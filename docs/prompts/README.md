@@ -2,6 +2,8 @@
 
 These prompts operate on local task records. GitHub Issues are intentionally not used.
 
+The preferred Codex entry point is the repository-local `$whisper-next-task` skill. It restores interrupted work before applying the prompts below.
+
 - `take-next-task.md`: select the next safe ready task.
 - `take-next-tasks-loop.md`: complete up to three tasks sequentially.
 - `implement-task.md`: implement one explicit ready task.

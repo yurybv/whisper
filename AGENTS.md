@@ -16,6 +16,8 @@ Before selecting or implementing a task, read:
 - the linked section of `docs/superpowers/plans/2026-08-19-whisper-macos-mvp.md`
 - `docs/testing/test-strategy.md` when code is involved
 
+When the owner asks to continue development, resume previous work, or take the next task, use the repository-local `whisper-next-task` skill under `.agents/skills/`. It must recover dirty work, unpublished commits, and active task statuses before selecting a new `ready` task.
+
 Do not create or use GitHub Issues as task records. Do not invent product behavior that conflicts with the approved specification or Open Design prototype.
 
 ## Repository and account guard
@@ -39,6 +41,7 @@ If the account or remote differs, stop before pushing. Never push this repositor
 
 ## Task workflow
 
+- Recover and reconcile any dirty worktree, unpublished commit, `in-progress` task, or `review` task before selecting new work.
 - Select one `status: ready` task whose dependencies are done.
 - Change it to `status: in-progress` before implementation.
 - Keep the change inside that task's scope.

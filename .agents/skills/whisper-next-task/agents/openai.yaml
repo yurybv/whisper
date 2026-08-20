@@ -1,0 +1,4 @@
+interface:
+  display_name: "Whisper: Next Task"
+  short_description: "Resume project state and complete the next safe task"
+  default_prompt: "Restore the Whisper project state, continue unfinished work if present, otherwise complete the next ready task in order."

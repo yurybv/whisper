@@ -30,11 +30,13 @@ A task is ready only when it has:
 ## Selecting the next task
 
 1. Run the repository and account guard from `AGENTS.md`.
-2. Read `docs/implementation/task-backlog.md`.
-3. Find the earliest milestone that has a `ready` task.
-4. Select the lowest-numbered ready task whose dependencies are done.
-5. Read its full task record and linked plan section.
-6. Change only that task to `status: in-progress` and commit that status with the implementation or as the first commit of the task series.
+2. Run `.agents/skills/whisper-next-task/scripts/project-state.sh` and fetch `origin/master` when the guard passes.
+3. Inspect and preserve dirty files, unpublished commits, and status mismatches.
+4. Resume an `in-progress` task or finish a `review` task before selecting new work.
+5. If no work is active, read `docs/implementation/task-backlog.md` and find the earliest milestone that has a `ready` task.
+6. Select the lowest-numbered ready task whose dependencies are done.
+7. Read its full task record and linked plan section.
+8. Change only that task to `status: in-progress` and commit that status with the implementation or as the first commit of the task series.
 
 Do not skip a milestone review gate. Do not select a blocked task simply because it is interesting.
 

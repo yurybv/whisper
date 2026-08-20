@@ -1,7 +1,7 @@
 # Whisper macOS Personal MVP Design
 
-Date: 2026-08-19  
-Status: approved direction, implementation-ready  
+Date: 2026-08-19
+Status: approved direction, implementation-ready
 Audience: product designer and implementation engineer
 
 ## Product goal

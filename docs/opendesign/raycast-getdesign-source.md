@@ -667,4 +667,3 @@ The only "imagery" in the system is in-product Raycast UI screenshots and small 
 - **Dark mode is the only mode** — no light variant exists in the captured surfaces.
 - **Form validation states** beyond the focused-input border treatment are not present in the captured surfaces.
 - **Authenticated chrome** (account dashboard, billing settings, team management) not in the captured pages.
-

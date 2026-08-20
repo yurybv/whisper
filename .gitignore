@@ -1,0 +1,12 @@
+.DS_Store
+**/.DS_Store
+
+# Xcode generated and local user state
+DerivedData/
+*.xcuserstate
+xcuserdata/
+
+# Local secrets and environment overrides
+.env
+.env.*
+!.env.example

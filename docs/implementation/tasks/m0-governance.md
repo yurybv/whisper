@@ -49,7 +49,7 @@
 
 - **Title:** Review milestone 0 and authorize foundation
 - **Type:** review
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Audit governance, ADR coverage, environment readiness, task consistency, account safety, and the readiness of Milestone 1.
 - **Out of scope:** Application code.

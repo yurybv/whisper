@@ -1,6 +1,6 @@
 # Whisper MVP Roadmap
 
-Status: approved implementation sequence for the personal macOS MVP.
+Status: Milestone 0 complete; Milestone 1 authorized on 2026-08-20.
 
 ## Principles
 
@@ -24,9 +24,13 @@ Deliverables:
 
 Exit gate: `WH-M0-004` is done.
 
+Review: passed on 2026-08-20. See [Milestone 0 review](reviews/m0-review.md).
+
 ## Milestone 1: Native foundation
 
 Goal: boot a reproducible SwiftUI macOS app with domain models, persistence, secrets, permissions, and settings foundations.
+
+Entry gate: authorized by `WH-M0-004`; begin with `WH-M1-001` only.
 
 Deliverables:
 

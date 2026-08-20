@@ -4,7 +4,7 @@
 
 - **Title:** Scaffold reproducible macOS application
 - **Type:** build
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Create XcodeGen manifest, macOS application/test targets, Info.plist, ad-hoc entitlements, app entry, baseline design tokens, bootstrap script, and smoke test.
 - **Out of scope:** Product screens beyond a minimal boot surface; feature services.
@@ -13,7 +13,7 @@
 - **Dependencies:** WH-M0-004.
 - **Expected files:** `project.yml`, `Config/**`, `Resources/**`, `Sources/WhisperApp/**`, `Sources/Core/DesignTokens.swift`, `Tests/WhisperTests/SmokeTests.swift`, `scripts/bootstrap.sh`.
 - **Source:** implementation plan Task 1.
-- **Blockers:** Previous milestone review.
+- **Blockers:** None.
 
 ## WH-M1-002
 

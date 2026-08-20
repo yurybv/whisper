@@ -17,13 +17,13 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 | WH-M0-001 | Establish local task workflow and repository guardrails | done | — |
 | WH-M0-002 | Record native architecture and tooling decisions | done | WH-M0-001 |
 | WH-M0-003 | Verify development environment and project readiness | done | WH-M0-002 |
-| WH-M0-004 | Review milestone 0 and authorize foundation | ready | WH-M0-001..003 |
+| WH-M0-004 | Review milestone 0 and authorize foundation | done | WH-M0-001..003 |
 
 ## Milestone 1: Native foundation
 
 | ID | Task | Status | Depends on |
 |---|---|---|---|
-| WH-M1-001 | Scaffold reproducible macOS application | blocked | WH-M0-004 |
+| WH-M1-001 | Scaffold reproducible macOS application | ready | WH-M0-004 |
 | WH-M1-002 | Implement mode, shortcut, and settings domain rules | blocked | WH-M1-001 |
 | WH-M1-003 | Add SwiftData persistence and file layout | blocked | WH-M1-002 |
 | WH-M1-004 | Add Keychain, permissions, and launch-at-login services | blocked | WH-M1-001 |

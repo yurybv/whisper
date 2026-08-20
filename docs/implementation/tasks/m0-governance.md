@@ -19,7 +19,7 @@
 
 - **Title:** Record native architecture and tooling decisions
 - **Type:** architecture
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Add concise ADRs for XcodeGen, unsandboxed ad-hoc distribution, SwiftData plus Application Support storage, direct OpenAI REST transport, ScreenCaptureKit dual-source capture, CGEventTap shortcuts, and Accessibility insertion fallback.
 - **Out of scope:** Implementing the selected architecture or adding alternative providers.

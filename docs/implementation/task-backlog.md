@@ -15,7 +15,7 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 | ID | Task | Status | Depends on |
 |---|---|---|---|
 | WH-M0-001 | Establish local task workflow and repository guardrails | done | — |
-| WH-M0-002 | Record native architecture and tooling decisions | ready | WH-M0-001 |
+| WH-M0-002 | Record native architecture and tooling decisions | done | WH-M0-001 |
 | WH-M0-003 | Verify development environment and project readiness | ready | WH-M0-002 |
 | WH-M0-004 | Review milestone 0 and authorize foundation | blocked | WH-M0-001..003 |
 

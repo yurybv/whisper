@@ -34,7 +34,7 @@
 
 - **Title:** Verify development environment and project readiness
 - **Type:** chore
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Check Xcode 26, Swift, macOS SDK, XcodeGen, Homebrew, available disk, microphone hardware, and Screen Recording capability; document exact versions and any bootstrap command.
 - **Out of scope:** Installing paid tools, changing system permissions without the owner's interaction, or scaffolding the app.
@@ -49,7 +49,7 @@
 
 - **Title:** Review milestone 0 and authorize foundation
 - **Type:** review
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Audit governance, ADR coverage, environment readiness, task consistency, account safety, and the readiness of Milestone 1.
 - **Out of scope:** Application code.

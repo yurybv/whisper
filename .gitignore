@@ -3,6 +3,7 @@
 
 # Xcode generated and local user state
 DerivedData/
+Whisper.xcodeproj/
 *.xcuserstate
 xcuserdata/
 

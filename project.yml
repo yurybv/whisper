@@ -1,0 +1,67 @@
+name: Whisper
+options:
+  bundleIdPrefix: dev.yury
+  deploymentTarget:
+    macOS: "15.0"
+settings:
+  base:
+    ARCHS: arm64
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
+    MACOSX_DEPLOYMENT_TARGET: "15.0"
+targets:
+  Whisper:
+    type: application
+    platform: macOS
+    sources:
+      - Sources
+    resources:
+      - Resources
+    info:
+      path: Resources/Info.plist
+      properties:
+        CFBundleDisplayName: Whisper
+        LSUIElement: true
+        NSMicrophoneUsageDescription: Whisper uses the microphone for dictation and meeting transcription.
+        NSScreenCaptureUsageDescription: Whisper captures system audio for meetings that you choose to record.
+    entitlements:
+      path: Config/Whisper.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.yury.whisper
+        PRODUCT_NAME: Whisper
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_IDENTITY: "-"
+  WhisperTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - Tests/WhisperTests
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_IDENTITY: "-"
+    dependencies:
+      - target: Whisper
+  WhisperUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - Tests/WhisperUITests
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_IDENTITY: "-"
+    dependencies:
+      - target: Whisper
+schemes:
+  Whisper:
+    build:
+      targets:
+        Whisper: all
+        WhisperTests: [test]
+        WhisperUITests: [test]
+    test:
+      targets:
+        - WhisperTests
+        - WhisperUITests

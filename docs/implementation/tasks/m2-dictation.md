@@ -19,7 +19,7 @@
 
 - **Title:** Build microphone recorder and silence handling
 - **Type:** feature
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Implement protocol-backed AVAudioEngine recording, file output, metering, duration, device loss, silence/no-speech behavior, and cancellation cleanup.
 - **Out of scope:** System audio and long meeting capture.
@@ -29,12 +29,13 @@
 - **Expected files:** `Sources/Audio/MicrophoneRecorder.swift`, protocols/meters, matching tests.
 - **Source:** implementation plan Task 6.
 - **Blockers:** None.
+- **Verification:** 12 focused audio tests and the 63-test unit suite pass without microphone permission. Live microphone smoke is not applicable until the recorder is wired into the dictation coordinator; the milestone review owns that end-to-end check.
 
 ## WH-M2-003
 
 - **Title:** Implement mode transformation and dictation state machine
 - **Type:** feature
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Orchestrate record, transcribe, transform, insert-ready result, cancel, and failure states; snapshot the active mode and protect single-session concurrency.
 - **Out of scope:** Actual Accessibility insertion and presentation UI.
@@ -43,7 +44,7 @@
 - **Dependencies:** WH-M2-001, WH-M2-002, WH-M1-003.
 - **Expected files:** `Sources/Dictation/**`, matching tests.
 - **Source:** implementation plan Task 7.
-- **Blockers:** WH-M2-001 and WH-M2-002.
+- **Blockers:** None.
 
 ## WH-M2-004
 

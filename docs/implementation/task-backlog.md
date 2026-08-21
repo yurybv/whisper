@@ -34,8 +34,8 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 | ID | Task | Status | Depends on |
 |---|---|---|---|
 | WH-M2-001 | Build OpenAI REST transport and retry policy | done | WH-M1-005 |
-| WH-M2-002 | Build microphone recorder and silence handling | ready | WH-M1-005 |
-| WH-M2-003 | Implement mode transformation and dictation state machine | blocked | WH-M2-001..002 |
+| WH-M2-002 | Build microphone recorder and silence handling | done | WH-M1-005 |
+| WH-M2-003 | Implement mode transformation and dictation state machine | ready | WH-M2-001..002 |
 | WH-M2-004 | Capture focused target and insert text reliably | blocked | WH-M2-003 |
 | WH-M2-005 | Implement global shortcuts and shortcut recorder | blocked | WH-M2-003 |
 | WH-M2-006 | Build menu bar shell, HUD, and mode switcher | blocked | WH-M2-003..005 |

@@ -35,7 +35,7 @@
 
 - **Title:** Implement mode transformation and dictation state machine
 - **Type:** feature
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Orchestrate record, transcribe, transform, insert-ready result, cancel, and failure states; snapshot the active mode and protect single-session concurrency.
 - **Out of scope:** Actual Accessibility insertion and presentation UI.
@@ -45,12 +45,13 @@
 - **Expected files:** `Sources/Dictation/**`, matching tests.
 - **Source:** implementation plan Task 7.
 - **Blockers:** None.
+- **Verification:** 10 focused prompt/coordinator tests and the full 73-test suite pass; the macOS application build succeeds. Manual target-app QA is not applicable until the protocol boundary is implemented and wired in WH-M2-004 and WH-M2-006.
 
 ## WH-M2-004
 
 - **Title:** Capture focused target and insert text reliably
 - **Type:** feature
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Capture the previously focused process/element, restore focus, set text through Accessibility, and fall back to clipboard plus Command-V or clipboard-only.
 - **Out of scope:** App-specific plugins and browser extensions.
@@ -59,13 +60,13 @@
 - **Dependencies:** WH-M2-003.
 - **Expected files:** `Sources/Accessibility/**`, `Tests/WhisperTests/Accessibility/**`.
 - **Source:** implementation plan Task 8.
-- **Blockers:** Accessibility permission needed for manual QA.
+- **Blockers:** None for implementation; Accessibility permission is required for the task's manual QA.
 
 ## WH-M2-005
 
 - **Title:** Implement global shortcuts and shortcut recorder
 - **Type:** feature
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Implement CGEventTap listener, Right Option press/release semantics, Command-Shift-K, Command-Shift-R, Escape, editable shortcuts, and conflict handling.
 - **Out of scope:** Mouse shortcuts and per-app shortcuts.
@@ -74,7 +75,7 @@
 - **Dependencies:** WH-M2-003.
 - **Expected files:** `Sources/Hotkeys/**`, matching tests.
 - **Source:** implementation plan Task 9.
-- **Blockers:** Input Monitoring/Accessibility permission may be required for manual QA.
+- **Blockers:** None for implementation; Input Monitoring or Accessibility permission may be required for the task's manual QA.
 
 ## WH-M2-006
 

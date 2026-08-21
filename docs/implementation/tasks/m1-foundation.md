@@ -49,7 +49,7 @@
 
 - **Title:** Add Keychain, permissions, and launch-at-login services
 - **Type:** feature
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Implement protocol-backed secure storage, OpenAI key lifecycle, permission status/open-settings actions, and launch-at-login state.
 - **Out of scope:** Onboarding UI and real OpenAI calls.
@@ -64,7 +64,7 @@
 
 - **Title:** Review milestone 1 foundation
 - **Type:** review
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Verify build reproducibility, domain invariants, storage safety, secret handling, service boundaries, and readiness for dictation.
 - **Out of scope:** Dictation feature implementation.
@@ -73,4 +73,4 @@
 - **Dependencies:** WH-M1-001, WH-M1-002, WH-M1-003, WH-M1-004.
 - **Expected files:** `docs/implementation/reviews/m1-review.md`, backlog updates.
 - **Source:** roadmap Milestone 1.
-- **Blockers:** Completion of foundation tasks.
+- **Blockers:** None.

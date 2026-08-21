@@ -27,14 +27,14 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 | WH-M1-002 | Implement mode, shortcut, and settings domain rules | done | WH-M1-001 |
 | WH-M1-003 | Add SwiftData persistence and file layout | done | WH-M1-002 |
 | WH-M1-004 | Add Keychain, permissions, and launch-at-login services | done | WH-M1-001 |
-| WH-M1-005 | Review milestone 1 foundation | ready | WH-M1-001..004 |
+| WH-M1-005 | Review milestone 1 foundation | done | WH-M1-001..004 |
 
 ## Milestone 2: End-to-end dictation
 
 | ID | Task | Status | Depends on |
 |---|---|---|---|
-| WH-M2-001 | Build OpenAI REST transport and retry policy | blocked | WH-M1-005 |
-| WH-M2-002 | Build microphone recorder and silence handling | blocked | WH-M1-005 |
+| WH-M2-001 | Build OpenAI REST transport and retry policy | ready | WH-M1-005 |
+| WH-M2-002 | Build microphone recorder and silence handling | ready | WH-M1-005 |
 | WH-M2-003 | Implement mode transformation and dictation state machine | blocked | WH-M2-001..002 |
 | WH-M2-004 | Capture focused target and insert text reliably | blocked | WH-M2-003 |
 | WH-M2-005 | Implement global shortcuts and shortcut recorder | blocked | WH-M2-003 |

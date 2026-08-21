@@ -4,7 +4,7 @@
 
 - **Title:** Build OpenAI REST transport and retry policy
 - **Type:** feature
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Add centralized model configuration, URLSession transport, multipart audio upload, transcription/response DTOs, safe error mapping, and bounded retry/backoff.
 - **Out of scope:** UI, audio capture, logging content, SDK dependencies, or real-network automated tests.
@@ -13,13 +13,13 @@
 - **Dependencies:** WH-M1-005.
 - **Expected files:** `Sources/OpenAI/**`, `Tests/WhisperTests/OpenAI/**`.
 - **Source:** implementation plan Task 5.
-- **Blockers:** Previous milestone review.
+- **Blockers:** None.
 
 ## WH-M2-002
 
 - **Title:** Build microphone recorder and silence handling
 - **Type:** feature
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Implement protocol-backed AVAudioEngine recording, file output, metering, duration, device loss, silence/no-speech behavior, and cancellation cleanup.
 - **Out of scope:** System audio and long meeting capture.
@@ -28,7 +28,7 @@
 - **Dependencies:** WH-M1-005.
 - **Expected files:** `Sources/Audio/MicrophoneRecorder.swift`, protocols/meters, matching tests.
 - **Source:** implementation plan Task 6.
-- **Blockers:** Previous milestone review.
+- **Blockers:** None.
 
 ## WH-M2-003
 

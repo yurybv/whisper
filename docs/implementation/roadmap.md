@@ -1,6 +1,6 @@
 # Whisper MVP Roadmap
 
-Status: Milestone 0 complete; Milestone 1 authorized on 2026-08-20.
+Status: Milestones 0 and 1 complete; Milestone 2 authorized on 2026-08-21.
 
 ## Principles
 
@@ -32,7 +32,9 @@ Goal: boot a reproducible SwiftUI macOS app with domain models, persistence, sec
 
 Entry gate: authorized by `WH-M0-004`; begin with `WH-M1-001` only.
 
-Progress: `WH-M1-001` through `WH-M1-004` completed on 2026-08-21; `WH-M1-005` is ready for milestone review.
+Progress: `WH-M1-001` through `WH-M1-005` completed on 2026-08-21.
+
+Review: passed on 2026-08-21. See [Milestone 1 review](reviews/m1-review.md).
 
 Deliverables:
 
@@ -46,6 +48,8 @@ Exit gate: the app builds, foundation tests pass, and `WH-M1-005` is done.
 ## Milestone 2: End-to-end dictation
 
 Goal: hold Right Option, dictate, release, transform through the active mode, and insert text into the previous application.
+
+Entry gate: authorized by `WH-M1-005`; select `WH-M2-001` first under the backlog ordering rule.
 
 Deliverables:
 

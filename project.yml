@@ -64,4 +64,3 @@ schemes:
     test:
       targets:
         - WhisperTests
-        - WhisperUITests

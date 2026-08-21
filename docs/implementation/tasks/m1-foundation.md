@@ -64,7 +64,7 @@
 
 - **Title:** Review milestone 1 foundation
 - **Type:** review
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Verify build reproducibility, domain invariants, storage safety, secret handling, service boundaries, and readiness for dictation.
 - **Out of scope:** Dictation feature implementation.

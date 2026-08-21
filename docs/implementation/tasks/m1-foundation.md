@@ -4,7 +4,7 @@
 
 - **Title:** Scaffold reproducible macOS application
 - **Type:** build
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Create XcodeGen manifest, macOS application/test targets, Info.plist, ad-hoc entitlements, app entry, baseline design tokens, bootstrap script, and smoke test.
 - **Out of scope:** Product screens beyond a minimal boot surface; feature services.
@@ -19,7 +19,7 @@
 
 - **Title:** Implement mode, shortcut, and settings domain rules
 - **Type:** feature
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Define modes, default-mode invariants, validated drafts, shortcut values, app settings defaults, retention, result language, and feature errors.
 - **Out of scope:** Persistence, UI, hotkey capture, and OpenAI requests.
@@ -28,7 +28,7 @@
 - **Dependencies:** WH-M1-001.
 - **Expected files:** `Sources/Core/ModeDefinition.swift`, `ModeRules.swift`, `AppSettings.swift`, `Shortcut.swift`, `FeatureError.swift`, matching tests.
 - **Source:** implementation plan Task 2.
-- **Blockers:** WH-M1-001.
+- **Blockers:** None.
 
 ## WH-M1-003
 
@@ -49,7 +49,7 @@
 
 - **Title:** Add Keychain, permissions, and launch-at-login services
 - **Type:** feature
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Implement protocol-backed secure storage, OpenAI key lifecycle, permission status/open-settings actions, and launch-at-login state.
 - **Out of scope:** Onboarding UI and real OpenAI calls.
@@ -58,7 +58,7 @@
 - **Dependencies:** WH-M1-001.
 - **Expected files:** `Sources/Core/SecureStore.swift`, `KeychainSecureStore.swift`, `PermissionService.swift`, `LaunchAtLoginService.swift`, matching tests.
 - **Source:** implementation plan Task 4.
-- **Blockers:** WH-M1-001.
+- **Blockers:** None.
 
 ## WH-M1-005
 

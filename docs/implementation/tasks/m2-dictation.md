@@ -4,7 +4,7 @@
 
 - **Title:** Build OpenAI REST transport and retry policy
 - **Type:** feature
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Add centralized model configuration, URLSession transport, multipart audio upload, transcription/response DTOs, safe error mapping, and bounded retry/backoff.
 - **Out of scope:** UI, audio capture, logging content, SDK dependencies, or real-network automated tests.

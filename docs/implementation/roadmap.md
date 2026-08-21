@@ -51,6 +51,8 @@ Goal: hold Right Option, dictate, release, transform through the active mode, an
 
 Entry gate: authorized by `WH-M1-005`; select `WH-M2-001` first under the backlog ordering rule.
 
+Progress: `WH-M2-001` completed on 2026-08-21; `WH-M2-002` is next.
+
 Deliverables:
 
 - OpenAI REST transport and retry policy;

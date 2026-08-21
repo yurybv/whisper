@@ -24,8 +24,8 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 | ID | Task | Status | Depends on |
 |---|---|---|---|
 | WH-M1-001 | Scaffold reproducible macOS application | done | WH-M0-004 |
-| WH-M1-002 | Implement mode, shortcut, and settings domain rules | ready | WH-M1-001 |
-| WH-M1-003 | Add SwiftData persistence and file layout | blocked | WH-M1-002 |
+| WH-M1-002 | Implement mode, shortcut, and settings domain rules | done | WH-M1-001 |
+| WH-M1-003 | Add SwiftData persistence and file layout | ready | WH-M1-002 |
 | WH-M1-004 | Add Keychain, permissions, and launch-at-login services | ready | WH-M1-001 |
 | WH-M1-005 | Review milestone 1 foundation | blocked | WH-M1-001..004 |
 

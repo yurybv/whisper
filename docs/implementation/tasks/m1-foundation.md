@@ -19,7 +19,7 @@
 
 - **Title:** Implement mode, shortcut, and settings domain rules
 - **Type:** feature
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Define modes, default-mode invariants, validated drafts, shortcut values, app settings defaults, retention, result language, and feature errors.
 - **Out of scope:** Persistence, UI, hotkey capture, and OpenAI requests.
@@ -34,7 +34,7 @@
 
 - **Title:** Add SwiftData persistence and file layout
 - **Type:** feature
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Store mode, dictation, meeting, and transcript metadata; define repositories; create safe Application Support recording and temporary paths; add recovery queries.
 - **Out of scope:** Audio capture, network processing, and history UI.
@@ -43,7 +43,7 @@
 - **Dependencies:** WH-M1-002.
 - **Expected files:** `Sources/Persistence/**`, `Tests/WhisperTests/Persistence/**`.
 - **Source:** implementation plan Task 3.
-- **Blockers:** WH-M1-002.
+- **Blockers:** None.
 
 ## WH-M1-004
 

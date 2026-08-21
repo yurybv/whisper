@@ -34,7 +34,7 @@
 
 - **Title:** Add SwiftData persistence and file layout
 - **Type:** feature
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Store mode, dictation, meeting, and transcript metadata; define repositories; create safe Application Support recording and temporary paths; add recovery queries.
 - **Out of scope:** Audio capture, network processing, and history UI.

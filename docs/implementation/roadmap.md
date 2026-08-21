@@ -32,7 +32,7 @@ Goal: boot a reproducible SwiftUI macOS app with domain models, persistence, sec
 
 Entry gate: authorized by `WH-M0-004`; begin with `WH-M1-001` only.
 
-Progress: `WH-M1-001` and `WH-M1-002` completed on 2026-08-21; `WH-M1-003` and `WH-M1-004` are ready.
+Progress: `WH-M1-001`, `WH-M1-002`, and `WH-M1-003` completed on 2026-08-21; `WH-M1-004` is ready.
 
 Deliverables:
 

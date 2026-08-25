@@ -1336,7 +1336,7 @@ docs/testing/manual-acceptance.md contains explicit checks for:
 - English Translation custom mode;
 - Right Option hold and Escape cancel;
 - Command-Shift-K switcher;
-- insertion in TextEdit, Notes, Safari, Slack, and VS Code;
+- insertion in TextEdit, Notes, Safari, and VS Code;
 - missing Accessibility clipboard fallback;
 - invalid key, offline, 429, and server error;
 - system audio plus microphone capture;
@@ -1401,7 +1401,7 @@ Do not combine review gates. Audio capture, Accessibility insertion, and destruc
 
 The MVP is complete only when:
 
-- Right Option dictation succeeds in the five target apps;
+- Right Option dictation succeeds in the four target apps;
 - active mode switching works without losing the previous app focus;
 - custom instructions reliably transform rather than answer dictated text;
 - a call captures both separate tracks and survives network failure;

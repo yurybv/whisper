@@ -30,7 +30,7 @@ Once `scripts/verify.sh` exists, it becomes the canonical full command.
 
 Dictation:
 
-- TextEdit, Notes, Safari, Slack, and VS Code;
+- TextEdit, Notes, Safari, and VS Code;
 - Russian and English with Default mode;
 - Russian-to-English custom mode;
 - silence, cancel, no network, invalid key, revoked microphone, and revoked Accessibility;

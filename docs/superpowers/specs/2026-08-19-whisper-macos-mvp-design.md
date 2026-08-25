@@ -321,7 +321,7 @@ Integration tests use protocol fakes for AVAudioEngine, ScreenCaptureKit writers
 
 Manual acceptance tests cover:
 
-- TextEdit, Notes, Safari, Slack, and VS Code insertion;
+- TextEdit, Notes, Safari, and VS Code insertion;
 - Russian and English Default dictation;
 - the Russian-to-English custom mode;
 - cancel, silence, offline, invalid-key, and revoked-permission cases;

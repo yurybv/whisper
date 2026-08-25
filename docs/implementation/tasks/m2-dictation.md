@@ -56,7 +56,7 @@
 - **Scope:** Capture the previously focused process/element, restore focus, set text through Accessibility, and fall back to clipboard plus Command-V or clipboard-only.
 - **Out of scope:** App-specific plugins and browser extensions.
 - **Acceptance criteria:** Target app is captured before overlays; successful insertion restores the prior app; denied Accessibility copies result and explains manual paste; unsupported fields never lose the text.
-- **Required checks:** Accessibility insertion tests from implementation plan Task 8; manual TextEdit, Notes, Safari, Slack, and VS Code matrix when available.
+- **Required checks:** Accessibility insertion tests from implementation plan Task 8; manual TextEdit, Notes, Safari, and VS Code matrix when available.
 - **Dependencies:** WH-M2-003.
 - **Expected files:** `Sources/Accessibility/**`, `Tests/WhisperTests/Accessibility/**`.
 - **Source:** implementation plan Task 8.

@@ -5,6 +5,24 @@ struct DetectedLanguage: Decodable, Sendable, Equatable {
     let probability: Double?
 }
 
+extension DetectedLanguage {
+    private enum CodingKeys: String, CodingKey {
+        case language
+        case code
+        case probability
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        if let language = try container.decodeIfPresent(String.self, forKey: .language) {
+            self.language = language
+        } else {
+            language = try container.decode(String.self, forKey: .code)
+        }
+        probability = try container.decodeIfPresent(Double.self, forKey: .probability)
+    }
+}
+
 struct TranscriptionResponse: Decodable, Sendable, Equatable {
     let text: String
     let languages: [DetectedLanguage]?

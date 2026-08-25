@@ -7,9 +7,9 @@
 
 ## Decision
 
-Milestone 2 is not yet through its exit gate. The implementation has strong deterministic coverage and the macOS app builds, but the mandatory live Default Russian, Default English, and Russian-to-English TextEdit matrix cannot run until the owner's OpenAI key is available through the production Keychain entry. The three repository-side recovery findings were resolved by `WH-M2-008`: failed work now exposes stage-aware Retry/Discard, clipboard-only completion says `Paste manually`, and user-facing failures use centralized secret-safe recovery guidance.
+Milestone 2 is not yet through its exit gate. The production Keychain credential is present, real OpenAI transcription and transformation pass with synthetic English and Russian audio, deterministic coverage is strong, and the macOS app builds. The mandatory in-app Default Russian, Default English, and Russian-to-English TextEdit matrix is still pending. The recovery findings were resolved by `WH-M2-008`, and the live transcription response mismatch was resolved by `WH-M2-009`.
 
-Milestone 3 remains blocked. Provision the local Keychain credential without committing or sharing it, then resume `WH-M2-007` for the live gate.
+Milestone 3 remains blocked while `WH-M2-007` completes the real app-to-TextEdit gate.
 
 ## Scope reviewed
 
@@ -23,6 +23,8 @@ Milestone 3 remains blocked. Provision the local Keychain credential without com
 | `WH-M2-006` | `3e8cea3` | Menu-bar shell, nonactivating HUD, key mode palette, keyboard navigation, and focus restoration |
 
 The owner explicitly removed Slack from the approved compatibility scope during this milestone; `59af632` records that product decision. It is not treated as implementation drift and is not restored by this review.
+
+Live OpenAI QA initially found that successful `gpt-transcribe` responses identify languages with `languages[].code`, while the production DTO required `languages[].language`. `WH-M2-009` added compatible decoding for the live field without removing legacy support. Synthetic English and Russian audio then passed real transcription and both Default and Russian-to-English transformations without logging response values.
 
 ## Architecture and behavior findings
 
@@ -56,7 +58,7 @@ git diff --check 3dde632..HEAD
 
 Results:
 
-- 138 unit tests pass with zero failures.
+- 139 unit tests pass with zero failures.
 - The application build succeeds.
 - The environment check reports the supported Mac, Xcode, microphone hardware, microphone permission, and Screen Recording permission ready.
 - Source contains no `print`, `debugPrint`, `dump`, `NSLog`, `os_log`, or `Logger` calls.
@@ -72,33 +74,34 @@ Results:
 | Push-to-talk event tap | Real session smoke observed one Right Option press and one release | Pass |
 | Mode palette | Built-app Computer Use smoke verified search focus, keyboard navigation, Escape, and prior-app restoration | Pass |
 | HUD | Built-app smoke verified text-plus-icon Listening presentation without opening a key main window | Pass |
-| Default Russian/English and Russian-to-English | Production Keychain item is absent, so no real OpenAI request was attempted | Blocked |
+| OpenAI Default Russian/English and Russian-to-English | Synthetic English and Russian WAV files passed real transcription; Default preserved each source language and the custom instruction returned English without Cyrillic | Pass |
+| In-app TextEdit matrix | The first synthetic Right Option attempt left the TextEdit marker unchanged; no end-to-end insertion is claimed yet | Pending final gate |
 
 ## Privacy and safety
 
 - The production app reads the OpenAI key only from Keychain service `dev.yury.whisper.openai`, account `api-key`.
 - The `OPENAI_API_KEY` environment variable is intentionally not a production credential path.
 - No credential, dictated text, transcript, custom instruction, audio, Authorization header, or private screenshot was added to the repository or logs.
-- The review did not request that the owner paste a key into chat, a command argument, or a tracked file.
-- Automated tests use fakes and synthetic content only.
+- The owner supplied the credential in chat after being asked to use the clipboard. It was not echoed or placed in a command argument, tracked file, or application log; rotation is recommended after this gate because chat exposure cannot be undone.
+- Automated suite tests use fakes and synthetic content only. The separate temporary live QA used generated WAV files and was removed after execution.
 
 ## Blockers and recovery
 
-### Owner credential blocker
+### Remaining TextEdit gate
 
 - **Failed criterion:** real TextEdit dictation in Default Russian, Default English, and the custom Russian-to-English mode.
-- **Evidence:** Keychain service `dev.yury.whisper.openai`, account `api-key`, is absent; `OPENAI_API_KEY` is also absent and is not consumed by `AppRuntime`.
+- **Evidence:** Keychain service `dev.yury.whisper.openai`, account `api-key`, is present and the real OpenAI stages pass. The first synthetic Right Option attempt did not change the TextEdit marker, so the app-level microphone/hotkey/insertion path still needs direct evidence.
 - **Affected tasks:** `WH-M2-007`; every Milestone 3 task remains blocked by the milestone gate.
-- **Recommended default:** add the key locally through Keychain Access, never through chat or the repository, then rerun this review.
-- **Exact external change:** create a generic-password item named `dev.yury.whisper.openai` with account `api-key` and the owner's valid OpenAI API key as its password.
+- **Recommended default:** diagnose the app-level start path without changing product behavior, then rerun the three TextEdit cases.
+- **Exact next check:** observe the built app's hotkey/accessibility state during a real recording, confirm microphone output reaches `DictationCoordinator`, and verify the final text is inserted into the captured TextEdit target.
 
 ### Resolved implementation blocker
 
 - **Previous failed criterion:** approved error recovery and clipboard-only completion behavior.
 - **Resolution:** `WH-M2-008` implements retained-session Retry/Discard, stage-aware continuation, manual-paste presentation, centralized safe messages, and single-flight recovery actions.
-- **Evidence:** coordinator, error-presentation, HUD, menu-model, runtime-action, and microphone device-loss tests pass in the 138-test suite; the application build and independent Critical/Important review pass.
-- **Remaining impact:** none beyond the separate owner credential blocker above.
+- **Evidence:** coordinator, error-presentation, HUD, menu-model, runtime-action, and microphone device-loss tests pass in the 139-test suite; the application build and independent Critical/Important review pass.
+- **Remaining impact:** none beyond the separate TextEdit gate above.
 
 ## Authorization
 
-**BLOCK NEXT MILESTONE.** Do not select Milestone 3 work until the local credential is provisioned, the real TextEdit language matrix passes, and `WH-M2-007` is updated to `done` on `origin/master`.
+**BLOCK NEXT MILESTONE.** Do not select Milestone 3 work until the real in-app TextEdit language matrix passes and `WH-M2-007` is updated to `done` on `origin/master`.

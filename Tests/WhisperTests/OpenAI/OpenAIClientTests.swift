@@ -54,6 +54,31 @@ final class OpenAIClientTests: XCTestCase {
         XCTAssertTrue(body.contains("name=\"prompt\"\r\n\r\nPayload CMS"))
     }
 
+    func testDictationDecodesLiveLanguageCodeMetadata() async throws {
+        let session = RecordingURLSession([
+            .http(
+                statusCode: 200,
+                body: Data(
+                    #"{"text":"Hello","languages":[{"code":"en"}],"usage":{"type":"duration","seconds":1}}"#.utf8
+                )
+            )
+        ])
+        let client = try makeClient(session: session)
+        let fixtureURL = try makeAudioFixture()
+        defer { try? FileManager.default.removeItem(at: fixtureURL) }
+
+        let response = try await client.transcribe(
+            fileURL: fixtureURL,
+            languageHint: nil,
+            prompt: nil
+        )
+
+        XCTAssertEqual(
+            response.languages,
+            [DetectedLanguage(language: "en", probability: nil)]
+        )
+    }
+
     func testDiarizedTranscriptionUsesMeetingModelAndDecodesSegments() async throws {
         let body = Data(#"{"text":"Hello","segments":[{"speaker":"A","text":"Hello","start":0.0,"end":1.25}]}"#.utf8)
         let session = RecordingURLSession([.http(statusCode: 200, body: body)])

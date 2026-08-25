@@ -99,16 +99,16 @@
 
 - **Title:** Review end-to-end dictation milestone
 - **Type:** review
-- **Status:** blocked
+- **Status:** in-progress
 - **Priority:** P0
 - **Scope:** Verify the real Default and Russian-to-English flows, target restoration, error recovery, shortcut behavior, network privacy, and test quality.
 - **Out of scope:** Main settings UI and meetings.
 - **Acceptance criteria:** End-to-end dictation passes in TextEdit; Default works in Russian and English; custom translation outputs English only; failed insertion preserves clipboard result; Milestone 3 is safe to start.
 - **Required checks:** Full tests; manual dictation matrix subset; network/log secret scan; `git diff --check`.
-- **Dependencies:** WH-M2-001 through WH-M2-006, WH-M2-008.
+- **Dependencies:** WH-M2-001 through WH-M2-006, WH-M2-008, WH-M2-009.
 - **Expected files:** `docs/implementation/reviews/m2-review.md`, backlog updates.
 - **Source:** roadmap Milestone 2.
-- **Blockers:** The production Keychain entry for service `dev.yury.whisper.openai`, account `api-key`, is absent, so the mandatory real TextEdit language matrix cannot run. The repository-side recovery findings were closed by `WH-M2-008`. See `docs/implementation/reviews/m2-review.md` for failed criteria, evidence, affected tasks, recommended defaults, and exact recovery actions.
+- **Blockers:** None. `WH-M2-009` aligned the live transcription response contract, the production Keychain entry is present, and the earlier recovery findings were closed by `WH-M2-008`.
 
 ## WH-M2-008
 
@@ -125,3 +125,19 @@
 - **Source:** approved design specification Error handling section and Milestone 2 review findings.
 - **Blockers:** None.
 - **Verification:** Retry resumes from the failed transcription, transformation, insertion, or history stage without recording again or duplicating completed insertion. Explicit Retry/Discard, deterministic discard-only failures, retained partial microphone capture, manual-paste feedback, secret-safe messages, and single-flight recovery actions are covered by tests. The full 138-test suite passes, the macOS app builds, production-source logging and credential-shape scans are clean, and `git diff --check` passes. Live recovery UI QA is not applicable without the production OpenAI Keychain credential and remains part of the resumed `WH-M2-007` TextEdit gate.
+
+## WH-M2-009
+
+- **Title:** Align transcription language metadata with the live OpenAI contract
+- **Type:** fix
+- **Status:** done
+- **Priority:** P0
+- **Scope:** Decode the live `gpt-transcribe` language metadata shape while retaining compatibility with the previously supported response field and keeping raw provider payloads out of logs.
+- **Out of scope:** Model changes, request changes, diarized meeting responses, UI, or broader DTO refactoring.
+- **Acceptance criteria:** A successful transcription response containing `languages[].code` decodes to `DetectedLanguage`; the legacy `languages[].language` fixture remains supported; live English and Russian audio requests no longer fail with `invalidResponse`; no response text or credential is logged.
+- **Required checks:** Focused OpenAI DTO/client tests; opt-in live English/Russian QA; full `WhisperTests`; application build; source logging/secret scan; `git diff --check`.
+- **Dependencies:** WH-M2-001.
+- **Expected files:** `Sources/OpenAI/OpenAIModels.swift`, `Tests/WhisperTests/OpenAI/OpenAIClientTests.swift`, task/review docs.
+- **Source:** `WH-M2-007` live OpenAI acceptance evidence.
+- **Blockers:** None.
+- **Verification:** A failing regression reproduced `invalidResponse` for the live `languages[].code` response shape, then passed after the decoder accepted `code` while preserving the legacy `language` field. All 13 focused OpenAI client tests pass. Temporary untracked live QA generated English and Russian WAV fixtures, received HTTP 200 from both transcription requests, verified Default retained English and Russian respectively, and verified the custom instruction returned English without Cyrillic. No credential, response text, transcript, or diagnostic payload value was printed or retained.

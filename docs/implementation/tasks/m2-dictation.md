@@ -108,13 +108,13 @@
 - **Dependencies:** WH-M2-001 through WH-M2-006, WH-M2-008.
 - **Expected files:** `docs/implementation/reviews/m2-review.md`, backlog updates.
 - **Source:** roadmap Milestone 2.
-- **Blockers:** The production Keychain entry for service `dev.yury.whisper.openai`, account `api-key`, is absent, so the mandatory real TextEdit language matrix cannot run. `WH-M2-008` must also close the retry/discard, clipboard-only presentation, and recovery-message findings. See `docs/implementation/reviews/m2-review.md` for failed criteria, evidence, affected tasks, recommended defaults, and exact recovery actions.
+- **Blockers:** The production Keychain entry for service `dev.yury.whisper.openai`, account `api-key`, is absent, so the mandatory real TextEdit language matrix cannot run. The repository-side recovery findings were closed by `WH-M2-008`. See `docs/implementation/reviews/m2-review.md` for failed criteria, evidence, affected tasks, recommended defaults, and exact recovery actions.
 
 ## WH-M2-008
 
 - **Title:** Harden dictation failure recovery and completion feedback
 - **Type:** fix
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Retain the complete failed dictation session, expose explicit retry and discard actions, preserve the original mode and target during retry, distinguish clipboard-only completion from inserted completion, and centralize secret-safe recovery messages for key, network, microphone, and insertion failures.
 - **Out of scope:** Settings/onboarding UI, meeting recovery, relaunch persistence, History screens, or changes to the approved mode/transformation behavior.
@@ -124,3 +124,4 @@
 - **Expected files:** `Sources/Core/FeatureError.swift`, `Sources/Dictation/**`, `Sources/UI/HUD/**`, `Sources/UI/MenuBar/**`, `Sources/WhisperApp/AppRuntime.swift`, matching tests, task/review docs.
 - **Source:** approved design specification Error handling section and Milestone 2 review findings.
 - **Blockers:** None.
+- **Verification:** Retry resumes from the failed transcription, transformation, insertion, or history stage without recording again or duplicating completed insertion. Explicit Retry/Discard, deterministic discard-only failures, retained partial microphone capture, manual-paste feedback, secret-safe messages, and single-flight recovery actions are covered by tests. The full 138-test suite passes, the macOS app builds, production-source logging and credential-shape scans are clean, and `git diff --check` passes. Live recovery UI QA is not applicable without the production OpenAI Keychain credential and remains part of the resumed `WH-M2-007` TextEdit gate.

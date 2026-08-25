@@ -8,6 +8,7 @@ enum DictationHUDStatus: Equatable, Sendable {
     case processing
     case inserting
     case inserted
+    case pasteManually
     case cancelled
     case error(message: String, textOnClipboard: Bool)
 }
@@ -35,9 +36,9 @@ struct DictationHUDPresentation: Equatable, Sendable {
             self.init(status: .processing)
         case .inserting:
             self.init(status: .inserting)
-        case .completed:
-            self.init(status: .inserted)
-        case let .failed(message, textOnClipboard):
+        case let .completed(result):
+            self.init(status: result == .copiedForManualPaste ? .pasteManually : .inserted)
+        case let .failed(message, textOnClipboard, _):
             self.init(status: .error(message: message, textOnClipboard: textOnClipboard))
         case .idle:
             self.init(
@@ -85,6 +86,13 @@ struct DictationHUDPresentation: Equatable, Sendable {
                 detail: "Dictation is ready",
                 systemImage: "checkmark.circle.fill",
                 accent: .success
+            )
+        case .pasteManually:
+            self.init(
+                title: "Paste manually",
+                detail: "Text is on the clipboard",
+                systemImage: "doc.on.clipboard",
+                accent: .warning
             )
         case .cancelled:
             self.init(
@@ -162,11 +170,17 @@ final class DictationHUDController {
             hide()
             return
         }
+        let dismissAfter: Duration?
+        if case .completed = state {
+            dismissAfter = .seconds(1.2)
+        } else {
+            dismissAfter = nil
+        }
         render(
             presentation: DictationHUDPresentation(state: state),
             level: level,
             screen: screen,
-            dismissAfter: state == .completed ? .seconds(1.2) : nil
+            dismissAfter: dismissAfter
         )
     }
 

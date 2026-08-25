@@ -5,6 +5,8 @@ enum MenuBarCommand: CaseIterable, Equatable, Sendable {
     case startDictation
     case changeMode
     case recordMeeting
+    case retryDictation
+    case discardDictation
     case recentHistory
     case openMainWindow
 
@@ -13,7 +15,7 @@ enum MenuBarCommand: CaseIterable, Equatable, Sendable {
         case .startDictation: .pushToTalk
         case .changeMode: .changeMode
         case .recordMeeting: .recordMeeting
-        case .recentHistory, .openMainWindow: nil
+        case .retryDictation, .discardDictation, .recentHistory, .openMainWindow: nil
         }
     }
 }
@@ -52,15 +54,18 @@ final class MenuBarViewModel {
     var state: MenuBarState
     var currentModeName: String
     var message: String?
+    var dictationRecovery: DictationRecovery
 
     init(
         state: MenuBarState = .ready,
         currentModeName: String = ModeDefinition.defaultMode.name,
-        message: String? = nil
+        message: String? = nil,
+        dictationRecovery: DictationRecovery = .none
     ) {
         self.state = state
         self.currentModeName = currentModeName
         self.message = message
+        self.dictationRecovery = dictationRecovery
     }
 }
 
@@ -69,6 +74,8 @@ struct MenuBarContentView: View {
     let onToggleDictation: () -> Void
     let onChangeMode: () -> Void
     let onRecordMeeting: () -> Void
+    let onRetryDictation: () -> Void
+    let onDiscardDictation: () -> Void
     let onRecentHistory: () -> Void
     let onOpenMainWindow: () -> Void
     let onQuit: () -> Void
@@ -99,12 +106,19 @@ struct MenuBarContentView: View {
 
             Divider().overlay(DesignTokens.border)
 
-            menuButton(
-                viewModel.state == .dictating ? "Finish Dictation" : "Start Dictation",
-                systemImage: "mic",
-                shortcut: "⌥",
-                action: onToggleDictation
-            )
+            if viewModel.dictationRecovery.canDiscard {
+                if viewModel.dictationRecovery.canRetry {
+                    menuButton("Retry Dictation", systemImage: "arrow.clockwise", action: onRetryDictation)
+                }
+                menuButton("Discard Dictation", systemImage: "trash", action: onDiscardDictation)
+            } else {
+                menuButton(
+                    viewModel.state == .dictating ? "Finish Dictation" : "Start Dictation",
+                    systemImage: "mic",
+                    shortcut: "⌥",
+                    action: onToggleDictation
+                )
+            }
             menuButton("Change Mode", systemImage: "square.grid.2x2", shortcut: "⇧⌘K", action: onChangeMode)
             menuButton("Record Meeting", systemImage: "record.circle", shortcut: "⇧⌘R", action: onRecordMeeting)
 

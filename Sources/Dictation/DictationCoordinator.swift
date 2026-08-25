@@ -18,6 +18,7 @@ extension HistoryRepository: DictationHistoryWriting {}
 enum DictationCoordinatorError: Error, Sendable, Equatable {
     case busy
     case notRecording
+    case noRetryAvailable
 }
 
 extension DictationCoordinatorError: LocalizedError {
@@ -27,6 +28,8 @@ extension DictationCoordinatorError: LocalizedError {
             "Another dictation is already running."
         case .notRecording:
             "No dictation is active."
+        case .noRetryAvailable:
+            "No failed dictation is available to retry."
         }
     }
 }
@@ -36,10 +39,14 @@ actor DictationCoordinator {
 
     private struct Session: Sendable {
         let id: UUID
+        let historyID: UUID
         let mode: ModeDefinition
         let target: FocusedTarget
         let startedAt: Date
         var capturedAudio: CapturedAudio?
+        var transcription: TranscriptionResponse?
+        var transformedText: String?
+        var insertionResult: InsertionResult?
     }
 
     private let recorder: any MicrophoneRecorder
@@ -55,7 +62,6 @@ actor DictationCoordinator {
     private var state: DictationState = .idle
     private var session: Session?
     private var startAttemptID: UUID?
-    private var retainedAudioURL: URL?
 
     init(
         recorder: any MicrophoneRecorder,
@@ -92,7 +98,7 @@ actor DictationCoordinator {
     }
 
     func retryAudioURL() -> URL? {
-        retainedAudioURL
+        session?.capturedAudio?.fileURL
     }
 
     func begin(deviceID: String? = nil) async throws {
@@ -107,7 +113,6 @@ actor DictationCoordinator {
             }
         }
 
-        deleteRetainedAudio()
         let startedAt = now()
 
         do {
@@ -122,17 +127,27 @@ actor DictationCoordinator {
             }
             session = Session(
                 id: UUID(),
+                historyID: UUID(),
                 mode: mode,
                 target: target,
                 startedAt: startedAt,
-                capturedAudio: nil
+                capturedAudio: nil,
+                transcription: nil,
+                transformedText: nil,
+                insertionResult: nil
             )
             emit(.recording(modeName: mode.name))
         } catch {
             guard startAttemptID == attemptID else {
                 throw CancellationError()
             }
-            emit(.failed(message: error.localizedDescription, textOnClipboard: false))
+            emit(
+                .failed(
+                    message: DictationErrorPresentation.message(for: error, recovery: .none),
+                    textOnClipboard: false,
+                    recovery: .none
+                )
+            )
             throw error
         }
     }
@@ -142,13 +157,8 @@ actor DictationCoordinator {
             return
         }
         let sessionID = initialSession.id
-        var capturedAudio: CapturedAudio?
-        var insertionResult: InsertionResult?
-
         do {
-            emit(.transcribing)
             let capture = try await recorder.stop()
-            capturedAudio = capture
             guard isCurrent(sessionID) else {
                 deleteAudio(at: capture.fileURL)
                 return
@@ -161,44 +171,147 @@ actor DictationCoordinator {
                 emit(.idle)
                 return
             }
-
-            let transcription = try await openAI.transcribe(
-                fileURL: capture.fileURL,
-                languageHint: initialSession.mode.languageHint,
-                prompt: nil
+        } catch let failure as MicrophoneCaptureFailure {
+            guard isCurrent(sessionID) else {
+                deleteAudio(at: failure.capturedAudio.fileURL)
+                return
+            }
+            session?.capturedAudio = failure.capturedAudio
+            let recovery: DictationRecovery = failure.capturedAudio.containsSpeech
+                ? .retryOrDiscard
+                : .discardOnly
+            emit(
+                .failed(
+                    message: DictationErrorPresentation.message(
+                        for: failure,
+                        recovery: recovery
+                    ),
+                    textOnClipboard: false,
+                    recovery: recovery
+                )
             )
+            return
+        } catch {
             guard isCurrent(sessionID) else {
-                deleteAudio(at: capture.fileURL)
                 return
             }
-
-            emit(.transforming)
-            let transformedText = try await openAI.transform(
-                text: transcription.text,
-                instructions: promptBuilder.instructions(for: initialSession.mode)
+            session = nil
+            emit(
+                .failed(
+                    message: DictationErrorPresentation.message(for: error, recovery: .none),
+                    textOnClipboard: false,
+                    recovery: .none
+                )
             )
-            guard isCurrent(sessionID) else {
-                deleteAudio(at: capture.fileURL)
-                return
+            return
+        }
+
+        guard let capturedSession = session, capturedSession.id == sessionID else { return }
+        await process(sessionID: capturedSession.id)
+    }
+
+    func retry() async throws {
+        guard case let .failed(_, _, recovery) = state,
+              recovery.canRetry,
+              let retrySession = session,
+              retrySession.capturedAudio != nil else {
+            throw DictationCoordinatorError.noRetryAvailable
+        }
+        await process(sessionID: retrySession.id)
+    }
+
+    func discardFailed() {
+        guard case let .failed(_, _, recovery) = state, recovery.canDiscard else { return }
+        if let audioURL = session?.capturedAudio?.fileURL {
+            deleteAudio(at: audioURL)
+        }
+        session = nil
+        emit(.idle)
+    }
+
+    @discardableResult
+    func cancel() async -> Bool {
+        guard case .inserting = state else {
+            let activeAudioURL = session?.capturedAudio?.fileURL
+            startAttemptID = nil
+            session = nil
+            await recorder.cancel()
+            if let activeAudioURL { deleteAudio(at: activeAudioURL) }
+            emit(.idle)
+            return true
+        }
+        return false
+    }
+
+    private func process(sessionID: UUID) async {
+        guard let capture = session?.capturedAudio, isCurrent(sessionID) else { return }
+
+        do {
+            let transcription: TranscriptionResponse
+            if let storedTranscription = session?.transcription {
+                transcription = storedTranscription
+            } else {
+                guard let mode = session?.mode else { return }
+                emit(.transcribing)
+                let response = try await openAI.transcribe(
+                    fileURL: capture.fileURL,
+                    languageHint: mode.languageHint,
+                    prompt: nil
+                )
+                guard isCurrent(sessionID) else {
+                    deleteAudio(at: capture.fileURL)
+                    return
+                }
+                session?.transcription = response
+                transcription = response
             }
 
-            emit(.inserting)
-            insertionResult = try await insertion.insert(transformedText, into: initialSession.target)
-            guard isCurrent(sessionID) else {
-                deleteAudio(at: capture.fileURL)
-                return
+            let transformedText: String
+            if let storedText = session?.transformedText {
+                transformedText = storedText
+            } else {
+                guard let mode = session?.mode else { return }
+                emit(.transforming)
+                let response = try await openAI.transform(
+                    text: transcription.text,
+                    instructions: promptBuilder.instructions(for: mode)
+                )
+                guard isCurrent(sessionID) else {
+                    deleteAudio(at: capture.fileURL)
+                    return
+                }
+                session?.transformedText = response
+                transformedText = response
             }
 
+            let insertionResult: InsertionResult
+            if let storedResult = session?.insertionResult {
+                emit(.inserting)
+                insertionResult = storedResult
+            } else {
+                guard let target = session?.target else { return }
+                emit(.inserting)
+                let result = try await insertion.insert(transformedText, into: target)
+                guard isCurrent(sessionID) else {
+                    deleteAudio(at: capture.fileURL)
+                    return
+                }
+                session?.insertionResult = result
+                insertionResult = result
+            }
+
+            guard let currentSession = session, currentSession.id == sessionID else { return }
             let draft = DictationDraft(
-                createdAt: initialSession.startedAt,
+                id: currentSession.historyID,
+                createdAt: currentSession.startedAt,
                 duration: capture.duration,
-                modeID: initialSession.mode.id,
-                modeNameSnapshot: initialSession.mode.name,
-                modeInstructionsSnapshot: initialSession.mode.instructions,
+                modeID: currentSession.mode.id,
+                modeNameSnapshot: currentSession.mode.name,
+                modeInstructionsSnapshot: currentSession.mode.instructions,
                 detectedLanguages: transcription.languages?.map(\.language) ?? [],
                 originalText: transcription.text,
                 outputText: transformedText,
-                targetApplicationBundleID: initialSession.target.bundleIdentifier,
+                targetApplicationBundleID: currentSession.target.bundleIdentifier,
                 status: .ready
             )
             _ = try await history.createDictation(draft)
@@ -209,40 +322,34 @@ actor DictationCoordinator {
 
             deleteAudio(at: capture.fileURL)
             session = nil
-            retainedAudioURL = nil
-            emit(.completed)
+            emit(.completed(insertionResult))
         } catch {
             guard isCurrent(sessionID) else {
-                if let capturedAudio { deleteAudio(at: capturedAudio.fileURL) }
+                deleteAudio(at: capture.fileURL)
                 return
             }
 
-            let shouldRetainForRetry = state == .transcribing || state == .transforming
-            if shouldRetainForRetry, let capturedAudio {
-                retainedAudioURL = capturedAudio.fileURL
-            } else if let capturedAudio {
-                deleteAudio(at: capturedAudio.fileURL)
-            }
-            session = nil
+            let recovery = recoveryDisposition(for: error)
             emit(
                 .failed(
-                    message: error.localizedDescription,
-                    textOnClipboard: insertionResult == .copiedForManualPaste
+                    message: DictationErrorPresentation.message(
+                        for: error,
+                        recovery: recovery
+                    ),
+                    textOnClipboard: session?.insertionResult == .copiedForManualPaste,
+                    recovery: recovery
                 )
             )
         }
     }
 
-    func cancel() async {
-        let activeAudioURL = session?.capturedAudio?.fileURL
-        let retryURL = retainedAudioURL
-        startAttemptID = nil
-        session = nil
-        retainedAudioURL = nil
-        await recorder.cancel()
-        if let activeAudioURL { deleteAudio(at: activeAudioURL) }
-        if let retryURL { deleteAudio(at: retryURL) }
-        emit(.idle)
+    private func recoveryDisposition(for error: Error) -> DictationRecovery {
+        switch error {
+        case OpenAIClientError.uploadTooLarge, OpenAIClientError.unreadableAudioFile:
+            .discardOnly
+        default:
+            .retryOrDiscard
+        }
     }
 
     private func isCurrent(_ id: UUID) -> Bool {
@@ -258,12 +365,6 @@ actor DictationCoordinator {
     private func emit(_ newState: DictationState) {
         state = newState
         stateContinuation.yield(newState)
-    }
-
-    private func deleteRetainedAudio() {
-        guard let retainedAudioURL else { return }
-        deleteAudio(at: retainedAudioURL)
-        self.retainedAudioURL = nil
     }
 
     private func deleteAudio(at url: URL) {

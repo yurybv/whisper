@@ -57,7 +57,7 @@ final class AVAudioEngineRecorderTests: XCTestCase {
         XCTAssertEqual(backend.stopCount, 1)
     }
 
-    func testDeviceLossFinalizesAndCleansCaptureBeforeThrowing() async throws {
+    func testDeviceLossFinalizesAndRetainsPartialCaptureForRecovery() async throws {
         let directory = try makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
         let backend = FakeAudioCaptureBackend()
@@ -71,9 +71,12 @@ final class AVAudioEngineRecorderTests: XCTestCase {
             _ = try await recorder.stop()
             XCTFail("Expected disconnected microphone error")
         } catch {
-            XCTAssertEqual(error as? FeatureError, .microphoneDisconnected)
+            let failure = try XCTUnwrap(error as? MicrophoneCaptureFailure)
+            XCTAssertEqual(failure.reason, .microphoneDisconnected)
+            XCTAssertEqual(failure.capturedAudio.duration, 0.1, accuracy: 0.000_001)
+            XCTAssertTrue(FileManager.default.fileExists(atPath: failure.capturedAudio.fileURL.path))
         }
-        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: directory.path).count, 0)
+        XCTAssertEqual(try FileManager.default.contentsOfDirectory(atPath: directory.path).count, 1)
         XCTAssertEqual(backend.stopCount, 1)
     }
 

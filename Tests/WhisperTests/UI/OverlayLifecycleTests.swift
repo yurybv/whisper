@@ -20,13 +20,29 @@ final class OverlayLifecycleTests: XCTestCase {
             DictationHUDPresentation(state: .transcribing),
             DictationHUDPresentation(state: .transforming),
             DictationHUDPresentation(state: .inserting),
-            DictationHUDPresentation(state: .completed),
-            DictationHUDPresentation(state: .failed(message: "Network unavailable", textOnClipboard: false)),
+            DictationHUDPresentation(state: .completed(.insertedDirectly)),
+            DictationHUDPresentation(
+                state: .failed(
+                    message: "Network unavailable",
+                    textOnClipboard: false,
+                    recovery: .retryOrDiscard
+                )
+            ),
             DictationHUDPresentation(status: .cancelled),
         ]
 
         XCTAssertTrue(presentations.allSatisfy { !$0.title.isEmpty && !$0.systemImage.isEmpty })
         XCTAssertEqual(presentations.first?.detail, "Default")
+    }
+
+    func testClipboardOnlyCompletionExplainsManualPaste() {
+        let presentation = DictationHUDPresentation(
+            state: .completed(.copiedForManualPaste)
+        )
+
+        XCTAssertEqual(presentation.title, "Paste manually")
+        XCTAssertTrue(presentation.detail.localizedCaseInsensitiveContains("clipboard"))
+        XCTAssertEqual(presentation.accent, .warning)
     }
 
     func testHUDFrameIsBottomCenteredInsideVisibleScreen() {

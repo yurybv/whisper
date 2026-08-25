@@ -2,6 +2,45 @@ import AppKit
 import CoreGraphics
 import Foundation
 
+struct AppRuntimeDictationPresentation: Equatable, Sendable {
+    let menuState: MenuBarState
+    let message: String?
+    let recovery: DictationRecovery
+    let blocksNewDictation: Bool
+
+    init(state: DictationState) {
+        switch state {
+        case .idle:
+            menuState = .ready
+            message = nil
+            recovery = .none
+            blocksNewDictation = false
+        case let .completed(result):
+            menuState = .ready
+            message = result == .copiedForManualPaste
+                ? "Text is on the clipboard. Paste manually."
+                : nil
+            recovery = .none
+            blocksNewDictation = false
+        case .recording:
+            menuState = .dictating
+            message = nil
+            recovery = .none
+            blocksNewDictation = true
+        case .transcribing, .transforming, .inserting:
+            menuState = .processing
+            message = nil
+            recovery = .none
+            blocksNewDictation = true
+        case let .failed(error, _, recovery):
+            menuState = .error
+            message = error
+            self.recovery = recovery
+            blocksNewDictation = recovery.canDiscard
+        }
+    }
+}
+
 @MainActor
 final class AppRuntime {
     private let persistence: PersistenceController
@@ -22,6 +61,7 @@ final class AppRuntime {
     private var modeSwitcherController: ModeSwitcherController!
     private var menuBarController: MenuBarController!
     private var hotkeyRouter: HotkeyActionRouter!
+    private var recoveryActionRouter: DictationRecoveryActionRouter!
 
     init() throws {
         let paths = try AppPaths()
@@ -64,6 +104,18 @@ final class AppRuntime {
                 Task { await self.hotkeys.setFeatureActive(self.isDictationActive) }
             }
         )
+        recoveryActionRouter = DictationRecoveryActionRouter(
+            onRetry: { [weak self] in
+                await self?.retryFailedDictation()
+            },
+            onDiscard: { [weak self] in
+                await self?.discardFailedDictation()
+            },
+            setFeatureActive: { [weak self] isActive in
+                guard let self else { return }
+                await self.hotkeys.setFeatureActive(isActive)
+            }
+        )
         menuBarController = MenuBarController(
             onToggleDictation: { [weak self] in
                 guard let self else { return }
@@ -71,6 +123,8 @@ final class AppRuntime {
             },
             onChangeMode: { [weak self] in self?.showModeSwitcher() },
             onRecordMeeting: { [weak self] in self?.showMeetingStub() },
+            onRetryDictation: { [weak self] in self?.recoveryActionRouter.scheduleRetry() },
+            onDiscardDictation: { [weak self] in self?.recoveryActionRouter.scheduleDiscard() },
             onRecentHistory: { [weak self] in self?.openMainWindow() },
             onOpenMainWindow: { [weak self] in self?.openMainWindow() },
             onQuit: { NSApp.terminate(nil) }
@@ -144,6 +198,7 @@ final class AppRuntime {
         stateTask = nil
         levelTask = nil
         hotkeyRouter.stop()
+        recoveryActionRouter.stop()
         Task { await hotkeys.stop() }
     }
 
@@ -182,19 +237,22 @@ final class AppRuntime {
         menuBarController.closePopover()
         if case .recording = lastState {
             hotkeyRouter.scheduleFinish()
-        } else if !isDictationActive {
+        } else if !AppRuntimeDictationPresentation(state: lastState).blocksNewDictation {
             await beginDictation()
         }
     }
 
     private func beginDictation() async {
-        guard !isDictationActive else { return }
+        guard !AppRuntimeDictationPresentation(state: lastState).blocksNewDictation else { return }
         dictationScreen = TargetScreenResolver.screenForFrontmostApplication()
         do {
             try await coordinator.begin()
             await hotkeys.setFeatureActive(true)
         } catch {
-            menuBarController.render(state: .error, message: error.localizedDescription)
+            menuBarController.render(
+                state: .error,
+                message: DictationErrorPresentation.message(for: error, recovery: .none)
+            )
         }
     }
 
@@ -204,13 +262,30 @@ final class AppRuntime {
         await hotkeys.setFeatureActive(false)
     }
 
+    private func retryFailedDictation() async {
+        menuBarController.closePopover()
+        do {
+            try await coordinator.retry()
+        } catch {
+            menuBarController.render(
+                state: .error,
+                message: DictationErrorPresentation.message(for: error, recovery: .none)
+            )
+        }
+    }
+
+    private func discardFailedDictation() async {
+        menuBarController.closePopover()
+        await coordinator.discardFailed()
+    }
+
     private func cancelTopFeature() async -> Bool {
         if modeSwitcherController.isVisible {
             modeSwitcherController.close()
             return false
         }
         guard isDictationActive else { return false }
-        await coordinator.cancel()
+        guard await coordinator.cancel() else { return false }
         hudController.render(status: .cancelled, screen: dictationScreen)
         await hotkeys.setFeatureActive(false)
         return true
@@ -243,25 +318,15 @@ final class AppRuntime {
     private func render(_ state: DictationState) {
         lastState = state
         hudController.render(state: state, level: lastLevel, screen: dictationScreen)
-
-        let menuState: MenuBarState
-        let message: String?
-        switch state {
-        case .idle, .completed:
-            menuState = .ready
-            message = nil
-        case let .recording(modeName):
-            menuState = .dictating
-            message = nil
+        if case let .recording(modeName) = state {
             menuBarController.setModeName(modeName)
-        case .transcribing, .transforming, .inserting:
-            menuState = .processing
-            message = nil
-        case let .failed(error, _):
-            menuState = .error
-            message = error
         }
-        menuBarController.render(state: menuState, message: message)
+        let presentation = AppRuntimeDictationPresentation(state: state)
+        menuBarController.render(
+            state: presentation.menuState,
+            message: presentation.message,
+            dictationRecovery: presentation.recovery
+        )
     }
 
 }

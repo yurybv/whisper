@@ -137,16 +137,13 @@ final class AVAudioEngineRecorder: MicrophoneRecorder, @unchecked Sendable {
             )
         }
 
-        if result.writeFailed || result.deviceDisconnected {
+        if result.writeFailed {
             try? FileManager.default.removeItem(at: result.url)
-            if result.deviceDisconnected {
-                throw FeatureError.microphoneDisconnected
-            }
             throw MicrophoneRecorderError.cannotWriteAudioFile
         }
 
         let duration = TimeInterval(result.frameCount) / Self.sampleRate
-        return CapturedAudio(
+        let capture = CapturedAudio(
             fileURL: result.url,
             duration: duration,
             peakLevel: result.peakLevel,
@@ -155,6 +152,13 @@ final class AVAudioEngineRecorder: MicrophoneRecorder, @unchecked Sendable {
                 peakLevel: result.peakLevel
             )
         )
+        if result.deviceDisconnected {
+            throw MicrophoneCaptureFailure(
+                reason: .microphoneDisconnected,
+                capturedAudio: capture
+            )
+        }
+        return capture
     }
 
     func cancel() async {

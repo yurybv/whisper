@@ -51,7 +51,7 @@ Goal: hold Right Option, dictate, release, transform through the active mode, an
 
 Entry gate: authorized by `WH-M1-005`; select `WH-M2-001` first under the backlog ordering rule.
 
-Progress: `WH-M2-001` through `WH-M2-006` completed. The `WH-M2-007` review is blocked by the missing local OpenAI Keychain credential and the recovery gaps assigned to ready task `WH-M2-008`.
+Progress: `WH-M2-001` through `WH-M2-006` and recovery hardening `WH-M2-008` are complete. The `WH-M2-007` review is blocked only by the missing local OpenAI Keychain credential.
 
 Deliverables:
 

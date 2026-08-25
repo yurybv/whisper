@@ -7,9 +7,9 @@
 
 ## Decision
 
-Milestone 2 is not yet through its exit gate. The implementation has strong deterministic coverage and the macOS app builds, but the mandatory live Default Russian, Default English, and Russian-to-English TextEdit matrix cannot run until the owner's OpenAI key is available through the production Keychain entry. The review also found three recoverable product gaps, now tracked as `WH-M2-008`: failed network work has no explicit retry/discard path, clipboard-only completion is presented as insertion, and user-facing errors do not provide safe recovery guidance.
+Milestone 2 is not yet through its exit gate. The implementation has strong deterministic coverage and the macOS app builds, but the mandatory live Default Russian, Default English, and Russian-to-English TextEdit matrix cannot run until the owner's OpenAI key is available through the production Keychain entry. The three repository-side recovery findings were resolved by `WH-M2-008`: failed work now exposes stage-aware Retry/Discard, clipboard-only completion says `Paste manually`, and user-facing failures use centralized secret-safe recovery guidance.
 
-Milestone 3 remains blocked. Complete `WH-M2-008`, provision the local Keychain credential without committing or sharing it, and resume `WH-M2-007` for the live gate.
+Milestone 3 remains blocked. Provision the local Keychain credential without committing or sharing it, then resume `WH-M2-007` for the live gate.
 
 ## Scope reviewed
 
@@ -33,11 +33,12 @@ Strengths:
 - `OpenAIClient` centralizes model configuration, reads the Keychain immediately before requests, sets `store: false`, and never includes a real network call in automated tests.
 - Retry/backoff, multipart limits, cancellation, silence, clipboard preservation, event normalization, and overlay lifecycle have deterministic tests.
 
-Blocking gaps delegated to `WH-M2-008`:
+Recovery gaps resolved by `WH-M2-008`:
 
-1. A transcription or transformation failure retains only an audio URL. No production action can retry or discard it, and beginning another dictation silently removes it.
-2. `.copiedForManualPaste` is discarded by the coordinator, so the HUD reports `Inserted` instead of `Paste manually`.
-3. raw `localizedDescription` output does not provide the approved, secret-safe recovery guidance for missing/invalid keys, offline failures, microphone loss, and insertion failures.
+1. The coordinator retains the complete failed session and resumes from transcription, transformation, insertion, or history without re-recording or duplicate insertion.
+2. The menu exposes explicit Retry/Discard, prevents a new dictation from destroying recoverable work, and serializes recovery actions so rapid input cannot race hotkey state.
+3. `.copiedForManualPaste` reaches the HUD and menu presentation as `Paste manually`.
+4. Centralized error presentation gives recovery guidance for missing/invalid keys, offline failures, microphone loss, and insertion failures without surfacing provider or private content.
 
 The UI-test target compiles, but the two XCUITests are not in the scheme test action because local UI Automation could not bootstrap the test process. This is an explicit test limitation, not claimed automated coverage; the built app's debug smoke hooks supplied keyboard/focus evidence for this milestone.
 
@@ -55,7 +56,7 @@ git diff --check 3dde632..HEAD
 
 Results:
 
-- 118 unit tests pass with zero failures.
+- 138 unit tests pass with zero failures.
 - The application build succeeds.
 - The environment check reports the supported Mac, Xcode, microphone hardware, microphone permission, and Screen Recording permission ready.
 - Source contains no `print`, `debugPrint`, `dump`, `NSLog`, `os_log`, or `Logger` calls.
@@ -91,14 +92,13 @@ Results:
 - **Recommended default:** add the key locally through Keychain Access, never through chat or the repository, then rerun this review.
 - **Exact external change:** create a generic-password item named `dev.yury.whisper.openai` with account `api-key` and the owner's valid OpenAI API key as its password.
 
-### Implementation blocker
+### Resolved implementation blocker
 
-- **Failed criterion:** approved error recovery and clipboard-only completion behavior.
-- **Evidence:** the review findings above and deterministic code inspection.
-- **Affected tasks:** `WH-M2-007` and the Milestone 2 exit gate.
-- **Recommended default:** complete `WH-M2-008`, then resume this review.
-- **Exact repository change:** expose retry/discard for the retained dictation session, preserve insertion outcome in state presentation, centralize recovery-oriented messages, and add regression tests.
+- **Previous failed criterion:** approved error recovery and clipboard-only completion behavior.
+- **Resolution:** `WH-M2-008` implements retained-session Retry/Discard, stage-aware continuation, manual-paste presentation, centralized safe messages, and single-flight recovery actions.
+- **Evidence:** coordinator, error-presentation, HUD, menu-model, runtime-action, and microphone device-loss tests pass in the 138-test suite; the application build and independent Critical/Important review pass.
+- **Remaining impact:** none beyond the separate owner credential blocker above.
 
 ## Authorization
 
-**BLOCK NEXT MILESTONE.** Do not select Milestone 3 work until `WH-M2-008` is done, the local credential is provisioned, the real TextEdit language matrix passes, and `WH-M2-007` is updated to `done` on `origin/master`.
+**BLOCK NEXT MILESTONE.** Do not select Milestone 3 work until the local credential is provisioned, the real TextEdit language matrix passes, and `WH-M2-007` is updated to `done` on `origin/master`.

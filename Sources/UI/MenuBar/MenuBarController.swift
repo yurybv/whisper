@@ -12,6 +12,8 @@ final class MenuBarController: NSObject {
         onToggleDictation: @escaping () -> Void,
         onChangeMode: @escaping () -> Void,
         onRecordMeeting: @escaping () -> Void,
+        onRetryDictation: @escaping () -> Void,
+        onDiscardDictation: @escaping () -> Void,
         onRecentHistory: @escaping () -> Void,
         onOpenMainWindow: @escaping () -> Void,
         onQuit: @escaping () -> Void
@@ -29,6 +31,8 @@ final class MenuBarController: NSObject {
                 onToggleDictation: onToggleDictation,
                 onChangeMode: onChangeMode,
                 onRecordMeeting: onRecordMeeting,
+                onRetryDictation: onRetryDictation,
+                onDiscardDictation: onDiscardDictation,
                 onRecentHistory: onRecentHistory,
                 onOpenMainWindow: onOpenMainWindow,
                 onQuit: onQuit
@@ -42,12 +46,20 @@ final class MenuBarController: NSObject {
         updateStatusItem()
     }
 
-    func render(state: MenuBarState, modeName: String? = nil, message: String? = nil) {
+    func render(
+        state: MenuBarState,
+        modeName: String? = nil,
+        message: String? = nil,
+        dictationRecovery: DictationRecovery? = nil
+    ) {
         viewModel.state = state
         if let modeName {
             viewModel.currentModeName = modeName
         }
         viewModel.message = message
+        if let dictationRecovery {
+            viewModel.dictationRecovery = dictationRecovery
+        }
         updateStatusItem()
     }
 

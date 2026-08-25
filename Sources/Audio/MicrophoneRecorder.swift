@@ -7,6 +7,15 @@ struct CapturedAudio: Sendable, Equatable {
     let containsSpeech: Bool
 }
 
+struct MicrophoneCaptureFailure: Error, Sendable, Equatable {
+    let reason: FeatureError
+    let capturedAudio: CapturedAudio
+}
+
+extension MicrophoneCaptureFailure: LocalizedError {
+    var errorDescription: String? { reason.localizedDescription }
+}
+
 protocol MicrophoneRecorder: Sendable {
     func start(deviceID: String?) async throws
     func levels() async -> AsyncStream<Float>

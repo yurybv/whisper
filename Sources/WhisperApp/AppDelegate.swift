@@ -38,6 +38,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 onToggleDictation: {},
                 onChangeMode: {},
                 onRecordMeeting: {},
+                onRetryDictation: {},
+                onDiscardDictation: {},
                 onRecentHistory: {},
                 onOpenMainWindow: {},
                 onQuit: { NSApp.terminate(nil) }

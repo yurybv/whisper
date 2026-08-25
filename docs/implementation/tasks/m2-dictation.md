@@ -99,13 +99,28 @@
 
 - **Title:** Review end-to-end dictation milestone
 - **Type:** review
-- **Status:** ready
+- **Status:** blocked
 - **Priority:** P0
 - **Scope:** Verify the real Default and Russian-to-English flows, target restoration, error recovery, shortcut behavior, network privacy, and test quality.
 - **Out of scope:** Main settings UI and meetings.
 - **Acceptance criteria:** End-to-end dictation passes in TextEdit; Default works in Russian and English; custom translation outputs English only; failed insertion preserves clipboard result; Milestone 3 is safe to start.
 - **Required checks:** Full tests; manual dictation matrix subset; network/log secret scan; `git diff --check`.
-- **Dependencies:** WH-M2-001 through WH-M2-006.
+- **Dependencies:** WH-M2-001 through WH-M2-006, WH-M2-008.
 - **Expected files:** `docs/implementation/reviews/m2-review.md`, backlog updates.
 - **Source:** roadmap Milestone 2.
+- **Blockers:** The production Keychain entry for service `dev.yury.whisper.openai`, account `api-key`, is absent, so the mandatory real TextEdit language matrix cannot run. `WH-M2-008` must also close the retry/discard, clipboard-only presentation, and recovery-message findings. See `docs/implementation/reviews/m2-review.md` for failed criteria, evidence, affected tasks, recommended defaults, and exact recovery actions.
+
+## WH-M2-008
+
+- **Title:** Harden dictation failure recovery and completion feedback
+- **Type:** fix
+- **Status:** ready
+- **Priority:** P0
+- **Scope:** Retain the complete failed dictation session, expose explicit retry and discard actions, preserve the original mode and target during retry, distinguish clipboard-only completion from inserted completion, and centralize secret-safe recovery messages for key, network, microphone, and insertion failures.
+- **Out of scope:** Settings/onboarding UI, meeting recovery, relaunch persistence, History screens, or changes to the approved mode/transformation behavior.
+- **Acceptance criteria:** Failed transcription or transformation can be retried without recording again; failed audio is deleted only after success or explicit discard; a new dictation cannot silently destroy recoverable work; clipboard-only completion says `Paste manually`; missing/invalid key and offline failures tell the owner what to do without exposing private content; coordinator-to-HUD regression tests cover the new paths.
+- **Required checks:** Focused `FeatureError`, coordinator, HUD, menu-model, and runtime-action tests; full `WhisperTests`; application build; source logging/secret scan; `git diff --check`.
+- **Dependencies:** WH-M2-001 through WH-M2-006.
+- **Expected files:** `Sources/Core/FeatureError.swift`, `Sources/Dictation/**`, `Sources/UI/HUD/**`, `Sources/UI/MenuBar/**`, `Sources/WhisperApp/AppRuntime.swift`, matching tests, task/review docs.
+- **Source:** approved design specification Error handling section and Milestone 2 review findings.
 - **Blockers:** None.

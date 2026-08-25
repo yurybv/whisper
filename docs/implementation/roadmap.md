@@ -51,7 +51,7 @@ Goal: hold Right Option, dictate, release, transform through the active mode, an
 
 Entry gate: authorized by `WH-M1-005`; select `WH-M2-001` first under the backlog ordering rule.
 
-Progress: `WH-M2-001` through `WH-M2-006` completed; `WH-M2-007` milestone review is next.
+Progress: `WH-M2-001` through `WH-M2-006` completed. The `WH-M2-007` review is blocked by the missing local OpenAI Keychain credential and the recovery gaps assigned to ready task `WH-M2-008`.
 
 Deliverables:
 
@@ -61,7 +61,7 @@ Deliverables:
 - focused-target capture and text insertion fallback;
 - global shortcuts, menu bar shell, HUD, and mode switcher.
 
-Exit gate: Default and Russian-to-English dictation work in TextEdit and `WH-M2-007` is done.
+Exit gate: Default and Russian-to-English dictation work in TextEdit and `WH-M2-007` is done. Milestone 3 remains blocked; see [Milestone 2 review](reviews/m2-review.md).
 
 ## Milestone 3: Main application experience
 

@@ -83,7 +83,7 @@
 
 - **Title:** Build menu bar shell, HUD, and mode switcher
 - **Type:** feature
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Create menu bar commands, main-window opening, nonactivating HUD, key mode palette, and state presentation for listening through inserted/failed.
 - **Out of scope:** Full Home/Modes/Settings content.
@@ -93,12 +93,13 @@
 - **Expected files:** `Sources/WhisperApp/**`, `Sources/UI/HUD/**`, `Sources/UI/ModeSwitcher/**`, UI smoke tests.
 - **Source:** implementation plan Task 10 and approved Open Design prototype.
 - **Blockers:** None.
+- **Verification:** Fifteen focused mode-switcher, HUD/panel lifecycle, menu-state, and responsive-cancellation tests pass together with the full 118-test unit suite; the app and UI-test targets compile successfully. Computer Use smoke verified the built dark mode palette focuses Search, supports keyboard navigation and Escape dismissal, restores the prior application without opening a main window, and leaves the menu utility running. A separate smoke displayed the text-and-icon Listening HUD over the active application without making a main window key. The local XCUITest runner was killed before bootstrapping a test process, so the same keyboard/focus paths were exercised through the built app's debug smoke hooks.
 
 ## WH-M2-007
 
 - **Title:** Review end-to-end dictation milestone
 - **Type:** review
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Verify the real Default and Russian-to-English flows, target restoration, error recovery, shortcut behavior, network privacy, and test quality.
 - **Out of scope:** Main settings UI and meetings.
@@ -107,4 +108,4 @@
 - **Dependencies:** WH-M2-001 through WH-M2-006.
 - **Expected files:** `docs/implementation/reviews/m2-review.md`, backlog updates.
 - **Source:** roadmap Milestone 2.
-- **Blockers:** Completion of dictation tasks.
+- **Blockers:** None.

@@ -51,7 +51,7 @@ Goal: hold Right Option, dictate, release, transform through the active mode, an
 
 Entry gate: authorized by `WH-M1-005`; select `WH-M2-001` first under the backlog ordering rule.
 
-Progress: `WH-M2-001` through `WH-M2-004` completed; `WH-M2-005` is next.
+Progress: `WH-M2-001` through `WH-M2-005` completed; `WH-M2-006` is next.
 
 Deliverables:
 

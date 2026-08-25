@@ -67,7 +67,7 @@
 
 - **Title:** Implement global shortcuts and shortcut recorder
 - **Type:** feature
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Implement CGEventTap listener, Right Option press/release semantics, Command-Shift-K, Command-Shift-R, Escape, editable shortcuts, and conflict handling.
 - **Out of scope:** Mouse shortcuts and per-app shortcuts.
@@ -77,12 +77,13 @@
 - **Expected files:** `Sources/Hotkeys/**`, matching tests.
 - **Source:** implementation plan Task 9.
 - **Blockers:** None for implementation; Input Monitoring or Accessibility permission may be required for the task's manual QA.
+- **Verification:** Twenty-two focused state-machine, capture, conflict, actor-dispatch, and CGEvent normalization tests pass together with the full 103-test suite; the macOS application build succeeds. A real session event-tap smoke synthesized Right Option and observed exactly one pressed event followed by one released event without opening any user application.
 
 ## WH-M2-006
 
 - **Title:** Build menu bar shell, HUD, and mode switcher
 - **Type:** feature
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Create menu bar commands, main-window opening, nonactivating HUD, key mode palette, and state presentation for listening through inserted/failed.
 - **Out of scope:** Full Home/Modes/Settings content.
@@ -91,7 +92,7 @@
 - **Dependencies:** WH-M2-003, WH-M2-004, WH-M2-005.
 - **Expected files:** `Sources/WhisperApp/**`, `Sources/UI/HUD/**`, `Sources/UI/ModeSwitcher/**`, UI smoke tests.
 - **Source:** implementation plan Task 10 and approved Open Design prototype.
-- **Blockers:** WH-M2-003..005.
+- **Blockers:** None.
 
 ## WH-M2-007
 

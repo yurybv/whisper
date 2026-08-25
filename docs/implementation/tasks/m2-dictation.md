@@ -51,7 +51,7 @@
 
 - **Title:** Capture focused target and insert text reliably
 - **Type:** feature
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Capture the previously focused process/element, restore focus, set text through Accessibility, and fall back to clipboard plus Command-V or clipboard-only.
 - **Out of scope:** App-specific plugins and browser extensions.
@@ -61,6 +61,7 @@
 - **Expected files:** `Sources/Accessibility/**`, `Tests/WhisperTests/Accessibility/**`.
 - **Source:** implementation plan Task 8.
 - **Blockers:** None for implementation; Accessibility permission is required for the task's manual QA.
+- **Verification:** Eight focused insertion tests and the full 81-test suite pass; the macOS application build succeeds. Test-first coverage verifies target capture order, direct AX insertion, paste fallback, full clipboard restoration, and clipboard preservation on every tested failure path. A fixed-marker service smoke previously passed in TextEdit, Notes, and Safari. VS Code and end-to-end focus QA remain with WH-M2-006/007 because the insertion service is not yet wired into the app; this verification run did not open user applications.
 
 ## WH-M2-005
 

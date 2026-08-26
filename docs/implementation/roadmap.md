@@ -51,7 +51,7 @@ Goal: hold Right Option, dictate, release, transform through the active mode, an
 
 Entry gate: authorized by `WH-M1-005`; select `WH-M2-001` first under the backlog ordering rule.
 
-Progress: `WH-M2-001` through `WH-M2-006` and remediation tasks `WH-M2-008` and `WH-M2-009` are complete. The production Keychain credential is present and the `WH-M2-007` review has resumed.
+Progress: `WH-M2-001` through `WH-M2-006` and remediation tasks `WH-M2-008` through `WH-M2-010` are complete. The production Keychain credential is present, successful access is cached only for the active app process, and the `WH-M2-007` review has resumed.
 
 Deliverables:
 

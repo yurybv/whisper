@@ -105,10 +105,10 @@
 - **Out of scope:** Main settings UI and meetings.
 - **Acceptance criteria:** End-to-end dictation passes in TextEdit; Default works in Russian and English; custom translation outputs English only; failed insertion preserves clipboard result; Milestone 3 is safe to start.
 - **Required checks:** Full tests; manual dictation matrix subset; network/log secret scan; `git diff --check`.
-- **Dependencies:** WH-M2-001 through WH-M2-006, WH-M2-008, WH-M2-009.
+- **Dependencies:** WH-M2-001 through WH-M2-006, WH-M2-008 through WH-M2-010.
 - **Expected files:** `docs/implementation/reviews/m2-review.md`, backlog updates.
 - **Source:** roadmap Milestone 2.
-- **Blockers:** None. `WH-M2-009` aligned the live transcription response contract, the production Keychain entry is present, and the earlier recovery findings were closed by `WH-M2-008`.
+- **Blockers:** The production credential path and request contract are resolved by `WH-M2-008` through `WH-M2-010`; the final live TextEdit language matrix remains pending.
 
 ## WH-M2-008
 
@@ -141,3 +141,19 @@
 - **Source:** `WH-M2-007` live OpenAI acceptance evidence.
 - **Blockers:** None.
 - **Verification:** A failing regression reproduced `invalidResponse` for the live `languages[].code` response shape, then passed after the decoder accepted `code` while preserving the legacy `language` field. All 13 focused OpenAI client tests pass. Temporary untracked live QA generated English and Russian WAV fixtures, received HTTP 200 from both transcription requests, verified Default retained English and Russian respectively, and verified the custom instruction returned English without Cyrillic. No credential, response text, transcript, or diagnostic payload value was printed or retained.
+
+## WH-M2-010
+
+- **Title:** Cache the OpenAI key for the active app session
+- **Type:** fix
+- **Status:** done
+- **Priority:** P0
+- **Scope:** Wrap the production Keychain store with a thread-safe, process-memory cache so a successfully read key is reused across transcription, transformation, retry, and connection-test requests during one app launch.
+- **Out of scope:** `.env` or UserDefaults secrets, permissive Keychain ACLs, certificate provisioning, notarization, Settings UI, or persistence across app launches and rebuilds.
+- **Acceptance criteria:** A nonempty key is fetched from the backing Keychain at most once per app session; missing values and read failures are not cached; save and delete keep the cache coherent; concurrent callers cannot trigger duplicate successful reads; the key remains absent from logs, files, task records, and test fixtures.
+- **Required checks:** Focused secure-store tests including the initial expected failure; full `WhisperTests`; application build; production-source logging and credential-pattern scans; `git diff --check`.
+- **Dependencies:** WH-M1-004, WH-M2-001.
+- **Expected files:** `Sources/Core/SecureStore.swift`, `Sources/WhisperApp/AppRuntime.swift`, `Tests/WhisperTests/Core/KeychainSecureStoreTests.swift`, approved design/task/review documentation.
+- **Source:** owner-approved Keychain session behavior on 2026-08-26 and the Milestone 2 live acceptance finding.
+- **Blockers:** None. A stable no-prompt-across-builds experience still requires a persistent Apple signing identity in Milestone 6; this task safely removes repeated reads within the current app process.
+- **Verification:** The initial cache test failed because `CachingSecureStore` did not exist. Save/delete lifecycle tests then failed until cache coherence was implemented. A deliberate read-outside-lock mutation made the concurrent regression fail and the restored single-flight implementation made it pass. Eight secure-store tests cover successful caching, nil/error/blank retry, concurrent reads, save, delete, in-memory lifecycle, and the real test-item Keychain lifecycle. The full 145-test suite and application build pass; environment, production logging, credential-shape, and `git diff --check` gates are clean. Manual Keychain UI QA is not applicable to deterministic cache behavior; macOS may still prompt once after an ad-hoc rebuild because its code requirement changes.

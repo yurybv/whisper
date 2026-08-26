@@ -184,7 +184,7 @@ The recording is considered safely captured as soon as both audio writers finali
 
 ## OpenAI API contract
 
-The API key is read from Keychain immediately before a request and is never persisted in SwiftData, UserDefaults, logs, crash text, or history.
+The API key is read from Keychain on the first OpenAI request of an app session. A successful nonempty value may remain only in process memory for that launch so transcription, transformation, and retry do not trigger repeated Keychain authorization. Missing values and read failures are not cached. The key is never persisted in SwiftData, UserDefaults, environment files, logs, crash text, or history.
 
 Central model configuration:
 

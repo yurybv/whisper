@@ -7,7 +7,7 @@
 
 ## Decision
 
-Milestone 2 is not yet through its exit gate. The production Keychain credential is present, real OpenAI transcription and transformation pass with synthetic English and Russian audio, deterministic coverage is strong, and the macOS app builds. The mandatory in-app Default Russian, Default English, and Russian-to-English TextEdit matrix is still pending. The recovery findings were resolved by `WH-M2-008`, and the live transcription response mismatch was resolved by `WH-M2-009`.
+Milestone 2 is not yet through its exit gate. The production Keychain credential is present, real OpenAI transcription and transformation pass with synthetic English and Russian audio, deterministic coverage is strong, and the macOS app builds. The mandatory in-app Default Russian, Default English, and Russian-to-English TextEdit matrix is still pending. The recovery findings were resolved by `WH-M2-008`, the live transcription response mismatch by `WH-M2-009`, and repeated Keychain reads within one app launch by `WH-M2-010`.
 
 Milestone 3 remains blocked while `WH-M2-007` completes the real app-to-TextEdit gate.
 
@@ -21,6 +21,9 @@ Milestone 3 remains blocked while `WH-M2-007` completes the real app-to-TextEdit
 | `WH-M2-004` | `d0996e4` | Focused-target capture, direct Accessibility insertion, paste fallback, and clipboard restoration |
 | `WH-M2-005` | `9ae9c94` | Global push-to-talk, mode/meeting/cancel shortcuts, event normalization, and conflict checks |
 | `WH-M2-006` | `3e8cea3` | Menu-bar shell, nonactivating HUD, key mode palette, keyboard navigation, and focus restoration |
+| `WH-M2-008` | `9bbd8b1` | Recoverable dictation sessions, Retry/Discard, and completion/error feedback |
+| `WH-M2-009` | `d9a9dd3` | Live `languages[].code` transcription response compatibility |
+| `WH-M2-010` | task commit | Process-memory Keychain cache with single-flight access and coherent save/delete behavior |
 
 The owner explicitly removed Slack from the approved compatibility scope during this milestone; `59af632` records that product decision. It is not treated as implementation drift and is not restored by this review.
 
@@ -32,7 +35,7 @@ Strengths:
 
 - Protocol boundaries isolate URL loading, Keychain, microphone capture, persistence, Accessibility, and hotkeys.
 - `DictationCoordinator` is actor-isolated, snapshots the active mode and focused target, rejects concurrent sessions, and validates session identity after suspension points.
-- `OpenAIClient` centralizes model configuration, reads the Keychain immediately before requests, sets `store: false`, and never includes a real network call in automated tests.
+- `OpenAIClient` centralizes model configuration, receives a process-scoped secure-store cache backed only by Keychain, sets `store: false`, and never includes a real network call in automated tests.
 - Retry/backoff, multipart limits, cancellation, silence, clipboard preservation, event normalization, and overlay lifecycle have deterministic tests.
 
 Recovery gaps resolved by `WH-M2-008`:
@@ -58,7 +61,7 @@ git diff --check 3dde632..HEAD
 
 Results:
 
-- 139 unit tests pass with zero failures.
+- 145 unit tests pass with zero failures.
 - The application build succeeds.
 - The environment check reports the supported Mac, Xcode, microphone hardware, microphone permission, and Screen Recording permission ready.
 - Source contains no `print`, `debugPrint`, `dump`, `NSLog`, `os_log`, or `Logger` calls.
@@ -79,8 +82,9 @@ Results:
 
 ## Privacy and safety
 
-- The production app reads the OpenAI key only from Keychain service `dev.yury.whisper.openai`, account `api-key`.
+- The production app reads the OpenAI key only from Keychain service `dev.yury.whisper.openai`, account `api-key`, and keeps a successful nonempty read only in process memory for the current launch.
 - The `OPENAI_API_KEY` environment variable is intentionally not a production credential path.
+- No permissive all-app Keychain ACL is used. An ad-hoc rebuild may still require one authorization because its code requirement changes; stable cross-build access remains signed-release work in Milestone 6.
 - No credential, dictated text, transcript, custom instruction, audio, Authorization header, or private screenshot was added to the repository or logs.
 - The owner supplied the credential in chat after being asked to use the clipboard. It was not echoed or placed in a command argument, tracked file, or application log; rotation is recommended after this gate because chat exposure cannot be undone.
 - Automated suite tests use fakes and synthetic content only. The separate temporary live QA used generated WAV files and was removed after execution.
@@ -101,6 +105,13 @@ Results:
 - **Resolution:** `WH-M2-008` implements retained-session Retry/Discard, stage-aware continuation, manual-paste presentation, centralized safe messages, and single-flight recovery actions.
 - **Evidence:** coordinator, error-presentation, HUD, menu-model, runtime-action, and microphone device-loss tests pass in the 139-test suite; the application build and independent Critical/Important review pass.
 - **Remaining impact:** none beyond the separate TextEdit gate above.
+
+### Resolved Keychain authorization blocker
+
+- **Previous failed criterion:** transcription, transformation, and retry could each read the same Keychain item and repeat macOS authorization within one app launch.
+- **Resolution:** `WH-M2-010` adds a thread-safe, process-memory cache around the production Keychain store without using `.env`, UserDefaults, or permissive Keychain ACLs.
+- **Evidence:** deterministic tests prove a successful key is read once, concurrent initial callers are single-flight, nil/error/blank values remain retryable, and save/delete keep the cache coherent. The concurrent test fails under a deliberate read-outside-lock mutation and passes with the production implementation.
+- **Remaining impact:** ad-hoc rebuilds can still prompt once because their code requirement changes. A persistent signing identity is intentionally deferred to Milestone 6.
 
 ## Authorization
 

@@ -75,7 +75,9 @@ final class AppRuntime {
         recorder = AVAudioEngineRecorder(paths: paths)
         coordinator = DictationCoordinator(
             recorder: recorder,
-            openAI: OpenAIClient(secureStore: KeychainSecureStore()),
+            openAI: OpenAIClient(
+                secureStore: CachingSecureStore(backingStore: KeychainSecureStore())
+            ),
             modeProvider: modeRepository,
             history: history,
             insertion: AXTextInsertionService()

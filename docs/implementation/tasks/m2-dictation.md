@@ -99,7 +99,7 @@
 
 - **Title:** Review end-to-end dictation milestone
 - **Type:** review
-- **Status:** in-progress
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Verify the real Default and Russian-to-English flows, target restoration, error recovery, shortcut behavior, network privacy, and test quality.
 - **Out of scope:** Main settings UI and meetings.
@@ -108,7 +108,8 @@
 - **Dependencies:** WH-M2-001 through WH-M2-006, WH-M2-008 through WH-M2-010.
 - **Expected files:** `docs/implementation/reviews/m2-review.md`, backlog updates.
 - **Source:** roadmap Milestone 2.
-- **Blockers:** The production credential path and request contract are resolved by `WH-M2-008` through `WH-M2-010`; the final live TextEdit language matrix remains pending.
+- **Blockers:** None.
+- **Verification:** The production AVAudioEngine/OpenAI pipeline created ready results for Default English, Default Russian, and the Russian-to-English custom mode; source-language preservation and English-only translation were confirmed without printing private output. With the current app build authorized for Accessibility, those three stored production results were inserted automatically into a newly created TextEdit document and the target-language matrix passed. The temporary QA document was deleted, generated audio was moved to Trash, all automated and privacy gates passed, and Milestone 3 was authorized.
 
 ## WH-M2-008
 

@@ -39,7 +39,7 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 | WH-M2-004 | Capture focused target and insert text reliably | done | WH-M2-003 |
 | WH-M2-005 | Implement global shortcuts and shortcut recorder | done | WH-M2-003 |
 | WH-M2-006 | Build menu bar shell, HUD, and mode switcher | done | WH-M2-003..005 |
-| WH-M2-007 | Review end-to-end dictation milestone | in-progress | WH-M2-001..006, WH-M2-008..010 |
+| WH-M2-007 | Review end-to-end dictation milestone | done | WH-M2-001..006, WH-M2-008..010 |
 | WH-M2-008 | Harden dictation failure recovery and completion feedback | done | WH-M2-001..006 |
 | WH-M2-009 | Align transcription language metadata with the live OpenAI contract | done | WH-M2-001 |
 | WH-M2-010 | Cache the OpenAI key for the active app session | done | WH-M1-004, WH-M2-001 |
@@ -48,7 +48,7 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 
 | ID | Task | Status | Depends on |
 |---|---|---|---|
-| WH-M3-001 | Build onboarding and permission recovery | blocked | WH-M2-007 |
+| WH-M3-001 | Build onboarding and permission recovery | ready | WH-M2-007 |
 | WH-M3-002 | Build Home, Modes, and Settings screens | blocked | WH-M3-001 |
 | WH-M3-003 | Verify UI states, keyboard access, and VoiceOver | blocked | WH-M3-002 |
 | WH-M3-004 | Review main application experience | blocked | WH-M3-001..003 |

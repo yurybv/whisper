@@ -4,7 +4,7 @@
 
 - **Title:** Build onboarding and permission recovery
 - **Type:** feature
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Implement the four-step first-launch flow for API key, microphone, Screen Recording, Accessibility, verification, and exact repair actions.
 - **Out of scope:** Permanent onboarding navigation item, accounts, or cloud sync.
@@ -13,7 +13,7 @@
 - **Dependencies:** WH-M2-007.
 - **Expected files:** `Sources/UI/Onboarding/**`, UI tests.
 - **Source:** implementation plan Task 11 and approved Open Design prototype.
-- **Blockers:** Previous milestone review.
+- **Blockers:** None.
 
 ## WH-M3-002
 

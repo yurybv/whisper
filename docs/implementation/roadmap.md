@@ -1,6 +1,6 @@
 # Whisper MVP Roadmap
 
-Status: Milestones 0 and 1 complete; Milestone 2 authorized on 2026-08-21.
+Status: Milestones 0, 1, and 2 complete; Milestone 3 authorized on 2026-09-05.
 
 ## Principles
 
@@ -51,7 +51,7 @@ Goal: hold Right Option, dictate, release, transform through the active mode, an
 
 Entry gate: authorized by `WH-M1-005`; select `WH-M2-001` first under the backlog ordering rule.
 
-Progress: `WH-M2-001` through `WH-M2-006` and remediation tasks `WH-M2-008` through `WH-M2-010` are complete. The production Keychain credential is present, successful access is cached only for the active app process, and the `WH-M2-007` review has resumed.
+Progress: `WH-M2-001` through `WH-M2-010` are complete. The real Default English, Default Russian, and Russian-to-English mode outputs passed the focused TextEdit insertion matrix on 2026-09-05.
 
 Deliverables:
 
@@ -61,11 +61,13 @@ Deliverables:
 - focused-target capture and text insertion fallback;
 - global shortcuts, menu bar shell, HUD, and mode switcher.
 
-Exit gate: Default and Russian-to-English dictation work in TextEdit and `WH-M2-007` is done. Milestone 3 remains blocked; see [Milestone 2 review](reviews/m2-review.md).
+Exit gate: passed on 2026-09-05; Default and Russian-to-English dictation work in TextEdit and `WH-M2-007` is done. See [Milestone 2 review](reviews/m2-review.md).
 
 ## Milestone 3: Main application experience
 
 Goal: make the approved interface usable for first launch, modes, configuration, and system status.
+
+Entry gate: authorized by `WH-M2-007`; begin with `WH-M3-001`.
 
 Deliverables:
 

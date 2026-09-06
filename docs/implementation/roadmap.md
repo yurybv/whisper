@@ -69,6 +69,8 @@ Goal: make the approved interface usable for first launch, modes, configuration,
 
 Entry gate: authorized by `WH-M2-007`; begin with `WH-M3-001`.
 
+Progress: `WH-M3-001` implementation is in review as of 2026-09-06. Automated checks pass; live permission grant/recovery QA awaits owner approval for the reviewed build. `WH-M3-002` remains blocked.
+
 Deliverables:
 
 - four-step onboarding;

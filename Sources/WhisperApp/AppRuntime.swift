@@ -49,7 +49,8 @@ final class AppRuntime {
     private let coordinator: DictationCoordinator
     private let hotkeys: GlobalHotkeyMonitor
     private let hudController = DictationHUDController()
-    private let mainWindowController = MainWindowController()
+    private let mainWindowController: MainWindowController
+    private let onboarding: OnboardingModel
 
     private var hotkeyTask: Task<Void, Never>?
     private var stateTask: Task<Void, Never>?
@@ -64,6 +65,11 @@ final class AppRuntime {
     private var recoveryActionRouter: DictationRecoveryActionRouter!
 
     init() throws {
+        let store = CachingSecureStore(backingStore: KeychainSecureStore())
+        let openAI = OpenAIClient(secureStore: store)
+        onboarding = OnboardingModel(store: store, permissions: PermissionService(), defaults: .standard,
+                                     testConnection: { try await openAI.testConnection() })
+        mainWindowController = MainWindowController(onboarding: onboarding)
         let paths = try AppPaths()
         persistence = try PersistenceController()
         modeRepository = ModeRepository(context: persistence.container.mainContext)
@@ -75,9 +81,7 @@ final class AppRuntime {
         recorder = AVAudioEngineRecorder(paths: paths)
         coordinator = DictationCoordinator(
             recorder: recorder,
-            openAI: OpenAIClient(
-                secureStore: CachingSecureStore(backingStore: KeychainSecureStore())
-            ),
+            openAI: openAI,
             modeProvider: modeRepository,
             history: history,
             insertion: AXTextInsertionService()
@@ -162,7 +166,6 @@ final class AppRuntime {
                     state: .error,
                     message: "Enable Accessibility to use global shortcuts."
                 )
-                return
             }
             for await event in hotkeys.actionEvents {
                 guard !Task.isCancelled else { return }
@@ -202,6 +205,20 @@ final class AppRuntime {
         hotkeyRouter.stop()
         recoveryActionRouter.stop()
         Task { await hotkeys.stop() }
+    }
+
+    func refreshPermissions() {
+        onboarding.refreshPermissions()
+        guard onboarding.permissions.accessibility == .granted else { return }
+        Task { [weak self] in
+            guard let self else { return }
+            do { try await hotkeys.start() }
+            catch { menuBarController.render(state: .error, message: "Enable Accessibility in System Settings → Privacy & Security, then return to Whisper.") }
+        }
+    }
+
+    func showInitialWindow() {
+        if onboarding.isPresented { mainWindowController.show() }
     }
 
     func hideMainWindow() {
@@ -246,6 +263,12 @@ final class AppRuntime {
 
     private func beginDictation() async {
         guard !AppRuntimeDictationPresentation(state: lastState).blocksNewDictation else { return }
+        onboarding.refreshPermissions()
+        guard onboarding.canDictate else {
+            onboarding.showPermissionRecovery(.microphone)
+            openMainWindow()
+            return
+        }
         dictationScreen = TargetScreenResolver.screenForFrontmostApplication()
         do {
             try await coordinator.begin()

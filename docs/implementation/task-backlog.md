@@ -48,7 +48,7 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 
 | ID | Task | Status | Depends on |
 |---|---|---|---|
-| WH-M3-001 | Build onboarding and permission recovery | ready | WH-M2-007 |
+| WH-M3-001 | Build onboarding and permission recovery | review | WH-M2-007 |
 | WH-M3-002 | Build Home, Modes, and Settings screens | blocked | WH-M3-001 |
 | WH-M3-003 | Verify UI states, keyboard access, and VoiceOver | blocked | WH-M3-002 |
 | WH-M3-004 | Review main application experience | blocked | WH-M3-001..003 |

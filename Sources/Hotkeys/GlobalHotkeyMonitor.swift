@@ -37,10 +37,12 @@ actor GlobalHotkeyMonitor {
     }
 
     func start() throws {
+        // The stream consumer may still exist after macOS disables its event tap.
+        // Let the source validate and recover its native monitoring on every refresh.
+        try source.start()
         guard monitoringTask == nil else {
             return
         }
-        try source.start()
         let events = source.events
         monitoringTask = Task { [weak self] in
             for await event in events {

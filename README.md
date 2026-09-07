@@ -13,6 +13,8 @@ On first launch, setup explains the OpenAI data boundary, offers an explicit **S
 
 Continue or close setup to explore the main window without granting permissions. Missing microphone access routes dictation to its repair page. Screen Recording does not block dictation; without Accessibility, use the menu bar and paste results manually. After changing permissions in System Settings, return to Whisper to refresh their status. Use **Relaunch Whisper** if macOS asks you to reopen after a Screen Recording change.
 
+Global shortcuts also depend on macOS Input Monitoring access. If keyboard monitoring is unavailable, the menu bar reports the exact repair path and retries when you return to Whisper. An enabled Accessibility or Input Monitoring entry can refer to an earlier ad-hoc build; if the current build still lacks access, remove only Whisper’s stale entry and add the current app bundle again.
+
 After setup, **Settings → Preview Setup** reopens the flow without clearing completion; **Reset Setup** clears completion without deleting the key or changing macOS permissions. Completing setup opens Home. Home and Settings currently provide the setup shell; full main screens, meeting capture and History remain in the local backlog.
 
 Automated onboarding and mode-switcher UI tests use DEBUG-only `--ui-testing` fixtures, without Keychain, user databases, permission prompts or OpenAI requests. Unit tests use protocol fakes. The scheme includes both unit and UI targets.

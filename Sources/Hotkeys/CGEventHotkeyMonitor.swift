@@ -2,6 +2,7 @@ import CoreGraphics
 import Foundation
 
 enum HotkeyMonitorError: Error, Equatable, Sendable {
+    case inputMonitoringUnavailable
     case eventTapUnavailable
     case startupTimedOut
 }
@@ -15,8 +16,10 @@ final class CGEventHotkeyMonitor: HotkeyEventSource, @unchecked Sendable {
     private var eventLoop: CFRunLoop?
     private var eventThread: Thread?
     private var running = false
+    private let hasListeningAccess: @Sendable () -> Bool
 
-    init() {
+    init(hasListeningAccess: @escaping @Sendable () -> Bool = { CGPreflightListenEventAccess() }) {
+        self.hasListeningAccess = hasListeningAccess
         let pair = AsyncStream<HotkeyEvent>.makeStream()
         events = pair.stream
         continuation = pair.continuation
@@ -28,9 +31,14 @@ final class CGEventHotkeyMonitor: HotkeyEventSource, @unchecked Sendable {
     }
 
     func start() throws {
-        if lock.withLock({ running }) {
+        guard hasListeningAccess() else {
+            stop()
+            throw HotkeyMonitorError.inputMonitoringUnavailable
+        }
+        if lock.withLock({ running && eventTap.map { CGEvent.tapIsEnabled(tap: $0) } == true }) {
             return
         }
+        stop()
 
         let eventMask = Self.eventTypes.reduce(CGEventMask(0)) { mask, type in
             mask | (CGEventMask(1) << type.rawValue)
@@ -63,6 +71,10 @@ final class CGEventHotkeyMonitor: HotkeyEventSource, @unchecked Sendable {
         guard ready.wait(timeout: .now() + 1) == .success else {
             stop()
             throw HotkeyMonitorError.startupTimedOut
+        }
+        guard CGEvent.tapIsEnabled(tap: tap) else {
+            stop()
+            throw HotkeyMonitorError.eventTapUnavailable
         }
     }
 

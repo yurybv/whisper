@@ -232,6 +232,48 @@ final class HotkeyStateMachineTests: XCTestCase {
 }
 
 final class GlobalHotkeyMonitorTests: XCTestCase {
+    func testFailedPermissionRefreshCanRecoverWithoutLosingActionStream() async throws {
+        let source = FakeHotkeyEventSource()
+        let monitor = GlobalHotkeyMonitor(source: source, shortcuts: AppSettings.defaults.shortcuts)
+        try await monitor.start()
+        source.startFailure = .inputMonitoringUnavailable
+        do {
+            try await monitor.start()
+            XCTFail("Revoked listening access must not report a successful refresh")
+        } catch {
+            XCTAssertEqual(error as? HotkeyMonitorError, .inputMonitoringUnavailable)
+        }
+        source.startFailure = nil
+        try await monitor.start()
+        let received = expectation(description: "Action stream remains usable after permission recovery")
+        let reader = Task {
+            for await action in monitor.actionEvents {
+                XCTAssertEqual(action, .invoked(.changeMode))
+                received.fulfill()
+                return
+            }
+        }
+        source.send(.keyDown(keyCode: 40, flags: [.command, .shift], isRepeat: false))
+        await fulfillment(of: [received], timeout: 2)
+        reader.cancel()
+        XCTAssertEqual(source.startCount, 3)
+        await monitor.stop()
+    }
+
+
+    func testRefreshRechecksSourceWithoutReplacingEventConsumer() async throws {
+        let source = FakeHotkeyEventSource()
+        let monitor = GlobalHotkeyMonitor(source: source, shortcuts: AppSettings.defaults.shortcuts)
+        var actions = monitor.actionEvents.makeAsyncIterator()
+        try await monitor.start()
+        try await monitor.start()
+        XCTAssertEqual(source.startCount, 2, "Permission refresh must let the source recover a disabled tap")
+        source.send(.keyDown(keyCode: 40, flags: [.command, .shift], isRepeat: false))
+        let action = await actions.next()
+        XCTAssertEqual(action, .invoked(.changeMode))
+        await monitor.stop()
+    }
+
     func testMonitorStartsSourceAndPublishesNormalizedActions() async throws {
         let source = FakeHotkeyEventSource()
         let monitor = GlobalHotkeyMonitor(
@@ -311,6 +353,13 @@ final class GlobalHotkeyMonitorTests: XCTestCase {
 }
 
 final class CGEventHotkeyMonitorTests: XCTestCase {
+    func testMissingListeningAccessFailsBeforeCreatingAnEventTap() {
+        let source = CGEventHotkeyMonitor(hasListeningAccess: { false })
+        XCTAssertThrowsError(try source.start()) { error in
+            XCTAssertEqual(error as? HotkeyMonitorError, .inputMonitoringUnavailable)
+        }
+    }
+
     func testNormalizerMapsKeyboardEventsAndSupportedFlags() {
         XCTAssertEqual(
             CGEventHotkeyMonitor.normalize(
@@ -363,6 +412,11 @@ private final class FakeHotkeyEventSource: HotkeyEventSource, @unchecked Sendabl
     private let lock = NSLock()
     private var storedStartCount = 0
     private var storedStopCount = 0
+    private var storedStartFailure: HotkeyMonitorError?
+    var startFailure: HotkeyMonitorError? {
+        get { lock.withLock { storedStartFailure } }
+        set { lock.withLock { storedStartFailure = newValue } }
+    }
 
     var startCount: Int { lock.withLock { storedStartCount } }
     var stopCount: Int { lock.withLock { storedStopCount } }
@@ -374,7 +428,11 @@ private final class FakeHotkeyEventSource: HotkeyEventSource, @unchecked Sendabl
     }
 
     func start() throws {
-        lock.withLock { storedStartCount += 1 }
+        let failure = lock.withLock {
+            storedStartCount += 1
+            return storedStartFailure
+        }
+        if let failure { throw failure }
     }
 
     func stop() {

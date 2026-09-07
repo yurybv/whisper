@@ -2,6 +2,23 @@ import XCTest
 @testable import Whisper
 
 final class MenuBarModelTests: XCTestCase {
+    func testIdleDoesNotHideShortcutPermissionFailure() {
+        let failure = AppRuntimeDictationPresentation(state: .idle, shortcutFailure: "Repair keyboard access")
+        XCTAssertEqual(failure.menuState, .error)
+        XCTAssertEqual(failure.message, "Repair keyboard access")
+        XCTAssertFalse(failure.blocksNewDictation, "Menu-bar dictation remains available")
+        let recovered = AppRuntimeDictationPresentation(state: .idle, shortcutFailure: nil)
+        XCTAssertEqual(recovered.menuState, .ready)
+        XCTAssertNil(recovered.message)
+    }
+
+    func testDictationFeedbackTakesPriorityOverShortcutFailure() {
+        let presentation = AppRuntimeDictationPresentation(
+            state: .completed(.copiedForManualPaste), shortcutFailure: "Repair keyboard access")
+        XCTAssertTrue(presentation.message?.contains("Paste manually") == true)
+        XCTAssertEqual(presentation.menuState, .error)
+    }
+
     func testMenuActionsMirrorGlobalShortcuts() {
         XCTAssertEqual(MenuBarCommand.startDictation.shortcutAction, .pushToTalk)
         XCTAssertEqual(MenuBarCommand.changeMode.shortcutAction, .changeMode)

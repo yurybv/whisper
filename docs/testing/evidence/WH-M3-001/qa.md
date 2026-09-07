@@ -43,3 +43,31 @@ Once authorized: request/grant each permission, verify the live state after retu
 - Inspected the live Whisper setup before running UI tests: the API-key page had an empty secure field and no test request; Continue opened Microphone access, still reporting **Not Requested**. No permission was requested or changed and no API key was read or entered.
 - Reviewed the permission service, onboarding model/view, runtime refresh, relaunch implementation, and existing onboarding tests. The remaining live recovery criterion still requires permission grants; automated fixtures do not satisfy it. Requested owner authorization under the computer-use tool's security-sensitive-access confirmation policy.
 - Task remains **review**; no implementation task was completed and WH-M3-002 remains blocked.
+
+
+## Live grants and shortcut recovery correction — 2026-09-07
+
+The owner explicitly approved Microphone, Screen Recording, and Accessibility grants for the reviewed Debug build.
+
+- Microphone moved from Not Requested to Granted after Request Access. Screen Recording moved from Not Granted to Granted after enabling Whisper in System Settings and reopening.
+- Accessibility initially remained Not Granted despite its enabled Settings row, even after toggling and restarting. Replacing the stale row with the exact current DerivedData app bundle made the live application report Granted. This matches the ad-hoc identity issue documented in the milestone 2 review.
+- All three permission pages and the final summary reported Granted. Completing setup opened Home. Settings reflected each grant and Preview Setup worked without clearing completion.
+- The Screen Recording repair link followed by Preview Setup retained Relaunch Whisper after permission was granted. The app’s Relaunch button terminated its process and started a new one; onboarding completion persisted, so the menu-bar process did not reopen setup automatically.
+- Command–Shift–K sent through computer use did not open the switcher. Read-only `CGGetEventTapList` inspection found the app’s native tap disabled with only the flagsChanged mask (4096), both before and after relaunch. Input Monitoring contained another enabled stale Whisper entry. Its removal was authenticated by the owner during repair; restoration of the current bundle is pending the explicit Input Monitoring decision. No live keyboard-recovery pass is claimed.
+- One unrelated Accessibility toggle changed during coordinate targeting and was restored to its original off state. Subsequent list selection used keyboard navigation and checked the selected row before removal. No credentials were read, entered, or saved by the agent.
+
+The correction stays within permission failure/recovery:
+
+- Preflight Input Monitoring before installing a tap and reject a disabled tap after startup.
+- Recheck source startup on every refresh while retaining the existing AsyncStream consumer, so native recovery is not bypassed or cancelled.
+- Keep shortcut permission failures visible through idle/completed dictation state updates while preserving manual-paste feedback and allowing menu-bar dictation.
+- Report the specific Input Monitoring repair path instead of incorrectly directing every failure only to Accessibility.
+
+Verification:
+
+- The source-refresh regression failed first: expected two source start checks, observed one. The listening-access and status-projection tests failed on missing interfaces before their implementation.
+- Full scheme passed: **155 unit tests and 4 UI tests**, zero failures (`Test-Whisper-2026.09.07_22-10-28-+0400.xcresult`). A subsequently added successful → denied → recovered listener test also passed with all **5 GlobalHotkeyMonitor tests** (`Test-Whisper-2026.09.07_22-11-54-+0400.xcresult`).
+- Tests and build used `/tmp/whisper-recovery-tests` as DerivedData, preserving the previously reviewed app bundle. Required build and `git diff --check` passed.
+- Independent read-only code review found no blocking defect. The recommended failed-refresh regression was added. A preexisting delayed native-thread startup race after timeout was noted, without expanding this correction.
+
+Task remains **review**. Pending: owner direction on Input Monitoring status/repair inside the existing fourth setup step, restoring the current build’s Input Monitoring access, and live shortcut recovery for the corrected build. WH-M3-002 remains blocked.

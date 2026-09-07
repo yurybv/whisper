@@ -8,18 +8,18 @@ struct AppRuntimeDictationPresentation: Equatable, Sendable {
     let recovery: DictationRecovery
     let blocksNewDictation: Bool
 
-    init(state: DictationState) {
+    init(state: DictationState, shortcutFailure: String? = nil) {
         switch state {
         case .idle:
-            menuState = .ready
-            message = nil
+            menuState = shortcutFailure == nil ? .ready : .error
+            message = shortcutFailure
             recovery = .none
             blocksNewDictation = false
         case let .completed(result):
-            menuState = .ready
+            menuState = shortcutFailure == nil ? .ready : .error
             message = result == .copiedForManualPaste
                 ? "Text is on the clipboard. Paste manually."
-                : nil
+                : shortcutFailure
             recovery = .none
             blocksNewDictation = false
         case .recording:
@@ -55,6 +55,7 @@ final class AppRuntime {
     private var hotkeyTask: Task<Void, Never>?
     private var stateTask: Task<Void, Never>?
     private var levelTask: Task<Void, Never>?
+    private var shortcutFailure: String?
     private var lastState: DictationState = .idle
     private var lastLevel: Float = 0
     private var dictationScreen: NSScreen?
@@ -159,14 +160,7 @@ final class AppRuntime {
 
         hotkeyTask = Task { [weak self] in
             guard let self else { return }
-            do {
-                try await hotkeys.start()
-            } catch {
-                menuBarController.render(
-                    state: .error,
-                    message: "Enable Accessibility to use global shortcuts."
-                )
-            }
+            await refreshHotkeys()
             for await event in hotkeys.actionEvents {
                 guard !Task.isCancelled else { return }
                 await hotkeyRouter.handle(event)
@@ -209,12 +203,20 @@ final class AppRuntime {
 
     func refreshPermissions() {
         onboarding.refreshPermissions()
-        guard onboarding.permissions.accessibility == .granted else { return }
-        Task { [weak self] in
-            guard let self else { return }
-            do { try await hotkeys.start() }
-            catch { menuBarController.render(state: .error, message: "Enable Accessibility in System Settings → Privacy & Security, then return to Whisper.") }
+        Task { [weak self] in await self?.refreshHotkeys() }
+    }
+
+    private func refreshHotkeys() async {
+        do {
+            try await hotkeys.start()
+            shortcutFailure = nil
+        } catch HotkeyMonitorError.inputMonitoringUnavailable {
+            shortcutFailure = "Enable Whisper in System Settings → Privacy & Security → Input Monitoring, then return to Whisper."
+        } catch {
+            shortcutFailure = "Global shortcuts are unavailable. Check Whisper in System Settings → Privacy & Security → Accessibility and Input Monitoring, then reopen Whisper."
         }
+        let presentation = AppRuntimeDictationPresentation(state: lastState, shortcutFailure: shortcutFailure)
+        menuBarController.render(state: presentation.menuState, message: presentation.message)
     }
 
     func showInitialWindow() {
@@ -346,7 +348,7 @@ final class AppRuntime {
         if case let .recording(modeName) = state {
             menuBarController.setModeName(modeName)
         }
-        let presentation = AppRuntimeDictationPresentation(state: state)
+        let presentation = AppRuntimeDictationPresentation(state: state, shortcutFailure: shortcutFailure)
         menuBarController.render(
             state: presentation.menuState,
             message: presentation.message,

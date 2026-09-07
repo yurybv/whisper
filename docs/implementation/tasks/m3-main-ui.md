@@ -13,10 +13,10 @@
 - **Dependencies:** WH-M2-007.
 - **Expected files:** `Sources/UI/Onboarding/**`, UI tests.
 - **Source:** implementation plan Task 11 and approved Open Design prototype.
-- **Blockers:** Live permission grant/recovery QA requires owner approval for this debug build; see the evidence below.
+- **Blockers:** Restore the reviewed build’s Input Monitoring grant and finish live shortcut-recovery QA; approval for adding its status/repair within the existing Accessibility setup step is pending.
 - **Implementation (2026-09-06):** Four-step setup and final readiness summary; explicit Keychain save/test; current permission states and exact System Settings repair links; relaunch guidance after Screen Recording requests/repair; persisted completion, Settings preview/reset and Home transition. Runtime shares the session key cache and reattempts hotkey startup after Accessibility changes. Only microphone access gates dictation capture.
 - **Verification:** 151 unit tests and 4 UI tests passed with the complete Xcode scheme; focused tests observed failing before implementation. Read-only code review found and resolved the Screen Recording relaunch-path gap. See [QA evidence](../../testing/evidence/WH-M3-001/qa.md).
-- **Remaining acceptance:** Approve granting Microphone, Screen Recording and Accessibility to the reviewed debug build, then verify live denied/not-requested → granted transitions, hotkey recovery and relaunch. The current build reports Microphone Not Requested, Screen Recording Not Granted, Accessibility Not Granted. System Settings has existing Whisper Microphone/Accessibility entries enabled, which is insufficient evidence that this build has access. Do not mark done or unblock WH-M3-002 until live recovery is verified.
+- **Remaining acceptance (2026-09-07):** Owner approved the three setup permissions. Live Microphone, Screen Recording, and Accessibility now report Granted; setup completion and Relaunch were exercised. Shortcut recovery exposed a disabled modifier-only event tap despite an enabled stale Input Monitoring entry. Recovery correction now rejects unavailable listening access and disabled taps, retries the source while retaining the event consumer, and preserves actionable permission errors while idle. Automated verification passes. The stale Input Monitoring entry was removed during authorized repair and restoration of the current build is pending; verify live shortcut recovery before marking done or unblocking WH-M3-002.
 
 ## WH-M3-002
 

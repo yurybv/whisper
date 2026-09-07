@@ -69,7 +69,7 @@ Goal: make the approved interface usable for first launch, modes, configuration,
 
 Entry gate: authorized by `WH-M2-007`; begin with `WH-M3-001`.
 
-Progress: `WH-M3-001` remains in review as of 2026-09-07. Live Microphone, Screen Recording, and Accessibility grants and relaunch were verified. Shortcut recovery exposed stale Input Monitoring consent and missing source retries; recovery corrections pass automated checks. Restoring the keyboard grant and completing live shortcut QA remain pending. `WH-M3-002` remains blocked.
+Progress: `WH-M3-001` remains in review as of 2026-09-07. Live Microphone, Screen Recording, and Accessibility grants and relaunch were verified. Shortcut recovery exposed stale Input Monitoring consent and missing source retries; recovery corrections pass automated checks. Input Monitoring is now included in the fourth setup step and granted to the corrected QA build; the native tap is enabled with all keyboard event types. Final physical shortcut QA remains pending. `WH-M3-002` remains blocked.
 
 Deliverables:
 

@@ -17,7 +17,7 @@ Identify Right Option by its physical key code and emit exactly one pressed and 
 ## Consequences
 
 - Modifier-only push to talk and release semantics work outside the app.
-- Accessibility permission and event-tap lifecycle status become explicit prerequisites.
+- Input Monitoring permission and event-tap lifecycle status are explicit prerequisites for global keyboard events; Accessibility separately enables text insertion. The owner approved showing both permissions in the fourth onboarding step on 2026-09-07.
 - The callback must perform minimal work and must not own feature state.
 - Keyboard layouts and reserved macOS shortcuts require validation in the shortcut domain.
 

@@ -21,6 +21,7 @@ final class OnboardingModel {
     private(set) var step: Step = .apiKey
     private(set) var isPresented: Bool
     private(set) var screenSettingsOpened = false
+    private(set) var inputMonitoringSettingsOpened = false
     private(set) var requestingPermission = false
 
     init(store: any SecureStore, permissions: PermissionService, defaults: UserDefaults,
@@ -41,7 +42,7 @@ final class OnboardingModel {
         switch kind {
         case .microphone: step = .microphone
         case .screenRecording: step = .screenRecording
-        case .accessibility: step = .accessibility
+        case .accessibility, .inputMonitoring: step = .accessibility
         }
     }
 
@@ -72,6 +73,7 @@ final class OnboardingModel {
     func request(_ kind: PermissionKind) async {
         guard !requestingPermission else { return }
         if kind == .screenRecording { screenSettingsOpened = true }
+        if kind == .inputMonitoring { inputMonitoringSettingsOpened = true }
         requestingPermission = true
         defer { requestingPermission = false }
         _ = await permissionService.request(kind)
@@ -80,6 +82,7 @@ final class OnboardingModel {
 
     func openSettings(for kind: PermissionKind) {
         if kind == .screenRecording { screenSettingsOpened = true }
+        if kind == .inputMonitoring { inputMonitoringSettingsOpened = true }
         permissionService.openSettings(for: kind)
     }
 

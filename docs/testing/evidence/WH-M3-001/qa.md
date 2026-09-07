@@ -71,3 +71,19 @@ Verification:
 - Independent read-only code review found no blocking defect. The recommended failed-refresh regression was added. A preexisting delayed native-thread startup race after timeout was noted, without expanding this correction.
 
 Task remains **review**. Pending: owner direction on Input Monitoring status/repair inside the existing fourth setup step, restoring the current build’s Input Monitoring access, and live shortcut recovery for the corrected build. WH-M3-002 remains blocked.
+
+
+## Approved Input Monitoring setup and restored grant — 2026-09-07
+
+The owner explicitly approved enabling Input Monitoring for the corrected build and adding its status/repair to setup.
+
+- Added Input Monitoring to the native permission snapshot, preflight, request, and exact `Privacy_ListenEvent` Settings route. It shares the existing fourth Accessibility step and participates in readiness, final verification rows, and Settings permission rows.
+- The fourth step scrolls independently of Back/Continue. Both request and Settings paths offer relaunch guidance, including after a grant. Missing Input Monitoring leaves menu-bar dictation available.
+- Full verification passed: **158 unit tests, 4 UI tests**, zero failures. Result: `/tmp/whisper-recovery-tests/Logs/Test/Test-Whisper-2026.09.07_22-34-50-+0400.xcresult`. Required build, ad-hoc signature verification, and `git diff --check` passed.
+- TDD: the new permission/readiness tests failed on the missing Input Monitoring cases/properties before implementation. UI checks exposed an off-screen window/activation conflict with the older debug process, then a test trying to click the new repair control before scrolling it into view. The old idle process was stopped; the final UI test explicitly scrolls to repair and verifies relaunch is hittable at minimum window size.
+- Independent read-only review found no blocking issue; its requested request-only relaunch regression was added.
+- Granted Input Monitoring through System Settings to the exact final QA bundle `/tmp/whisper-recovery-tests/Build/Products/Debug/Whisper.app`, after the final build and signature verification. The row is enabled. No other permissions were changed during this final grant.
+- Launched that bundle (process 9751). Read-only `CGGetEventTapList` inspection confirmed **enabled=true, events=7168** (key-down, key-up, flagsChanged), compared with the prior disabled, modifier-only tap. This is live native-listener evidence, not a claim that a physical shortcut passed.
+- Computer-use Command–Shift–K injection into System Settings did not produce a visible Whisper switcher. The owner was asked to press the physical shortcut and open Whisper’s main window. The menu-bar-only app cannot currently be inspected by the window-based computer-use tool until a window is open.
+
+Current status remains **review** pending that final physical shortcut/main-window check. No subsequent task has started. Test recordings that include other desktop windows remain outside the repository; no private screenshots, keys, or dictated text were committed.

@@ -25,7 +25,15 @@ struct OnboardingView: View {
                 case .apiKey: apiKey
                 case .microphone: permission(.microphone)
                 case .screenRecording: permission(.screenRecording)
-                case .accessibility: permission(.accessibility)
+                case .accessibility:
+                    ScrollView {
+                        VStack(alignment: .leading, spacing: 20) {
+                            permission(.accessibility)
+                            Divider()
+                            inputMonitoring
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                 case .ready: ready
                 }
             }
@@ -94,6 +102,28 @@ struct OnboardingView: View {
         }
     }
 
+    private var inputMonitoring: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Input Monitoring").font(.headline)
+            Text(PermissionKind.inputMonitoring.setupExplanation)
+                .foregroundStyle(DesignTokens.secondaryText)
+            Label(model.permissions.inputMonitoring.setupLabel,
+                  systemImage: model.permissions.inputMonitoring == .granted ? "checkmark.circle" : "exclamationmark.circle")
+                .accessibilityIdentifier("input-monitoring-status")
+            if model.permissions.inputMonitoring != .granted {
+                HStack {
+                    Button("Request Input Monitoring") { Task { await model.request(.inputMonitoring) } }
+                        .disabled(model.requestingPermission)
+                    Button("Open Input Monitoring Settings") { model.openSettings(for: .inputMonitoring) }
+                }
+                Text("System Settings → Privacy & Security → Input Monitoring. Enable Whisper, then return here.")
+                    .font(.callout)
+            }
+            if model.inputMonitoringSettingsOpened { relaunchGuidance }
+            Button("Check Keyboard Access") { model.refreshPermissions() }
+        }
+    }
+
     private var relaunchGuidance: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("If macOS asks you to quit and reopen Whisper, relaunch to apply the change.")
@@ -115,7 +145,7 @@ struct OnboardingView: View {
                     }
                 }
             }
-            if model.screenSettingsOpened { relaunchGuidance }
+            if model.screenSettingsOpened || model.inputMonitoringSettingsOpened { relaunchGuidance }
             Divider()
             Text("Right Option")
             Text("Command-Shift-K")
@@ -134,6 +164,7 @@ extension PermissionKind {
         case .microphone: "Microphone"
         case .screenRecording: "Screen Recording"
         case .accessibility: "Accessibility"
+        case .inputMonitoring: "Input Monitoring"
         }
     }
     var setupTitle: String { "\(settingsTitle) access" }
@@ -141,7 +172,8 @@ extension PermissionKind {
         switch self {
         case .microphone: "Allow Whisper to hear your voice for dictation and meeting recordings."
         case .screenRecording: "Allow Screen Recording to capture Mac audio during meetings. Dictation works without this permission."
-        case .accessibility: "Allow Accessibility for global shortcuts and inserting text into the active app. Without it, use menu-bar dictation and paste the result manually."
+        case .accessibility: "Allow Accessibility to insert text into the active app. Without it, paste the result manually."
+        case .inputMonitoring: "Allow Whisper to detect your global shortcuts while you use other apps. Without it, use the menu-bar actions. Keyboard input is not stored or sent to OpenAI."
         }
     }
 }

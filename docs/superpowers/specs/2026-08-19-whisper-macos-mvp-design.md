@@ -117,7 +117,7 @@ The first launch opens a four-step setup:
 1. Explain local processing boundaries and request the OpenAI API key.
 2. Request microphone access.
 3. Request Screen Recording access.
-4. Request Accessibility access and verify all permissions.
+4. Request Accessibility and Input Monitoring access and verify all permissions. Input Monitoring shares this step rather than adding a fifth step (owner-approved platform clarification, 2026-09-07).
 
 The app remains usable for history and mode editing when a permission is missing. Features that require the missing permission explain the exact fix instead of failing silently.
 

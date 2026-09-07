@@ -8,6 +8,7 @@ enum PermissionKind: String, CaseIterable, Sendable, Codable, Hashable {
     case microphone
     case screenRecording
     case accessibility
+    case inputMonitoring
 }
 
 enum PermissionState: String, Sendable, Codable, Equatable {
@@ -20,6 +21,7 @@ struct PermissionSnapshot: Sendable, Equatable {
     let microphone: PermissionState
     let screenRecording: PermissionState
     let accessibility: PermissionState
+    let inputMonitoring: PermissionState
 
     subscript(kind: PermissionKind) -> PermissionState {
         switch kind {
@@ -29,6 +31,8 @@ struct PermissionSnapshot: Sendable, Equatable {
             screenRecording
         case .accessibility:
             accessibility
+        case .inputMonitoring:
+            inputMonitoring
         }
     }
 }
@@ -52,7 +56,8 @@ final class PermissionService {
         PermissionSnapshot(
             microphone: client.state(for: .microphone),
             screenRecording: client.state(for: .screenRecording),
-            accessibility: client.state(for: .accessibility)
+            accessibility: client.state(for: .accessibility),
+            inputMonitoring: client.state(for: .inputMonitoring)
         )
     }
 
@@ -75,6 +80,8 @@ final class MacPermissionSystemClient: PermissionSystemClient {
             CGPreflightScreenCaptureAccess() ? .granted : .denied
         case .accessibility:
             AXIsProcessTrusted() ? .granted : .denied
+        case .inputMonitoring:
+            CGPreflightListenEventAccess() ? .granted : .denied
         }
     }
 
@@ -88,6 +95,8 @@ final class MacPermissionSystemClient: PermissionSystemClient {
             }
         case .screenRecording:
             return CGRequestScreenCaptureAccess() ? .granted : .denied
+        case .inputMonitoring:
+            return CGRequestListenEventAccess() ? .granted : .denied
         case .accessibility:
             let options = [
                 "AXTrustedCheckOptionPrompt": true
@@ -121,6 +130,7 @@ final class MacPermissionSystemClient: PermissionSystemClient {
         case .microphone: "Privacy_Microphone"
         case .screenRecording: "Privacy_ScreenCapture"
         case .accessibility: "Privacy_Accessibility"
+        case .inputMonitoring: "Privacy_ListenEvent"
         }
         return "x-apple.systempreferences:com.apple.preference.security?\(anchor)"
     }

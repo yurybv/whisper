@@ -3,6 +3,32 @@ import XCTest
 
 @MainActor
 final class OnboardingModelTests: XCTestCase {
+    func testKeyboardRequestOffersRelaunchWithoutOpeningSettingsFirst() async {
+        let model = makeModel()
+        XCTAssertFalse(model.inputMonitoringSettingsOpened)
+        await model.request(.inputMonitoring)
+        XCTAssertEqual(model.permissions.inputMonitoring, .granted)
+        XCTAssertTrue(model.inputMonitoringSettingsOpened)
+    }
+
+    func testKeyboardPermissionGatesReadinessButNotMenuDictation() async {
+        let client = SetupPermissionClient()
+        for kind in [PermissionKind.microphone, .screenRecording, .accessibility] { client.states[kind] = .granted }
+        let model = makeModel(client: client)
+        await model.saveAndTest()
+        XCTAssertFalse(model.isReady)
+        XCTAssertTrue(model.canDictate)
+        model.showPermissionRecovery(.inputMonitoring)
+        XCTAssertEqual(model.step, .accessibility)
+        model.openSettings(for: .inputMonitoring)
+        XCTAssertEqual(client.opened, [.inputMonitoring])
+        XCTAssertTrue(model.inputMonitoringSettingsOpened)
+        await model.request(.inputMonitoring)
+        XCTAssertEqual(client.requested, [.inputMonitoring])
+        XCTAssertTrue(model.isReady)
+    }
+
+
     func testConnectionIsExplicitAndSavedKeyIsNotRevealed() async throws {
         let store = InMemorySecureStore()
         store.saveOpenAIKey("sk-test-existing")

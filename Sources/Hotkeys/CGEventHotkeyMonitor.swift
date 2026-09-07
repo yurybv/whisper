@@ -1,7 +1,9 @@
+import ApplicationServices
 import CoreGraphics
 import Foundation
 
 enum HotkeyMonitorError: Error, Equatable, Sendable {
+    case accessibilityUnavailable
     case inputMonitoringUnavailable
     case eventTapUnavailable
     case startupTimedOut
@@ -16,10 +18,19 @@ final class CGEventHotkeyMonitor: HotkeyEventSource, @unchecked Sendable {
     private var eventLoop: CFRunLoop?
     private var eventThread: Thread?
     private var running = false
+    private var reservedShortcuts = [ShortcutAction.changeMode, .recordMeeting].compactMap {
+        AppSettings.defaults.shortcuts[$0]
+    }
+    private var consumedKeyCodes: Set<Int> = []
     private let hasListeningAccess: @Sendable () -> Bool
+    private let hasAccessibilityAccess: @Sendable () -> Bool
 
-    init(hasListeningAccess: @escaping @Sendable () -> Bool = { CGPreflightListenEventAccess() }) {
+    init(
+        hasListeningAccess: @escaping @Sendable () -> Bool = { CGPreflightListenEventAccess() },
+        hasAccessibilityAccess: @escaping @Sendable () -> Bool = { AXIsProcessTrusted() }
+    ) {
         self.hasListeningAccess = hasListeningAccess
+        self.hasAccessibilityAccess = hasAccessibilityAccess
         let pair = AsyncStream<HotkeyEvent>.makeStream()
         events = pair.stream
         continuation = pair.continuation
@@ -30,10 +41,26 @@ final class CGEventHotkeyMonitor: HotkeyEventSource, @unchecked Sendable {
         continuation.finish()
     }
 
+    func updateShortcuts(_ shortcuts: [ShortcutAction: Shortcut]) {
+        lock.withLock {
+            // Mode and meeting commands are always allowed by HotkeyStateMachine.
+            // Leave modifier-only dictation and context-dependent Escape untouched.
+            reservedShortcuts = [ShortcutAction.changeMode, .recordMeeting].compactMap {
+                guard let shortcut = shortcuts[$0],
+                      !HotkeyStateMachine.modifierKeyCodes.contains(shortcut.key.keyCode) else { return nil }
+                return shortcut
+            }
+        }
+    }
+
     func start() throws {
         guard hasListeningAccess() else {
             stop()
             throw HotkeyMonitorError.inputMonitoringUnavailable
+        }
+        guard hasAccessibilityAccess() else {
+            stop()
+            throw HotkeyMonitorError.accessibilityUnavailable
         }
         if lock.withLock({ running && eventTap.map { CGEvent.tapIsEnabled(tap: $0) } == true }) {
             return
@@ -46,7 +73,7 @@ final class CGEventHotkeyMonitor: HotkeyEventSource, @unchecked Sendable {
         guard let tap = CGEvent.tapCreate(
             tap: .cgSessionEventTap,
             place: .headInsertEventTap,
-            options: .listenOnly,
+            options: Self.tapOptions,
             eventsOfInterest: eventMask,
             callback: hotkeyEventTapCallback,
             userInfo: Unmanaged.passUnretained(self).toOpaque()
@@ -81,6 +108,7 @@ final class CGEventHotkeyMonitor: HotkeyEventSource, @unchecked Sendable {
     func stop() {
         let state = lock.withLock { () -> (CFRunLoop?, CFMachPort?) in
             running = false
+            consumedKeyCodes.removeAll()
             let state = (eventLoop, eventTap)
             eventLoop = nil
             eventTap = nil
@@ -118,7 +146,10 @@ final class CGEventHotkeyMonitor: HotkeyEventSource, @unchecked Sendable {
         }
     }
 
-    fileprivate func receive(type: CGEventType, event: CGEvent) {
+    static let tapOptions: CGEventTapOptions = .defaultTap
+
+    @discardableResult
+    func receive(type: CGEventType, event: CGEvent) -> Bool {
         let keyCode = Int(event.getIntegerValueField(.keyboardEventKeycode))
         let isRepeat = event.getIntegerValueField(.keyboardEventAutorepeat) != 0
         if let normalized = Self.normalize(
@@ -127,8 +158,27 @@ final class CGEventHotkeyMonitor: HotkeyEventSource, @unchecked Sendable {
             flags: event.flags,
             isRepeat: isRepeat
         ) {
+            let shouldSuppress = lock.withLock { () -> Bool in
+                switch normalized {
+                case let .keyDown(keyCode, flags, isRepeat):
+                    if isRepeat { return consumedKeyCodes.contains(keyCode) }
+                    // A fresh press also reconciles a release missed while a tap was disabled.
+                    consumedKeyCodes.remove(keyCode)
+                    guard reservedShortcuts.contains(where: {
+                        $0.key.keyCode == keyCode && $0.modifiers == flags
+                    }) else { return false }
+                    consumedKeyCodes.insert(keyCode)
+                    return true
+                case let .keyUp(keyCode, _):
+                    return consumedKeyCodes.remove(keyCode) != nil
+                case .flagsChanged:
+                    return false
+                }
+            }
             continuation.yield(normalized)
+            return shouldSuppress
         }
+        return false
     }
 
     fileprivate func reenableEventTap() {
@@ -198,7 +248,7 @@ private func hotkeyEventTapCallback(
     case .tapDisabledByTimeout, .tapDisabledByUserInput:
         monitor.reenableEventTap()
     default:
-        monitor.receive(type: type, event: event)
+        if monitor.receive(type: type, event: event) { return nil }
     }
     return Unmanaged.passUnretained(event)
 }

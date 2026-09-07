@@ -2,6 +2,7 @@ import Foundation
 
 protocol HotkeyEventSource: Sendable {
     var events: AsyncStream<HotkeyEvent> { get }
+    func updateShortcuts(_ shortcuts: [ShortcutAction: Shortcut])
     func start() throws
     func stop()
 }
@@ -26,6 +27,7 @@ actor GlobalHotkeyMonitor {
     init(source: any HotkeyEventSource, shortcuts: [ShortcutAction: Shortcut]) {
         self.source = source
         stateMachine = HotkeyStateMachine(shortcuts: shortcuts)
+        source.updateShortcuts(shortcuts)
 
         let actionPair = AsyncStream<HotkeyActionEvent>.makeStream()
         actionEvents = actionPair.stream
@@ -72,10 +74,11 @@ actor GlobalHotkeyMonitor {
 
     func updateShortcuts(_ shortcuts: [ShortcutAction: Shortcut]) {
         stateMachine.updateShortcuts(shortcuts)
+        source.updateShortcuts(shortcuts)
     }
 
     func resetShortcutsToDefaults() {
-        stateMachine.resetToDefaults()
+        updateShortcuts(AppSettings.defaults.shortcuts)
     }
 
     func setFeatureActive(_ isActive: Bool) {

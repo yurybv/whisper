@@ -69,7 +69,7 @@ Goal: make the approved interface usable for first launch, modes, configuration,
 
 Entry gate: authorized by `WH-M2-007`; begin with `WH-M3-001`.
 
-Progress: `WH-M3-001` remains in review as of 2026-09-07. Live Microphone, Screen Recording, and Accessibility grants and relaunch were verified. Shortcut recovery exposed stale Input Monitoring consent and missing source retries; recovery corrections pass automated checks. Input Monitoring is now included in the fourth setup step and granted to the corrected QA build; the native tap is enabled with all keyboard event types. Final physical shortcut QA remains pending. `WH-M3-002` remains blocked.
+Progress: `WH-M3-001` remains in review as of 2026-09-08. Live Microphone, Screen Recording, and Accessibility grants and relaunch were verified. Shortcut recovery exposed stale Input Monitoring consent and missing source retries; recovery corrections pass automated checks. Input Monitoring is now included in the fourth setup step and granted to the corrected QA build; the native tap is enabled with all keyboard event types. On 2026-09-08 the owner reported that physical Command–Shift–K opened Finder Network. Active command filtering, shortcut reassignment and key-lifecycle recovery now pass 168 unit tests and 4 UI tests. Final permission refresh and live QA remain required. `WH-M3-002` remains blocked.
 
 Deliverables:
 

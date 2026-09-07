@@ -10,15 +10,15 @@ Push to talk depends on the physical press and release of Right Option even when
 
 ## Decision
 
-Create a Quartz session event tap for key-down, key-up, and flags-changed events. Run the callback on a dedicated run-loop thread, normalize events immediately, and pass them to an actor-owned pure state machine. Re-enable a tap disabled by timeout or user input.
+Create an active Quartz session event tap for key-down, key-up, and flags-changed events. Consume configured nonmodifier Change Mode and Record Meeting commands synchronously, including repeats and their matching releases, while still delivering them to the action state machine. Other key events pass through. A passive listener allows Finder to execute Network/AirDrop for the same default shortcuts. Run the callback on a dedicated run-loop thread, normalize events immediately, and pass them to an actor-owned pure state machine. Re-enable a tap disabled by timeout or user input.
 
 Identify Right Option by its physical key code and emit exactly one pressed and released transition. Store shortcut definitions as domain values so conflict validation, defaults, recording, and runtime matching share the same rules.
 
 ## Consequences
 
 - Modifier-only push to talk and release semantics work outside the app.
-- Input Monitoring permission and event-tap lifecycle status are explicit prerequisites for global keyboard events; Accessibility separately enables text insertion. The owner approved showing both permissions in the fourth onboarding step on 2026-09-07.
-- The callback must perform minimal work and must not own feature state.
+- Input Monitoring permission and event-tap lifecycle status are explicit prerequisites for global keyboard events; Accessibility enables active shortcut filtering and text insertion. The owner approved showing both permissions in the fourth onboarding step on 2026-09-07.
+- The callback performs only normalization, locked command matching/release tracking, and stream delivery; feature state remains actor-owned. Shortcut updates and resets update both matching layers. Fresh presses reconcile missed releases, and stopping clears claimed keys.
 - Keyboard layouts and reserved macOS shortcuts require validation in the shortcut domain.
 
 ## Rejected alternatives

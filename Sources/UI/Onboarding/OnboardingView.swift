@@ -172,7 +172,7 @@ extension PermissionKind {
         switch self {
         case .microphone: "Allow Whisper to hear your voice for dictation and meeting recordings."
         case .screenRecording: "Allow Screen Recording to capture Mac audio during meetings. Dictation works without this permission."
-        case .accessibility: "Allow Accessibility to insert text into the active app. Without it, paste the result manually."
+        case .accessibility: "Allow Accessibility to handle Whisper shortcuts and insert text into the active app. Without it, use the menu bar and paste results manually."
         case .inputMonitoring: "Allow Whisper to detect your global shortcuts while you use other apps. Without it, use the menu-bar actions. Keyboard input is not stored or sent to OpenAI."
         }
     }

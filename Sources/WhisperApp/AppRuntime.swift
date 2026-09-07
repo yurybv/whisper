@@ -210,6 +210,8 @@ final class AppRuntime {
         do {
             try await hotkeys.start()
             shortcutFailure = nil
+        } catch HotkeyMonitorError.accessibilityUnavailable {
+            shortcutFailure = "Enable Whisper in System Settings → Privacy & Security → Accessibility, then return to Whisper."
         } catch HotkeyMonitorError.inputMonitoringUnavailable {
             shortcutFailure = "Enable Whisper in System Settings → Privacy & Security → Input Monitoring, then return to Whisper."
         } catch {

@@ -34,3 +34,12 @@ Independent read-only review found a missing relaunch action after Request Acces
 Live grant/recovery QA is incomplete. The current build needs Microphone, Screen Recording and Accessibility access to verify the real macOS transitions, hotkey recovery after returning from Settings, and relaunch behavior. Computer-use policy requires confirmation at action time before granting an app security-sensitive access. Ask the owner to authorize these permissions for the reviewed build, or have the owner grant them directly.
 
 Once authorized: request/grant each permission, verify the live state after returning; use Relaunch if requested by macOS; verify Accessibility restores shortcut monitoring and microphone denial routes dictation to repair. Preserve existing user permission entries. Update this record, complete WH-M3-001, unblock WH-M3-002 and push the completion commit after repository guards pass. No next task is eligible before then.
+
+## Recovery verification — 2026-09-07
+
+- Recovered a clean `master` at `f279696`; after fetching, local and `origin/master` matched. Account `yurybv`, expected HTTPS remote, and task-status consistency checks passed. There were no unpublished commits or other active tasks.
+- Reran the complete Xcode scheme: **151 unit tests and 4 UI tests passed**, zero failures. Result bundle: `Test-Whisper-2026.09.07_21-48-22-+0400.xcresult` in Xcode DerivedData test logs.
+- The required `xcodebuild ... build` and `git diff --check` passed.
+- Inspected the live Whisper setup before running UI tests: the API-key page had an empty secure field and no test request; Continue opened Microphone access, still reporting **Not Requested**. No permission was requested or changed and no API key was read or entered.
+- Reviewed the permission service, onboarding model/view, runtime refresh, relaunch implementation, and existing onboarding tests. The remaining live recovery criterion still requires permission grants; automated fixtures do not satisfy it. Requested owner authorization under the computer-use tool's security-sensitive-access confirmation policy.
+- Task remains **review**; no implementation task was completed and WH-M3-002 remains blocked.

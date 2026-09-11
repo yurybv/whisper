@@ -100,3 +100,15 @@ Current status remains **review** pending that final physical shortcut/main-wind
 - Full scheme passed **168 unit tests and 4 UI tests**, zero failures: `/tmp/whisper-shortcut-fix/Logs/Test/Test-Whisper-2026.09.08_00-49-16-+0400.xcresult`. The reviewer’s final cleanup assertion also passed with all **13 CGEventHotkeyMonitor tests**. Required final build, `codesign --verify --deep --strict`, and `git diff --check` passed. Test events are constructed in process and never posted to the desktop.
 - Final QA bundle: `/tmp/whisper-shortcut-fix/Build/Products/Debug/Whisper.app`. Both older debug processes had no open WAV/M4A files and were stopped for the controlled retest. System Settings requests owner authentication before adding the final build to the already-approved Accessibility list. No password or credential is read or entered by the agent.
 - Task remains **review**. Refresh Accessibility and Input Monitoring for this final bundle, launch it, then verify the physical shortcut, absence of Finder Network, Escape focus restoration, and final setup status. No next task is eligible until that passes.
+
+## Final-bundle permission refresh — 2026-09-11
+
+- Recovered a clean `master` at `65c4b8f`, matching `origin/master`, with GitHub CLI account `yurybv` and the required HTTPS remote.
+- Rebuilt the published commit once at `/tmp/whisper-shortcut-fix/Build/Products/Debug/Whisper.app`. The build succeeded, `codesign --verify --deep --strict` passed, and the bundle identifier is `dev.yury.whisper`.
+- Removed only Whisper's stale Input Monitoring and Accessibility entries, added that exact final bundle, and verified both switches are on. No unrelated permission entry was changed.
+- After relaunch, setup reports Accessibility **Granted** and Input Monitoring **Granted**. Native `CGGetEventTapList` diagnostics report `enabled=true`, keyboard mask `7168`, and active-filter options `0` for the final process.
+- Setup also reports Microphone **Not Requested** and Screen Recording **Not Granted** for this ad-hoc identity. The missing states remain visible and setup remains usable; the real grant, repair-link, relaunch, and completed-setup paths for those permissions were already exercised on 2026-09-07.
+- The persisted onboarding-completion flag was restored after temporarily exposing the live setup window. No API key was read, entered, logged, or tested.
+- Computer-use Command–Shift–K again opened Finder Network because target-directed synthetic input bypasses the session event tap. This does not contradict the enabled native tap and cannot count as physical shortcut acceptance.
+
+Task remains **review**. The only remaining check is a physical Command–Shift–K from Finder, followed by Escape, confirming the switcher opens, Finder does not handle Network, and focus returns to Finder.

@@ -112,3 +112,23 @@ Current status remains **review** pending that final physical shortcut/main-wind
 - Computer-use Command–Shift–K again opened Finder Network because target-directed synthetic input bypasses the session event tap. This does not contradict the enabled native tap and cannot count as physical shortcut acceptance.
 
 Task remains **review**. The only remaining check is a physical Command–Shift–K from Finder, followed by Escape, confirming the switcher opens, Finder does not handle Network, and focus returns to Finder.
+
+## Built-in display placement correction — 2026-09-11
+
+- Physical shortcut tracing reached every expected layer: the active `CGEventHotkeyMonitor` matched and consumed key code 40 with Command and Shift, `GlobalHotkeyMonitor` published the action, `HotkeyActionRouter` handled `.changeMode`, and `AppRuntime.showModeSwitcher()` ran. This ruled out shortcut delivery as the cause of the invisible switcher.
+- Live AppKit inspection showed the panel was positioned while its deferred frame and hosted view still had zero size. SwiftUI later realized it as `560×452`, leaving the original centering calculation stale.
+- The panel now selects the Mac's built-in `NSScreen` with `CGDisplayIsBuiltin`, falls back to the main or first screen only when no built-in display is reported, applies its configured content size before activation, and recenters after the hosted view's final layout.
+- TDD: the frame-helper test first failed to compile because the helper did not exist. The pre-presentation placement regression then exposed the zero-size frame and verifies the configured `560×420` content frame before ordering the window.
+- Focused `OverlayLifecycleTests` passed all 9 tests. After stale test runners were stopped, the complete scheme passed **170 unit tests and 4 UI tests**, zero failures: `/tmp/whisper-shortcut-fix/Logs/Test/Test-Whisper-2026.09.11_23-46-00-+0400.xcresult`.
+- Final smoke bundle: `/tmp/whisper-shortcut-fix/Build/Products/Debug/Whisper.app`, identifier `dev.yury.whisper`, ad-hoc signature verified with `codesign --verify --deep --strict`.
+- The built-in display has AppKit visible frame `(0, 0, 1728, 1084)` and Core Graphics display height `1117`. With the external `3360×1890` display connected, the smoke switcher appeared at Quartz bounds `(584, 349, 560, 452)`, exactly corresponding to the center of the built-in visible frame.
+- No shortcut input, key, dictated text, transcript, instruction, or authorization header was logged or added to repository fixtures.
+
+## Final bundle permission and focus QA — 2026-09-12
+
+- Removed only Whisper's stale Accessibility and Input Monitoring records and added `/tmp/whisper-shortcut-fix/Build/Products/Debug/Whisper.app` to both lists. Both switches report on.
+- The normal final process created an enabled active event tap with keyboard mask `7168` and options `0`.
+- A background UI smoke kept Finder as the previously active application, presented the switcher at `(584, 349, 560, 452)` on the built-in display, then activated Whisper for keyboard delivery. Escape closed the switcher and restored Finder as the frontmost application.
+- System Events and a separate `CGEventPost(.cghidEventTap)` helper both bypassed the app's session tap and went to Finder. They are recorded as diagnostic failures and are not treated as substitutes for physical keyboard input.
+
+Task remains **review**. With the corrected, permission-ready bundle running and Finder frontmost, physically press Command–Shift–K and confirm the centered switcher appears without Finder handling the command. The direct Escape and focus-restoration path already passes, but may be repeated during that final check.

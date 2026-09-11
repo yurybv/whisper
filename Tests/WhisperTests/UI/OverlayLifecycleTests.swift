@@ -62,6 +62,24 @@ final class OverlayLifecycleTests: XCTestCase {
         XCTAssertFalse(panel.styleMask.contains(.nonactivatingPanel))
     }
 
+    func testModeSwitcherFrameIsCenteredInsideVisibleScreen() {
+        let frame = ModeSwitcherPanel.frame(
+            panelSize: NSSize(width: 560, height: 452),
+            visibleFrame: NSRect(x: 120, y: 80, width: 1_440, height: 900)
+        )
+
+        XCTAssertEqual(frame.origin.x, 560)
+        XCTAssertEqual(frame.origin.y, 304)
+    }
+
+    func testModeSwitcherPlacementUsesConfiguredContentSizeBeforePresentation() {
+        let panel = ModeSwitcherPanel()
+
+        panel.place(in: NSRect(x: 120, y: 80, width: 1_440, height: 900))
+
+        XCTAssertEqual(panel.frame, NSRect(x: 560, y: 320, width: 560, height: 420))
+    }
+
     func testModeSwitcherLifecycleRestoresPreviousApplicationOnClose() {
         let panel = FakeModeSwitcherPanel()
         let application = FakeRestorableApplication()

@@ -1,4 +1,5 @@
 import AppKit
+import CoreGraphics
 import Observation
 import SwiftUI
 
@@ -24,9 +25,11 @@ extension NSRunningApplication: ApplicationRestoring {
 
 @MainActor
 final class ModeSwitcherPanel: NSPanel, ModeSwitcherPanelPresenting {
+    private static let contentSize = NSSize(width: 560, height: 420)
+
     init() {
         super.init(
-            contentRect: NSRect(x: 0, y: 0, width: 560, height: 420),
+            contentRect: NSRect(origin: .zero, size: Self.contentSize),
             styleMask: [.titled, .fullSizeContentView],
             backing: .buffered,
             defer: true
@@ -49,13 +52,53 @@ final class ModeSwitcherPanel: NSPanel, ModeSwitcherPanelPresenting {
     override var canBecomeMain: Bool { false }
 
     func present() {
-        center()
-        _ = NSRunningApplication.current.activate(options: [])
+        contentView?.layoutSubtreeIfNeeded()
+        let visibleFrame = (Self.builtInScreen() ?? NSScreen.main ?? NSScreen.screens.first)?.visibleFrame
+        if let visibleFrame { place(in: visibleFrame) }
+        _ = NSRunningApplication.current.activate(options: [.activateAllWindows])
         makeKeyAndOrderFront(nil)
+        contentView?.layoutSubtreeIfNeeded()
+        if let visibleFrame {
+            setFrame(Self.frame(panelSize: frame.size, visibleFrame: visibleFrame), display: true)
+        }
+        orderFrontRegardless()
+        if let visibleFrame {
+            DispatchQueue.main.async { [weak self] in
+                guard let self, isVisible else { return }
+                contentView?.layoutSubtreeIfNeeded()
+                setFrame(Self.frame(panelSize: frame.size, visibleFrame: visibleFrame), display: true)
+                orderFrontRegardless()
+            }
+        }
     }
 
     func dismiss() {
         orderOut(nil)
+    }
+
+    func place(in visibleFrame: NSRect) {
+        setContentSize(Self.contentSize)
+        setFrame(Self.frame(panelSize: frame.size, visibleFrame: visibleFrame), display: true)
+    }
+
+    static func frame(panelSize: NSSize, visibleFrame: NSRect) -> NSRect {
+        NSRect(
+            x: visibleFrame.midX - panelSize.width / 2,
+            y: visibleFrame.midY - panelSize.height / 2,
+            width: panelSize.width,
+            height: panelSize.height
+        )
+    }
+
+    private static func builtInScreen() -> NSScreen? {
+        NSScreen.screens.first { screen in
+            guard let screenNumber = screen.deviceDescription[
+                NSDeviceDescriptionKey("NSScreenNumber")
+            ] as? NSNumber else {
+                return false
+            }
+            return CGDisplayIsBuiltin(CGDirectDisplayID(screenNumber.uint32Value)) != 0
+        }
     }
 }
 

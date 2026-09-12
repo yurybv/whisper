@@ -23,7 +23,7 @@
 - Keep OpenAI model identifiers centralized in OpenAIConfiguration.
 - Limit uploaded audio files to 20 MB even though the API limit is 25 MB.
 - Write recordings continuously to disk and support up to three hours.
-- Use Right Option for push-to-talk, Command-Shift-K for the mode switcher, Command-Shift-R for meeting recording, and Escape for cancel by default.
+- Use Right Option for push-to-talk, Control-Command-M for the mode switcher, Command-Shift-R for meeting recording, and Escape for cancel by default.
 - Preserve the original focused application before showing any panel.
 - UI copy is English in the MVP; dictated content may be any supported language.
 - Use the repository-root Raycast DESIGN.md as the visual-token source and the Superwhisper screenshots as the structural source. The approved OpenDesign prototype supersedes only the screen-level composition when it becomes available.
@@ -281,7 +281,7 @@ func testDefaultShortcutsRoundTripThroughJSON() throws {
 AppSettings.defaults must use:
 
 - pushToTalk: Right Option modifier key code 61;
-- changeMode: Command-Shift-K;
+- changeMode: Control-Command-M;
 - recordMeeting: Command-Shift-R;
 - cancel: Escape;
 - launchAtLogin: false;
@@ -832,7 +832,7 @@ func testLeftOptionDoesNotTriggerRightOptionShortcut() {
 
 - [ ] **Step 2: Implement the pure state machine**
 
-Handle keyDown, keyUp, and flagsChanged. Suppress auto-repeat. Emit pressed and released only once per physical transition. Command-Shift-K and Command-Shift-R emit invoked events on keyDown. Escape emits invoked cancel only while a feature is active.
+Handle keyDown, keyUp, and flagsChanged. Suppress auto-repeat. Emit pressed and released only once per physical transition. Control-Command-M and Command-Shift-R emit invoked events on keyDown. Escape emits invoked cancel only while a feature is active.
 
 - [ ] **Step 3: Implement CGEventTap monitor**
 
@@ -897,7 +897,7 @@ Use NSStatusItem through AppDelegate so the icon can reflect ready, dictating, r
 
 - [ ] **Step 5: Wire hotkeys to controllers**
 
-Right Option pressed calls DictationCoordinator.begin; released calls finish. Command-Shift-K opens the switcher. Escape cancels dictation or closes the top panel. Leave meeting action wired to a stub closure until Task 12.
+Right Option pressed calls DictationCoordinator.begin; released calls finish. Control-Command-M opens the switcher. Escape cancels dictation or closes the top panel. Leave meeting action wired to a stub closure until Task 12.
 
 - [ ] **Step 6: Run tests and launch**
 
@@ -955,7 +955,7 @@ Inject in-memory persistence and fake services only when --ui-testing is present
 
 - [ ] **Step 2: Write onboarding UI test**
 
-Launch incomplete onboarding, enter a fake key, tap Test, advance through the three permission pages, and assert the Ready page shows Right Option, Command-Shift-K, and Command-Shift-R.
+Launch incomplete onboarding, enter a fake key, tap Test, advance through the three permission pages, and assert the Ready page shows Right Option, Control-Command-M, and Command-Shift-R.
 
 - [ ] **Step 3: Implement root navigation**
 
@@ -1335,7 +1335,7 @@ docs/testing/manual-acceptance.md contains explicit checks for:
 - Default Russian and English dictation;
 - English Translation custom mode;
 - Right Option hold and Escape cancel;
-- Command-Shift-K switcher;
+- Control-Command-M switcher;
 - insertion in TextEdit, Notes, Safari, and VS Code;
 - missing Accessibility clipboard fallback;
 - invalid key, offline, 429, and server error;

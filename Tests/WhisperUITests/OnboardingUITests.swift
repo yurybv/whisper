@@ -16,7 +16,7 @@ final class OnboardingUITests: XCTestCase {
             XCTAssertTrue(app.staticTexts[title].waitForExistence(timeout: 2))
         }
         XCTAssertTrue(app.staticTexts["Right Option"].exists)
-        XCTAssertTrue(app.staticTexts["Command-Shift-K"].exists)
+        XCTAssertTrue(app.staticTexts["Control-Command-M"].exists)
         XCTAssertTrue(app.staticTexts["Command-Shift-R"].exists)
         app.buttons["Open Home"].click()
         XCTAssertTrue(app.staticTexts["Welcome to Whisper"].waitForExistence(timeout: 2))

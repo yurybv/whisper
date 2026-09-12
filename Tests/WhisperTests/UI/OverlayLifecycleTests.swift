@@ -62,6 +62,18 @@ final class OverlayLifecycleTests: XCTestCase {
         XCTAssertFalse(panel.styleMask.contains(.nonactivatingPanel))
     }
 
+    func testModeSwitcherForcesApplicationActivationWhenPresented() {
+        let application = FakeApplicationActivator()
+        let panel = ModeSwitcherPanel(application: application)
+        application.isPanelVisible = { panel.isVisible }
+
+        panel.present()
+
+        XCTAssertEqual(application.activationRequests, [true])
+        XCTAssertEqual(application.panelVisibilityAtActivation, [true])
+        panel.dismiss()
+    }
+
     func testModeSwitcherFrameIsCenteredInsideVisibleScreen() {
         let frame = ModeSwitcherPanel.frame(
             panelSize: NSSize(width: 560, height: 452),
@@ -141,5 +153,17 @@ private final class FakeRestorableApplication: ApplicationRestoring {
     func restoreActivation() -> Bool {
         restoreCount += 1
         return true
+    }
+}
+
+@MainActor
+private final class FakeApplicationActivator: ApplicationActivating {
+    private(set) var activationRequests: [Bool] = []
+    private(set) var panelVisibilityAtActivation: [Bool] = []
+    var isPanelVisible: () -> Bool = { false }
+
+    func activate(ignoringOtherApps: Bool) {
+        activationRequests.append(ignoringOtherApps)
+        panelVisibilityAtActivation.append(isPanelVisible())
     }
 }

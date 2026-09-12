@@ -119,7 +119,7 @@ struct MenuBarContentView: View {
                     action: onToggleDictation
                 )
             }
-            menuButton("Change Mode", systemImage: "square.grid.2x2", shortcut: "⇧⌘K", action: onChangeMode)
+            menuButton("Change Mode", systemImage: "square.grid.2x2", shortcut: "⌃⌘M", action: onChangeMode)
             menuButton("Record Meeting", systemImage: "record.circle", shortcut: "⇧⌘R", action: onRecordMeeting)
 
             Divider().overlay(DesignTokens.border)

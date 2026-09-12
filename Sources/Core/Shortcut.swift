@@ -17,6 +17,7 @@ struct Shortcut: Sendable, Codable, Equatable {
 
         static let rightOption = Key(61)
         static let k = Key(40)
+        static let m = Key(46)
         static let r = Key(15)
         static let escape = Key(53)
     }

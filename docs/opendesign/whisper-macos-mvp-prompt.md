@@ -69,7 +69,7 @@ Show:
 - OpenAI connection status;
 - three permission rows;
 - quick actions for Start Dictation, Change Mode, and Record Meeting;
-- shortcut keycaps: Right Option, Command-Shift-K, and Command-Shift-R;
+- shortcut keycaps: Right Option, Control-Command-M, and Command-Shift-R;
 - a short recent-history list.
 
 The screen should make the app feel ready without looking like an analytics dashboard.
@@ -195,7 +195,7 @@ It must remain readable over light and dark applications without becoming visual
 
 ### Overlay B: Mode switcher
 
-Create a compact command-palette panel opened by Command-Shift-K.
+Create a compact command-palette panel opened by Control-Command-M.
 
 - Search field focused by default;
 - mode list with active checkmark;

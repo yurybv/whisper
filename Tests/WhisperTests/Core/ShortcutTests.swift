@@ -20,7 +20,7 @@ final class ShortcutTests: XCTestCase {
     func testDefaultShortcutsUseApprovedKeysAndModifiers() {
         XCTAssertEqual(AppSettings.defaults.shortcuts, [
             .pushToTalk: Shortcut(key: .rightOption, modifiers: [.option]),
-            .changeMode: Shortcut(key: .k, modifiers: [.command, .shift]),
+            .changeMode: Shortcut(key: .m, modifiers: [.control, .command]),
             .recordMeeting: Shortcut(key: .r, modifiers: [.command, .shift]),
             .cancel: Shortcut(key: .escape, modifiers: [])
         ])

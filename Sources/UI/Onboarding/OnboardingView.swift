@@ -148,7 +148,7 @@ struct OnboardingView: View {
             if model.screenSettingsOpened || model.inputMonitoringSettingsOpened { relaunchGuidance }
             Divider()
             Text("Right Option")
-            Text("Command-Shift-K")
+            Text("Control-Command-M")
             Text("Command-Shift-R")
             Text("Hold to dictate · Switch mode · Record a meeting")
                 .foregroundStyle(DesignTokens.mutedText)

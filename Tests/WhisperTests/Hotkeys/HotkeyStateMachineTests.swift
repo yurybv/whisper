@@ -37,16 +37,29 @@ final class HotkeyStateMachineTests: XCTestCase {
         XCTAssertNil(machine.consume(.flagsChanged(keyCode: 61, flags: [])))
     }
 
-    func testChangeModeInvokesOnlyOnInitialKeyDown() {
+    func testChangeModeUsesControlCommandMAndIgnoresLegacyFinderShortcut() {
         var machine = HotkeyStateMachine(shortcuts: AppSettings.defaults.shortcuts)
-        let flags: Shortcut.Modifiers = [.command, .shift]
+        let flags: Shortcut.Modifiers = [.control, .command]
 
         XCTAssertEqual(
-            machine.consume(.keyDown(keyCode: 40, flags: flags, isRepeat: false)),
+            machine.consume(
+                .keyDown(keyCode: Shortcut.Key.m.keyCode, flags: flags, isRepeat: false)
+            ),
             .invoked(.changeMode)
         )
-        XCTAssertNil(machine.consume(.keyDown(keyCode: 40, flags: flags, isRepeat: true)))
-        XCTAssertNil(machine.consume(.keyUp(keyCode: 40, flags: flags)))
+        XCTAssertNil(
+            machine.consume(
+                .keyDown(keyCode: Shortcut.Key.m.keyCode, flags: flags, isRepeat: true)
+            )
+        )
+        XCTAssertNil(
+            machine.consume(.keyUp(keyCode: Shortcut.Key.m.keyCode, flags: flags))
+        )
+        XCTAssertNil(
+            machine.consume(
+                .keyDown(keyCode: 40, flags: [.command, .shift], isRepeat: false)
+            )
+        )
     }
 
     func testRecordMeetingInvokesOnConfiguredKeyDown() {
@@ -253,7 +266,13 @@ final class GlobalHotkeyMonitorTests: XCTestCase {
                 return
             }
         }
-        source.send(.keyDown(keyCode: 40, flags: [.command, .shift], isRepeat: false))
+        source.send(
+            .keyDown(
+                keyCode: Shortcut.Key.m.keyCode,
+                flags: [.control, .command],
+                isRepeat: false
+            )
+        )
         await fulfillment(of: [received], timeout: 2)
         reader.cancel()
         XCTAssertEqual(source.startCount, 3)
@@ -268,7 +287,13 @@ final class GlobalHotkeyMonitorTests: XCTestCase {
         try await monitor.start()
         try await monitor.start()
         XCTAssertEqual(source.startCount, 2, "Permission refresh must let the source recover a disabled tap")
-        source.send(.keyDown(keyCode: 40, flags: [.command, .shift], isRepeat: false))
+        source.send(
+            .keyDown(
+                keyCode: Shortcut.Key.m.keyCode,
+                flags: [.control, .command],
+                isRepeat: false
+            )
+        )
         let action = await actions.next()
         XCTAssertEqual(action, .invoked(.changeMode))
         await monitor.stop()
@@ -301,7 +326,9 @@ final class GlobalHotkeyMonitorTests: XCTestCase {
         let source = FakeHotkeyEventSource()
         let monitor = GlobalHotkeyMonitor(
             source: source,
-            shortcuts: AppSettings.defaults.shortcuts
+            shortcuts: [
+                .changeMode: Shortcut(key: .k, modifiers: [.command, .shift])
+            ]
         )
         var actions = monitor.actionEvents.makeAsyncIterator()
         var captures = monitor.shortcutCaptures.makeAsyncIterator()
@@ -355,8 +382,10 @@ final class GlobalHotkeyMonitorTests: XCTestCase {
 final class CGEventHotkeyMonitorTests: XCTestCase {
     func testFreshPressReconcilesAReleaseMissedWhileTapWasDisabled() throws {
         let source = CGEventHotkeyMonitor(hasListeningAccess: { false })
-        let event = try XCTUnwrap(CGEvent(keyboardEventSource: nil, virtualKey: 40, keyDown: true))
-        event.flags = [.maskCommand, .maskShift]
+        let event = try XCTUnwrap(
+            CGEvent(keyboardEventSource: nil, virtualKey: 46, keyDown: true)
+        )
+        event.flags = [.maskControl, .maskCommand]
         XCTAssertTrue(source.receive(type: .keyDown, event: event))
         event.flags = []
         XCTAssertFalse(source.receive(type: .keyDown, event: event))
@@ -365,8 +394,10 @@ final class CGEventHotkeyMonitorTests: XCTestCase {
 
     func testStopDiscardsAnUnreleasedCommandBeforeRecovery() throws {
         let source = CGEventHotkeyMonitor(hasListeningAccess: { false })
-        let event = try XCTUnwrap(CGEvent(keyboardEventSource: nil, virtualKey: 40, keyDown: true))
-        event.flags = [.maskCommand, .maskShift]
+        let event = try XCTUnwrap(
+            CGEvent(keyboardEventSource: nil, virtualKey: 46, keyDown: true)
+        )
+        event.flags = [.maskControl, .maskCommand]
         XCTAssertTrue(source.receive(type: .keyDown, event: event))
         source.stop()
         event.flags = []
@@ -377,10 +408,12 @@ final class CGEventHotkeyMonitorTests: XCTestCase {
 
     func testRepeatCannotStartConsumingAPressThatWasPassedThrough() throws {
         let source = CGEventHotkeyMonitor(hasListeningAccess: { false })
-        let event = try XCTUnwrap(CGEvent(keyboardEventSource: nil, virtualKey: 40, keyDown: true))
+        let event = try XCTUnwrap(
+            CGEvent(keyboardEventSource: nil, virtualKey: 46, keyDown: true)
+        )
         event.flags = []
         XCTAssertFalse(source.receive(type: .keyDown, event: event))
-        event.flags = [.maskCommand, .maskShift]
+        event.flags = [.maskControl, .maskCommand]
         event.setIntegerValueField(.keyboardEventAutorepeat, value: 1)
         XCTAssertFalse(source.receive(type: .keyDown, event: event))
         XCTAssertFalse(source.receive(type: .keyUp, event: event))
@@ -397,8 +430,10 @@ final class CGEventHotkeyMonitorTests: XCTestCase {
     func testReassignedShortcutConsumesNewBindingAndFinishesOldRelease() async throws {
         let source = CGEventHotkeyMonitor(hasListeningAccess: { false })
         let monitor = GlobalHotkeyMonitor(source: source, shortcuts: AppSettings.defaults.shortcuts)
-        let event = try XCTUnwrap(CGEvent(keyboardEventSource: nil, virtualKey: 40, keyDown: true))
-        event.flags = [.maskCommand, .maskShift]
+        let event = try XCTUnwrap(
+            CGEvent(keyboardEventSource: nil, virtualKey: 46, keyDown: true)
+        )
+        event.flags = [.maskControl, .maskCommand]
         XCTAssertTrue(source.receive(type: .keyDown, event: event))
         await monitor.updateShortcuts([.changeMode: Shortcut(key: Shortcut.Key(35), modifiers: [.control])])
         XCTAssertTrue(source.receive(type: .keyUp, event: event))
@@ -410,16 +445,18 @@ final class CGEventHotkeyMonitorTests: XCTestCase {
         XCTAssertTrue(source.receive(type: .keyUp, event: event))
         await monitor.resetShortcutsToDefaults()
         XCTAssertFalse(source.receive(type: .keyDown, event: event))
-        event.setIntegerValueField(.keyboardEventKeycode, value: 40)
-        event.flags = [.maskCommand, .maskShift]
+        event.setIntegerValueField(.keyboardEventKeycode, value: 46)
+        event.flags = [.maskControl, .maskCommand]
         XCTAssertTrue(source.receive(type: .keyDown, event: event))
     }
 
     func testInitialShortcutConfigurationReplacesDefaults() throws {
         let source = CGEventHotkeyMonitor(hasListeningAccess: { false })
         let monitor = GlobalHotkeyMonitor(source: source, shortcuts: [:])
-        let event = try XCTUnwrap(CGEvent(keyboardEventSource: nil, virtualKey: 40, keyDown: true))
-        event.flags = [.maskCommand, .maskShift]
+        let event = try XCTUnwrap(
+            CGEvent(keyboardEventSource: nil, virtualKey: 46, keyDown: true)
+        )
+        event.flags = [.maskControl, .maskCommand]
         withExtendedLifetime(monitor) {
             XCTAssertFalse(source.receive(type: .keyDown, event: event))
         }
@@ -432,11 +469,16 @@ final class CGEventHotkeyMonitorTests: XCTestCase {
     func testModeShortcutIsConsumedButStillPublished() async throws {
         let source = CGEventHotkeyMonitor(hasListeningAccess: { false })
         var events = source.events.makeAsyncIterator()
-        let event = try XCTUnwrap(CGEvent(keyboardEventSource: nil, virtualKey: 40, keyDown: true))
-        event.flags = [.maskCommand, .maskShift]
+        let event = try XCTUnwrap(
+            CGEvent(keyboardEventSource: nil, virtualKey: 46, keyDown: true)
+        )
+        event.flags = [.maskControl, .maskCommand]
         XCTAssertTrue(source.receive(type: .keyDown, event: event))
         let received = await events.next()
-        XCTAssertEqual(received, .keyDown(keyCode: 40, flags: [.command, .shift], isRepeat: false))
+        XCTAssertEqual(
+            received,
+            .keyDown(keyCode: 46, flags: [.control, .command], isRepeat: false)
+        )
         event.setIntegerValueField(.keyboardEventAutorepeat, value: 1)
         XCTAssertTrue(source.receive(type: .keyDown, event: event))
         event.flags = []

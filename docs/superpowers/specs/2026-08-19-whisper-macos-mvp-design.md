@@ -11,7 +11,7 @@ Whisper is a personal macOS menu-bar utility that turns speech into text in any 
 The MVP is successful when the user can:
 
 1. Hold Right Option, dictate in Russian or English, release the key, and receive polished text in the previously focused field.
-2. Switch the active mode with Command-Shift-K.
+2. Switch the active mode with Control-Command-M.
 3. Create any number of custom modes with persistent natural-language instructions, including a Russian-to-English mode.
 4. Start and stop a call recording with Command-Shift-R.
 5. Recover a complete recording after up to three hours, even if network processing fails.
@@ -161,7 +161,7 @@ Escape cancels recording. Empty or silent recordings do not call OpenAI.
 
 ### Mode switcher
 
-Command-Shift-K opens a compact keyboard-first panel. Search is focused. Arrow keys change selection, Return activates, and Escape closes. Closing the panel restores focus to the application active before the panel opened.
+Control-Command-M opens a compact keyboard-first panel. Search is focused. Arrow keys change selection, Return activates, and Escape closes. Closing the panel restores focus to the application active before the panel opened.
 
 ## Call recording behavior
 

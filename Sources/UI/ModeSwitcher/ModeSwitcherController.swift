@@ -11,6 +11,13 @@ protocol ModeSwitcherPanelPresenting: AnyObject {
 }
 
 @MainActor
+protocol ApplicationActivating: AnyObject {
+    func activate(ignoringOtherApps: Bool)
+}
+
+extension NSApplication: ApplicationActivating {}
+
+@MainActor
 protocol ApplicationRestoring: AnyObject {
     @discardableResult
     func restoreActivation() -> Bool
@@ -26,8 +33,10 @@ extension NSRunningApplication: ApplicationRestoring {
 @MainActor
 final class ModeSwitcherPanel: NSPanel, ModeSwitcherPanelPresenting {
     private static let contentSize = NSSize(width: 560, height: 420)
+    private let application: any ApplicationActivating
 
-    init() {
+    init(application: any ApplicationActivating = NSApplication.shared) {
+        self.application = application
         super.init(
             contentRect: NSRect(origin: .zero, size: Self.contentSize),
             styleMask: [.titled, .fullSizeContentView],
@@ -55,19 +64,19 @@ final class ModeSwitcherPanel: NSPanel, ModeSwitcherPanelPresenting {
         contentView?.layoutSubtreeIfNeeded()
         let visibleFrame = (Self.builtInScreen() ?? NSScreen.main ?? NSScreen.screens.first)?.visibleFrame
         if let visibleFrame { place(in: visibleFrame) }
-        _ = NSRunningApplication.current.activate(options: [.activateAllWindows])
+        orderFrontRegardless()
+        application.activate(ignoringOtherApps: true)
         makeKeyAndOrderFront(nil)
         contentView?.layoutSubtreeIfNeeded()
         if let visibleFrame {
             setFrame(Self.frame(panelSize: frame.size, visibleFrame: visibleFrame), display: true)
         }
-        orderFrontRegardless()
         if let visibleFrame {
             DispatchQueue.main.async { [weak self] in
                 guard let self, isVisible else { return }
                 contentView?.layoutSubtreeIfNeeded()
                 setFrame(Self.frame(panelSize: frame.size, visibleFrame: visibleFrame), display: true)
-                orderFrontRegardless()
+                makeKeyAndOrderFront(nil)
             }
         }
     }

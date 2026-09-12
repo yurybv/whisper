@@ -109,13 +109,16 @@ struct HotkeyStateMachine: Sendable {
 
 struct ShortcutCaptureStateMachine: Sendable {
     private(set) var isCapturing = false
+    private var pendingModifier: Shortcut?
 
     mutating func beginCapture() {
         isCapturing = true
+        pendingModifier = nil
     }
 
     mutating func cancelCapture() {
         isCapturing = false
+        pendingModifier = nil
     }
 
     mutating func consume(_ event: HotkeyEvent) -> Shortcut? {
@@ -126,14 +129,19 @@ struct ShortcutCaptureStateMachine: Sendable {
         let shortcut: Shortcut?
         switch event {
         case let .flagsChanged(keyCode, flags):
-            guard HotkeyStateMachine.modifierKeyCodes.contains(keyCode), !flags.isEmpty else {
+            guard let modifier = Self.modifier(for: keyCode) else {
                 return nil
             }
-            shortcut = Shortcut(key: Shortcut.Key(keyCode), modifiers: flags)
+            if flags.contains(modifier) {
+                pendingModifier = Shortcut(key: Shortcut.Key(keyCode), modifiers: flags)
+                return nil
+            }
+            shortcut = pendingModifier
         case let .keyDown(keyCode, flags, isRepeat):
             guard !isRepeat else {
                 return nil
             }
+            pendingModifier = nil
             shortcut = Shortcut(key: Shortcut.Key(keyCode), modifiers: flags)
         case .keyUp:
             return nil
@@ -141,7 +149,18 @@ struct ShortcutCaptureStateMachine: Sendable {
 
         if shortcut != nil {
             isCapturing = false
+            pendingModifier = nil
         }
         return shortcut
+    }
+
+    private static func modifier(for keyCode: Int) -> Shortcut.Modifiers? {
+        switch keyCode {
+        case 54, 55: .command
+        case 56, 60: .shift
+        case 58, 61: .option
+        case 59, 62: .control
+        default: nil
+        }
     }
 }

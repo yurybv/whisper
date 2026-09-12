@@ -1,6 +1,7 @@
 import AppKit
 import CoreGraphics
 import Foundation
+import SwiftUI
 
 struct AppRuntimeDictationPresentation: Equatable, Sendable {
     let menuState: MenuBarState
@@ -49,10 +50,15 @@ final class AppRuntime {
     private let coordinator: DictationCoordinator
     private let hotkeys: GlobalHotkeyMonitor
     private let hudController = DictationHUDController()
-    private let mainWindowController: MainWindowController
+    private var mainWindowController: MainWindowController!
     private let onboarding: OnboardingModel
+    private let settingsStore: AppSettingsStore
+    private let homeModel: HomeModel
+    private let modesModel: ModesModel
+    private let settingsModel: SettingsModel
 
     private var hotkeyTask: Task<Void, Never>?
+    private var shortcutCaptureTask: Task<Void, Never>?
     private var stateTask: Task<Void, Never>?
     private var levelTask: Task<Void, Never>?
     private var shortcutFailure: String?
@@ -68,9 +74,10 @@ final class AppRuntime {
     init() throws {
         let store = CachingSecureStore(backingStore: KeychainSecureStore())
         let openAI = OpenAIClient(secureStore: store)
-        onboarding = OnboardingModel(store: store, permissions: PermissionService(), defaults: .standard,
+        let permissions = PermissionService()
+        onboarding = OnboardingModel(store: store, permissions: permissions, defaults: .standard,
                                      testConnection: { try await openAI.testConnection() })
-        mainWindowController = MainWindowController(onboarding: onboarding)
+        settingsStore = AppSettingsStore()
         let paths = try AppPaths()
         persistence = try PersistenceController()
         modeRepository = ModeRepository(context: persistence.container.mainContext)
@@ -89,7 +96,22 @@ final class AppRuntime {
         )
         hotkeys = GlobalHotkeyMonitor(
             source: CGEventHotkeyMonitor(),
-            shortcuts: AppSettings.defaults.shortcuts
+            shortcuts: settingsStore.shortcuts
+        )
+        homeModel = HomeModel(historyRepository: history)
+        modesModel = try ModesModel(repository: modeRepository)
+        settingsModel = SettingsModel(
+            secureStore: store,
+            settingsStore: settingsStore,
+            permissionService: permissions,
+            launchAtLoginService: LaunchAtLoginService(),
+            testConnection: { try await openAI.testConnection() },
+            beginShortcutCapture: { [hotkeys] action in
+                Task { await hotkeys.beginShortcutCapture(for: action) }
+            },
+            shortcutsChanged: { [hotkeys] shortcuts in
+                Task { await hotkeys.updateShortcuts(shortcuts) }
+            }
         )
 
         modeSwitcherController = ModeSwitcherController(
@@ -104,6 +126,7 @@ final class AppRuntime {
                 try modeRepository.activate(id)
             },
             onModeActivated: { [weak self] mode in
+                self?.modesModel.reloadForPresentation()
                 self?.menuBarController.setModeName(mode.name)
             },
             onClosed: { [weak self] in
@@ -136,6 +159,9 @@ final class AppRuntime {
             onOpenMainWindow: { [weak self] in self?.openMainWindow() },
             onQuit: { NSApp.terminate(nil) }
         )
+        modesModel.setActiveModeChanged { [weak self] mode in
+            self?.menuBarController.setModeName(mode.name)
+        }
         hotkeyRouter = HotkeyActionRouter(
             onBegin: { [weak self] in
                 guard let self else { return }
@@ -152,6 +178,22 @@ final class AppRuntime {
                 return await self.cancelTopFeature()
             }
         )
+        mainWindowController = MainWindowController { [weak self, onboarding, homeModel, modesModel, settingsModel] relaunch in
+            AnyView(
+                AppRootView(
+                    onboarding: onboarding,
+                    home: homeModel,
+                    modes: modesModel,
+                    settings: settingsModel,
+                    relaunch: relaunch,
+                    startDictation: { [weak self] in
+                        self?.startDictationFromHome()
+                    },
+                    changeMode: { [weak self] in self?.showModeSwitcher() },
+                    recordMeeting: { [weak self] in self?.showMeetingStub() }
+                )
+            )
+        }
     }
 
     func start() {
@@ -164,6 +206,14 @@ final class AppRuntime {
             for await event in hotkeys.actionEvents {
                 guard !Task.isCancelled else { return }
                 await hotkeyRouter.handle(event)
+            }
+        }
+
+        shortcutCaptureTask = Task { [weak self] in
+            guard let self else { return }
+            for await captured in hotkeys.shortcutCaptures {
+                guard !Task.isCancelled else { return }
+                settingsModel.acceptCapturedShortcut(captured)
             }
         }
 
@@ -191,9 +241,11 @@ final class AppRuntime {
 
     func stop() {
         hotkeyTask?.cancel()
+        shortcutCaptureTask?.cancel()
         stateTask?.cancel()
         levelTask?.cancel()
         hotkeyTask = nil
+        shortcutCaptureTask = nil
         stateTask = nil
         levelTask = nil
         hotkeyRouter.stop()
@@ -203,6 +255,7 @@ final class AppRuntime {
 
     func refreshPermissions() {
         onboarding.refreshPermissions()
+        settingsModel.refresh()
         Task { [weak self] in await self?.refreshHotkeys() }
     }
 
@@ -265,6 +318,15 @@ final class AppRuntime {
         }
     }
 
+    private func startDictationFromHome() {
+        mainWindowController.hide()
+        NSApp.hide(nil)
+        Task { [weak self] in
+            try? await Task.sleep(for: .milliseconds(150))
+            await self?.toggleDictation()
+        }
+    }
+
     private func beginDictation() async {
         guard !AppRuntimeDictationPresentation(state: lastState).blocksNewDictation else { return }
         onboarding.refreshPermissions()
@@ -275,7 +337,7 @@ final class AppRuntime {
         }
         dictationScreen = TargetScreenResolver.screenForFrontmostApplication()
         do {
-            try await coordinator.begin()
+            try await coordinator.begin(deviceID: settingsStore.selectedMicrophoneID)
             await hotkeys.setFeatureActive(true)
         } catch {
             menuBarController.render(
@@ -346,6 +408,9 @@ final class AppRuntime {
 
     private func render(_ state: DictationState) {
         lastState = state
+        if case .completed = state {
+            homeModel.refresh()
+        }
         hudController.render(state: state, level: lastLevel, screen: dictationScreen)
         if case let .recording(modeName) = state {
             menuBarController.setModeName(modeName)
@@ -363,8 +428,14 @@ final class AppRuntime {
 enum TargetScreenResolver {
     @MainActor
     static func screenForFrontmostApplication() -> NSScreen? {
-        guard let processIdentifier = NSWorkspace.shared.frontmostApplication?.processIdentifier,
-              let windowInfo = CGWindowListCopyWindowInfo(
+        guard let processIdentifier = NSWorkspace.shared.frontmostApplication?.processIdentifier else {
+            return NSScreen.main ?? NSScreen.screens.first
+        }
+        return screen(for: processIdentifier)
+    }
+
+    static func screen(for processIdentifier: pid_t) -> NSScreen? {
+        guard let windowInfo = CGWindowListCopyWindowInfo(
                 [.optionOnScreenOnly, .excludeDesktopElements],
                 kCGNullWindowID
               ) as? [[String: Any]] else {

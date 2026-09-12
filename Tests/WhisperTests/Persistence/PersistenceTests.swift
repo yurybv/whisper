@@ -206,6 +206,45 @@ final class PersistenceTests: XCTestCase {
     }
 
     @MainActor
+    func testRecentHistoryCombinesKindsNewestFirstAndHonorsLimit() throws {
+        let controller = try PersistenceController(inMemory: true)
+        let repository = HistoryRepository(context: controller.container.mainContext)
+        var expectedIDs: [UUID] = []
+
+        for offset in 0..<4 {
+            let id = try repository.createDictation(
+                DictationDraft(
+                    createdAt: Date(timeIntervalSinceReferenceDate: TimeInterval(10 + offset)),
+                    modeNameSnapshot: "Default",
+                    modeInstructionsSnapshot: ModeDefinition.defaultInstructions,
+                    originalText: "Original \(offset)",
+                    outputText: "Output \(offset)",
+                    status: .ready
+                )
+            )
+            expectedIDs.append(id)
+        }
+        for offset in 0..<3 {
+            let id = try repository.createMeeting(
+                MeetingDraft(
+                    title: "Meeting \(offset)",
+                    startedAt: Date(timeIntervalSinceReferenceDate: TimeInterval(20 + offset)),
+                    status: .ready,
+                    instructionsSnapshot: "Summarize."
+                )
+            )
+            expectedIDs.append(id)
+        }
+
+        let recent = try repository.recentHistory(limit: 5)
+
+        XCTAssertEqual(recent.map(\.id), Array(expectedIDs.reversed().prefix(5)))
+        XCTAssertEqual(recent.first?.kind, .recording)
+        XCTAssertEqual(recent.first?.title, "Meeting 2")
+        XCTAssertEqual(recent.last?.kind, .dictation)
+    }
+
+    @MainActor
     func testReplacesSegmentsAndCascadesWhenMeetingIsDeleted() throws {
         let controller = try PersistenceController(inMemory: true)
         let repository = HistoryRepository(context: controller.container.mainContext)

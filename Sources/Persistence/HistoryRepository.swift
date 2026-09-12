@@ -1,6 +1,20 @@
 import Foundation
 import SwiftData
 
+enum RecentHistoryKind: Equatable, Sendable {
+    case dictation
+    case recording
+}
+
+struct RecentHistoryItem: Identifiable, Equatable, Sendable {
+    let id: UUID
+    let kind: RecentHistoryKind
+    let date: Date
+    let title: String
+    let preview: String
+    let status: String
+}
+
 @MainActor
 protocol HistoryRepositoryProtocol {
     func createDictation(_ draft: DictationDraft) throws -> UUID
@@ -81,6 +95,48 @@ final class HistoryRepository: HistoryRepositoryProtocol {
         return try context.fetch(descriptor)
             .compactMap(\.snapshot)
             .filter { $0.status.isIncomplete }
+    }
+
+    func recentHistory(limit: Int) throws -> [RecentHistoryItem] {
+        guard limit > 0 else { return [] }
+        var dictationDescriptor = FetchDescriptor<DictationEntity>(
+            sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+        )
+        dictationDescriptor.fetchLimit = limit
+        var meetingDescriptor = FetchDescriptor<MeetingEntity>(
+            sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
+        )
+        meetingDescriptor.fetchLimit = limit
+
+        let dictations = try context.fetch(dictationDescriptor)
+            .compactMap(\.snapshot)
+            .map {
+                RecentHistoryItem(
+                    id: $0.id,
+                    kind: .dictation,
+                    date: $0.createdAt,
+                    title: $0.modeNameSnapshot,
+                    preview: $0.outputText.isEmpty ? $0.originalText : $0.outputText,
+                    status: $0.status.rawValue.capitalized
+                )
+            }
+        let meetings = try context.fetch(meetingDescriptor)
+            .compactMap(\.snapshot)
+            .map {
+                RecentHistoryItem(
+                    id: $0.id,
+                    kind: .recording,
+                    date: $0.startedAt,
+                    title: $0.title,
+                    preview: $0.processedText,
+                    status: $0.status.rawValue.capitalized
+                )
+            }
+        return Array(
+            (dictations + meetings)
+                .sorted { $0.date > $1.date }
+                .prefix(max(0, limit))
+        )
     }
 
     func deleteDictation(id: UUID) throws {

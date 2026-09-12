@@ -201,9 +201,24 @@ final class HotkeyStateMachineTests: XCTestCase {
         var capture = ShortcutCaptureStateMachine()
         capture.beginCapture()
 
+        XCTAssertNil(capture.consume(.flagsChanged(keyCode: 61, flags: [.option])))
+        XCTAssertTrue(capture.isCapturing)
         XCTAssertEqual(
-            capture.consume(.flagsChanged(keyCode: 61, flags: [.option])),
+            capture.consume(.flagsChanged(keyCode: 61, flags: [])),
             Shortcut(key: .rightOption, modifiers: [.option])
+        )
+        XCTAssertFalse(capture.isCapturing)
+    }
+
+    func testShortcutCaptureWaitsForChordAfterModifierPress() {
+        var capture = ShortcutCaptureStateMachine()
+        capture.beginCapture()
+
+        XCTAssertNil(capture.consume(.flagsChanged(keyCode: 59, flags: [.control])))
+        XCTAssertNil(capture.consume(.flagsChanged(keyCode: 55, flags: [.control, .command])))
+        XCTAssertEqual(
+            capture.consume(.keyDown(keyCode: 40, flags: [.control, .command], isRepeat: false)),
+            Shortcut(key: .k, modifiers: [.control, .command])
         )
         XCTAssertFalse(capture.isCapturing)
     }

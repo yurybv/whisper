@@ -69,7 +69,7 @@ Goal: make the approved interface usable for first launch, modes, configuration,
 
 Entry gate: authorized by `WH-M2-007`; begin with `WH-M3-001`.
 
-Progress: `WH-M3-001` completed on 2026-09-12. Live permission grant/relaunch recovery, stale Input Monitoring recovery, active command consumption, and built-in-display placement are verified. The Finder-conflicting Command–Shift–K default was replaced with Control–Command–M. Physical input opened the keyboard-ready `560×452` switcher centered on the built-in display without Finder or Rectangle reacting; Escape closed it and restored an external application. The final scheme passes 171 unit tests and 4 UI tests. `WH-M3-002` is now ready.
+Progress: `WH-M3-001` and `WH-M3-002` completed on 2026-09-12. The native five-destination shell now includes functional Home, Modes, and Settings screens, persistent custom-mode CRUD, settings/service state, focused-target-safe Home dictation startup, and isolated UI fixtures. Secret-free screenshots match the approved prototype, independent review found no remaining important issue, and the complete scheme passes 193 unit tests plus 6 UI tests. `WH-M3-003` is now ready for the dedicated UI-state, keyboard, and VoiceOver audit.
 
 Deliverables:
 

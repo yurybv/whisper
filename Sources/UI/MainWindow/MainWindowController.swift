@@ -3,11 +3,13 @@ import SwiftUI
 
 @MainActor
 final class MainWindowController: NSObject, NSWindowDelegate {
-    private var window: NSWindow?
-    private let onboarding: OnboardingModel
+    typealias RootViewBuilder = (@escaping () -> Void) -> AnyView
 
-    init(onboarding: OnboardingModel) {
-        self.onboarding = onboarding
+    private var window: NSWindow?
+    private let rootViewBuilder: RootViewBuilder
+
+    init(rootViewBuilder: @escaping RootViewBuilder) {
+        self.rootViewBuilder = rootViewBuilder
         super.init()
     }
 
@@ -48,7 +50,7 @@ final class MainWindowController: NSObject, NSWindowDelegate {
         window.center()
         window.delegate = self
         window.contentViewController = NSHostingController(
-            rootView: AppRootView(onboarding: onboarding, relaunch: { [weak self] in self?.relaunch() })
+            rootView: rootViewBuilder { [weak self] in self?.relaunch() }
         )
         return window
     }

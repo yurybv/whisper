@@ -28,7 +28,7 @@
 
 - **Title:** Build Home, Modes, and Settings screens
 - **Type:** feature
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Implement the five-item native shell's Home, Modes, and Settings destinations, custom-mode CRUD, API key actions, microphone choice, shortcuts, launch behavior, sound, retention, and permissions.
 - **Out of scope:** Recordings and History content; statistics; themes; model library; vocabulary.
@@ -38,12 +38,15 @@
 - **Expected files:** `Sources/UI/Home/**`, `Sources/UI/Modes/**`, `Sources/UI/Settings/**`, navigation shell and UI tests.
 - **Source:** implementation plan Task 11 and approved Open Design prototype.
 - **Blockers:** None.
+- **Implementation (2026-09-12):** Added the five-destination native shell; readiness-driven Home with three primary actions, status cards, shortcuts, and the five newest local history items; protected Default mode plus persistent custom-mode create, duplicate, rename, activate, and delete flows; and Settings for masked Keychain actions, live connection state, microphone selection, shortcut recording, launch behavior, sounds, retention, permissions, and setup recovery. Recordings and History remain explicit future-milestone placeholders.
+- **Reliability and privacy:** UI tests use isolated in-memory persistence, defaults, permissions, launch services, and secure storage without production Keychain or network access. Home restores the immediately previous application before focused-target capture. Keychain failures stay recoverable and secret-safe, stale connection tests cannot overwrite newer key state, partial shortcut preferences merge over approved defaults, and mode-switcher activation refreshes every main-window surface.
+- **Verification:** The complete Xcode scheme passed 199 tests (193 unit and 6 UI), zero failures, on 2026-09-12. Required build, ad-hoc signature verification, XcodeGen regeneration, `git diff --check`, focused red/green regressions, and independent read-only review passed. Secret-free Home, Modes, and Settings screenshots were compared with the approved prototype. See [QA evidence](../../testing/evidence/WH-M3-002/qa.md).
 
 ## WH-M3-003
 
 - **Title:** Verify UI states, keyboard access, and VoiceOver
 - **Type:** testing
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Add and verify loading, empty, populated, failed, saving, conflict, disabled, and permission states; audit focus order, VoiceOver labels, target size, status announcements, and reduced motion.
 - **Out of scope:** Visual redesign and post-MVP localization.
@@ -52,7 +55,7 @@
 - **Dependencies:** WH-M3-002.
 - **Expected files:** UI tests, accessibility helpers, `docs/testing/evidence/WH-M3-003/**`.
 - **Source:** spec UI states and accessibility section.
-- **Blockers:** WH-M3-002.
+- **Blockers:** None.
 
 ## WH-M3-004
 

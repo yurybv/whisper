@@ -1,5 +1,6 @@
 import XCTest
 
+@MainActor
 final class OnboardingUITests: XCTestCase {
     func testFirstLaunchCompletesFourStepsAndCanPreviewFromSettings() {
         let app = XCUIApplication()
@@ -19,7 +20,7 @@ final class OnboardingUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Control-Command-M"].exists)
         XCTAssertTrue(app.staticTexts["Command-Shift-R"].exists)
         app.buttons["Open Home"].click()
-        XCTAssertTrue(app.staticTexts["Welcome to Whisper"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["Ready to dictate"].waitForExistence(timeout: 2))
         app.buttons["Settings"].click()
         app.buttons["Preview Setup"].click()
         XCTAssertTrue(key.waitForExistence(timeout: 2))
@@ -55,6 +56,6 @@ final class OnboardingUITests: XCTestCase {
         app.buttons["Repair Screen Recording"].click()
         XCTAssertTrue(app.buttons["Relaunch Whisper"].waitForExistence(timeout: 2))
         app.buttons["Open Home"].click()
-        XCTAssertTrue(app.staticTexts["Welcome to Whisper"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["Dictation needs microphone access"].waitForExistence(timeout: 2))
     }
 }

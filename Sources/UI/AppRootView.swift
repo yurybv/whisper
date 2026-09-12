@@ -2,9 +2,36 @@ import SwiftUI
 
 struct AppRootView: View {
     @Bindable var onboarding: OnboardingModel
+    @Bindable var home: HomeModel
+    @Bindable var modes: ModesModel
+    @Bindable var settings: SettingsModel
     let relaunch: () -> Void
-    @State private var destination = "Home"
-    private let destinations = ["Home", "Modes", "Recordings", "History", "Settings"]
+    let startDictation: () -> Void
+    let changeMode: () -> Void
+    let recordMeeting: () -> Void
+    @State private var destination: SidebarDestination = .home
+
+    init(
+        onboarding: OnboardingModel,
+        home: HomeModel,
+        modes: ModesModel,
+        settings: SettingsModel,
+        initialDestination: SidebarDestination = .home,
+        relaunch: @escaping () -> Void,
+        startDictation: @escaping () -> Void,
+        changeMode: @escaping () -> Void,
+        recordMeeting: @escaping () -> Void
+    ) {
+        self.onboarding = onboarding
+        self.home = home
+        self.modes = modes
+        self.settings = settings
+        self.relaunch = relaunch
+        self.startDictation = startDictation
+        self.changeMode = changeMode
+        self.recordMeeting = recordMeeting
+        _destination = State(initialValue: initialDestination)
+    }
 
     var body: some View {
         Group {
@@ -13,53 +40,110 @@ struct AppRootView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             } else {
-                HStack(spacing: 0) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Whisper").font(.title2.bold()).padding(.bottom, 20)
-                        ForEach(destinations, id: \.self) { item in
-                            Button { destination = item } label: {
-                                Text(item).frame(maxWidth: .infinity, alignment: .leading).padding(12)
-                                    .background(destination == item ? DesignTokens.selected : .clear)
-                                    .clipShape(RoundedRectangle(cornerRadius: DesignTokens.controlRadius))
+                NavigationSplitView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Label("Whisper", systemImage: "waveform")
+                            .font(.system(size: 18, weight: .bold))
+                            .padding(.horizontal, DesignTokens.space16)
+                            .padding(.vertical, DesignTokens.space24)
+                        VStack(spacing: DesignTokens.space4) {
+                            ForEach(SidebarDestination.allCases) { item in
+                                Button {
+                                    destination = item
+                                } label: {
+                                    Label(item.rawValue, systemImage: item.systemImage)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.horizontal, DesignTokens.space12)
+                                        .frame(height: 36)
+                                        .background(destination == item ? DesignTokens.selected : .clear)
+                                        .clipShape(RoundedRectangle(cornerRadius: DesignTokens.controlRadius))
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityIdentifier(item.rawValue)
+                                .accessibilityAddTraits(destination == item ? .isSelected : [])
                             }
-                            .buttonStyle(.plain)
-                            .accessibilityAddTraits(destination == item ? .isSelected : [])
                         }
+                        .padding(.horizontal, DesignTokens.space8)
                         Spacer()
                     }
-                    .padding(20).frame(width: DesignTokens.sidebarWidth)
                     .background(DesignTokens.sidebar)
-                    Divider()
-                    VStack(alignment: .leading, spacing: 24) {
-                        Text(destination).font(.largeTitle.weight(.semibold))
-                        if destination == "Settings" {
-                            Text("Setup and permissions").font(.headline)
-                            Button("Preview Setup") { onboarding.presentSetup(reset: false) }
-                            Button("Reset Setup") { onboarding.presentSetup(reset: true) }
-                            ForEach(PermissionKind.allCases, id: \.self) { kind in
-                                HStack {
-                                    Text("\(kind.settingsTitle): \(onboarding.permissions[kind].setupLabel)")
-                                    Button("Open \(kind.settingsTitle) Settings") { onboarding.openSettings(for: kind) }
-                                }
-                            }
-                        } else if destination == "Home" {
-                            Text("Welcome to Whisper").font(.title2)
-                            Text("Use the menu bar to dictate or change mode. Complete or revisit setup from Settings.")
-                        } else {
-                            Text("\(destination) is not available yet.")
-                                .foregroundStyle(DesignTokens.secondaryText)
+                    .navigationSplitViewColumnWidth(
+                        min: DesignTokens.sidebarWidth,
+                        ideal: DesignTokens.sidebarWidth,
+                        max: DesignTokens.sidebarWidth
+                    )
+                } detail: {
+                    destinationView
+                }
+                .navigationSplitViewStyle(.balanced)
+                .toolbar {
+                    ToolbarItem {
+                        HStack(spacing: DesignTokens.space4) {
+                            Image(systemName: "mic")
+                            Text(settings.selectedMicrophoneName)
                         }
-                        Spacer()
-                    }.padding(40).frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                            .font(.system(size: 11))
+                            .foregroundStyle(DesignTokens.secondaryText)
+                            .help("Current microphone")
+                    }
                 }
             }
         }
         .foregroundStyle(DesignTokens.primaryText)
         .background(DesignTokens.canvas)
         .preferredColorScheme(.dark)
-        .onChange(of: onboarding.completionGeneration) { destination = "Home" }
+        .onChange(of: onboarding.completionGeneration) {
+            settings.refresh()
+            destination = .home
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             onboarding.refreshPermissions()
+            settings.refresh()
         }
+    }
+
+    @ViewBuilder
+    private var destinationView: some View {
+        switch destination {
+        case .home:
+            HomeView(
+                home: home,
+                modes: modes,
+                settings: settings,
+                startDictation: startDictation,
+                changeMode: changeMode,
+                recordMeeting: recordMeeting
+            )
+        case .modes:
+            ModesListView(model: modes)
+        case .recordings:
+            futureDestination(
+                title: "Recordings",
+                symbol: "record.circle",
+                message: "Durable meeting recording arrives in Milestone 4."
+            )
+        case .history:
+            futureDestination(
+                title: "History",
+                symbol: "clock.arrow.circlepath",
+                message: "Complete dictation and recording history arrives in Milestone 5."
+            )
+        case .settings:
+            SettingsView(
+                model: settings,
+                previewSetup: { onboarding.presentSetup(reset: false) },
+                resetSetup: { onboarding.presentSetup(reset: true) }
+            )
+        }
+    }
+
+    private func futureDestination(title: String, symbol: String, message: String) -> some View {
+        ContentUnavailableView(
+            title,
+            systemImage: symbol,
+            description: Text(message)
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(DesignTokens.canvas)
     }
 }

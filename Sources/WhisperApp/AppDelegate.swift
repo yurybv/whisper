@@ -3,7 +3,9 @@ import AppKit
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var runtime: AppRuntime?
     private var testModeSwitcher: ModeSwitcherController?
-    private var testWindow: MainWindowController?
+#if DEBUG
+    private var appTestEnvironment: AppUITestEnvironment?
+#endif
     private var fallbackMenuBar: MenuBarController?
 
     func applicationWillFinishLaunching(_ notification: Notification) {
@@ -33,10 +35,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 DispatchQueue.main.async { try? switcher.show() }
                 return
             }
-            let model = OnboardingTestEnvironment.makeModel(arguments: ProcessInfo.processInfo.arguments)
-            let window = MainWindowController(onboarding: model)
-            testWindow = window
-            window.show()
+            do {
+                let environment = try AppUITestEnvironment(arguments: ProcessInfo.processInfo.arguments)
+                appTestEnvironment = environment
+                environment.window.show()
+            } catch {
+                assertionFailure("Could not create isolated UI-test environment: \(error.localizedDescription)")
+            }
             return
         }
 #endif

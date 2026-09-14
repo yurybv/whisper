@@ -63,7 +63,7 @@
 
 - **Title:** Review main application experience
 - **Type:** review
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Compare implemented shell to the approved prototype, verify mode/settings behavior, permission recovery, accessibility evidence, and readiness for meeting capture.
 - **Out of scope:** Meeting feature code.
@@ -73,3 +73,4 @@
 - **Expected files:** `docs/implementation/reviews/m3-review.md`, backlog updates.
 - **Source:** roadmap Milestone 3.
 - **Blockers:** None.
+- **Review (2026-09-14):** The five-route shell, onboarding exclusion from persistent navigation, mode/settings behavior, permission recovery, accessibility evidence, visual evidence, privacy boundaries, and Milestone 4 architecture passed [the Milestone 3 review](../reviews/m3-review.md). The mode-switcher checks wait for row appearance and palette disappearance instead of sampling immediate state. The final complete scheme passed 204 tests with zero failures or skips, and the app build, ad-hoc signature verification, UI-test compilation, privacy scans, and `git diff --check` pass. Milestone 4 is authorized and `WH-M4-001` is ready.

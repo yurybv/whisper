@@ -19,4 +19,4 @@ After setup, **Settings → Preview Setup** reopens the flow without clearing co
 
 Automated onboarding, main-window, mode CRUD, and mode-switcher UI tests use DEBUG-only `--ui-testing` fixtures, without Keychain, user databases, permission prompts or OpenAI requests. Unit tests use protocol fakes. The scheme includes both unit and UI targets.
 
-Task status and verification evidence: [local backlog](docs/implementation/task-backlog.md), [onboarding QA](docs/testing/evidence/WH-M3-001/qa.md), [main UI QA](docs/testing/evidence/WH-M3-002/qa.md), [test strategy](docs/testing/test-strategy.md).
+Task status and verification evidence: [local backlog](docs/implementation/task-backlog.md), [onboarding QA](docs/testing/evidence/WH-M3-001/qa.md), [main UI QA](docs/testing/evidence/WH-M3-002/qa.md), [accessibility QA](docs/testing/evidence/WH-M3-003/qa.md), [Milestone 3 review](docs/implementation/reviews/m3-review.md), [test strategy](docs/testing/test-strategy.md).

@@ -1,6 +1,6 @@
 # Whisper MVP Roadmap
 
-Status: Milestones 0, 1, and 2 complete; Milestone 3 authorized on 2026-09-05.
+Status: Milestones 0 through 3 complete; Milestone 4 authorized on 2026-09-14.
 
 ## Principles
 
@@ -69,7 +69,7 @@ Goal: make the approved interface usable for first launch, modes, configuration,
 
 Entry gate: authorized by `WH-M2-007`; begin with `WH-M3-001`.
 
-Progress: `WH-M3-001` and `WH-M3-002` completed on 2026-09-12, and `WH-M3-003` completed on 2026-09-14. The native five-destination shell includes functional Home, Modes, and Settings screens, persistent custom-mode CRUD, settings/service state, focused-target-safe Home dictation startup, 44-point custom navigation/action targets, explicit non-color-only states, and concise AX semantics. Five focused accessibility UI tests, the macOS system audit with documented SwiftUI platform exceptions, the required build, and secret-free minimum-window screenshot/AX inspection pass. `WH-M3-004` is ready for the milestone review and complete-suite gate.
+Progress: `WH-M3-001` through `WH-M3-004` completed on 2026-09-14. The native five-destination shell includes functional Home, Modes, and Settings screens, persistent custom-mode CRUD, settings/service state, focused-target-safe Home dictation startup, 44-point custom navigation/action targets, explicit non-color-only states, and concise AX semantics. The final complete scheme passed 204 tests with zero failures or skips after stabilizing the mode-switcher disappearance checks. See [Milestone 3 review](reviews/m3-review.md).
 
 Deliverables:
 
@@ -79,6 +79,8 @@ Deliverables:
 - keyboard, VoiceOver, focus, empty, error, and permission states.
 
 Exit gate: all non-recording screens pass UI and accessibility QA and `WH-M3-004` is done.
+
+Review: passed on 2026-09-14. `WH-M4-001` is ready.
 
 ## Milestone 4: Durable meeting recording
 

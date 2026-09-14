@@ -1,5 +1,6 @@
 import XCTest
 
+@MainActor
 final class ModeSwitcherUITests: XCTestCase {
     func testKeyboardNavigationActivatesModeAndClosesPalette() {
         let app = XCUIApplication()
@@ -8,12 +9,12 @@ final class ModeSwitcherUITests: XCTestCase {
 
         let search = app.textFields["Search modes"]
         XCTAssertTrue(search.waitForExistence(timeout: 3))
-        XCTAssertTrue(app.buttons["Default"].exists)
+        XCTAssertTrue(app.buttons["Default"].waitForExistence(timeout: 3))
 
         search.typeKey(.downArrow, modifierFlags: [])
         search.typeKey(.return, modifierFlags: [])
 
-        XCTAssertFalse(search.waitForExistence(timeout: 1))
+        XCTAssertTrue(search.waitForNonExistence(timeout: 3))
     }
 
     func testEscapeClosesPaletteWithoutTerminatingUtility() {
@@ -26,7 +27,7 @@ final class ModeSwitcherUITests: XCTestCase {
 
         search.typeKey(.escape, modifierFlags: [])
 
-        XCTAssertFalse(search.waitForExistence(timeout: 1))
+        XCTAssertTrue(search.waitForNonExistence(timeout: 3))
         XCTAssertEqual(app.state, .runningBackground)
     }
 }

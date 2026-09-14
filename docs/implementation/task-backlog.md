@@ -51,13 +51,13 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 | WH-M3-001 | Build onboarding and permission recovery | done | WH-M2-007 |
 | WH-M3-002 | Build Home, Modes, and Settings screens | done | WH-M3-001 |
 | WH-M3-003 | Verify UI states, keyboard access, and VoiceOver | done | WH-M3-002 |
-| WH-M3-004 | Review main application experience | ready | WH-M3-001..003 |
+| WH-M3-004 | Review main application experience | done | WH-M3-001..003 |
 
 ## Milestone 4: Durable meeting recording
 
 | ID | Task | Status | Depends on |
 |---|---|---|---|
-| WH-M4-001 | Capture microphone and system audio with ScreenCaptureKit | blocked | WH-M3-004 |
+| WH-M4-001 | Capture microphone and system audio with ScreenCaptureKit | ready | WH-M3-004 |
 | WH-M4-002 | Export size-bounded long-audio chunks | blocked | WH-M4-001 |
 | WH-M4-003 | Merge diarized chunks into a chronological transcript | blocked | WH-M4-002 |
 | WH-M4-004 | Implement processing, retry, and relaunch recovery | blocked | WH-M4-003 |

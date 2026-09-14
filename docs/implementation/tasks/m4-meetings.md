@@ -4,7 +4,7 @@
 
 - **Title:** Capture microphone and system audio with ScreenCaptureKit
 - **Type:** feature
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Capture Mac system audio and selected microphone simultaneously, write separate durable tracks continuously, expose meters/duration, and finalize safely on stop or source loss.
 - **Out of scope:** Individual remote-speaker tracks, video capture, and live cloud streaming.

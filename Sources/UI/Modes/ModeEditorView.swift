@@ -75,10 +75,12 @@ struct ModeEditorView: View {
                     Label(validationMessage, systemImage: "exclamationmark.triangle")
                         .font(.system(size: 13))
                         .foregroundStyle(DesignTokens.warning)
+                        .accessibilityAddTraits(.updatesFrequently)
                 }
                 if let errorMessage = model.errorMessage {
                     Label(errorMessage, systemImage: "exclamationmark.triangle")
                         .foregroundStyle(DesignTokens.danger)
+                        .accessibilityAddTraits(.updatesFrequently)
                 }
 
                 HStack(spacing: DesignTokens.space12) {
@@ -123,6 +125,6 @@ struct ModeEditorView: View {
             content()
                 .frame(maxWidth: .infinity)
         }
-        .frame(minHeight: 36)
+        .frame(minHeight: 44)
     }
 }

@@ -46,7 +46,7 @@
 
 - **Title:** Verify UI states, keyboard access, and VoiceOver
 - **Type:** testing
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Add and verify loading, empty, populated, failed, saving, conflict, disabled, and permission states; audit focus order, VoiceOver labels, target size, status announcements, and reduced motion.
 - **Out of scope:** Visual redesign and post-MVP localization.
@@ -56,12 +56,14 @@
 - **Expected files:** UI tests, accessibility helpers, `docs/testing/evidence/WH-M3-003/**`.
 - **Source:** spec UI states and accessibility section.
 - **Blockers:** None.
+- **Implementation (2026-09-14):** Added a deterministic accessibility UI suite and isolated fixtures for connection loading/failure, shortcut conflict, denied permissions, and long disabled content. Raised custom navigation and mode-action targets to 44 points; exposed headings, mode selection/state, permissions, current microphone, and changing status messages with concise AX semantics; and removed decorative status symbols from VoiceOver traversal.
+- **Verification:** Five focused UI tests, the macOS action/element/parent-child/description accessibility audit with narrowly documented SwiftUI platform exceptions, the required build, ad-hoc signature verification, and `git diff --check` passed. Screenshot-first inspection covered Home permission/empty state, Modes long/disabled state, Settings failure/conflict state, AX order and values, native field focus, reduced motion, and the `1120 x 760` minimum content size. See [QA evidence](../../testing/evidence/WH-M3-003/qa.md).
 
 ## WH-M3-004
 
 - **Title:** Review main application experience
 - **Type:** review
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Compare implemented shell to the approved prototype, verify mode/settings behavior, permission recovery, accessibility evidence, and readiness for meeting capture.
 - **Out of scope:** Meeting feature code.
@@ -70,4 +72,4 @@
 - **Dependencies:** WH-M3-001, WH-M3-002, WH-M3-003.
 - **Expected files:** `docs/implementation/reviews/m3-review.md`, backlog updates.
 - **Source:** roadmap Milestone 3.
-- **Blockers:** Completion of main UI tasks.
+- **Blockers:** None.

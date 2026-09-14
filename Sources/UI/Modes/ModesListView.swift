@@ -97,6 +97,9 @@ struct ModesListView: View {
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("Mode row \(mode.name)")
+            .accessibilityLabel(mode.name)
+            .accessibilityValue(accessibilityValue(for: mode))
+            .accessibilityAddTraits(model.selectedModeID == mode.id ? .isSelected : [])
 
             Menu {
                 Button("Activate") { model.activateForPresentation(mode.id) }
@@ -111,10 +114,12 @@ struct ModesListView: View {
                 }
             } label: {
                 Image(systemName: "ellipsis")
-                    .frame(width: 28, height: 28)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
-            .menuStyle(.borderlessButton)
-            .fixedSize()
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .frame(width: 44, height: 44)
             .accessibilityLabel("Actions for \(mode.name)")
         }
         .padding(DesignTokens.space12)
@@ -131,5 +136,15 @@ struct ModesListView: View {
         let language = ModeInputLanguage(languageHint: mode.languageHint).label
         if mode.id == model.activeModeID { return "Active · \(language) input" }
         return "\(language) input · Updated \(mode.updatedAt.formatted(date: .abbreviated, time: .omitted))"
+    }
+
+    private func accessibilityValue(for mode: ModeDefinition) -> String {
+        let language = ModeInputLanguage(languageHint: mode.languageHint).label
+        var states: [String] = []
+        if mode.isDefault { states.append("Built-in") }
+        if mode.id == model.activeModeID { states.append("Active") }
+        if !mode.isEnabled { states.append("Disabled") }
+        states.append("\(language) input")
+        return states.joined(separator: ", ")
     }
 }

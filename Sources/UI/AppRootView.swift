@@ -54,9 +54,10 @@ struct AppRootView: View {
                                     Label(item.rawValue, systemImage: item.systemImage)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .padding(.horizontal, DesignTokens.space12)
-                                        .frame(height: 36)
+                                        .frame(height: 44)
                                         .background(destination == item ? DesignTokens.selected : .clear)
                                         .clipShape(RoundedRectangle(cornerRadius: DesignTokens.controlRadius))
+                                        .contentShape(Rectangle())
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityIdentifier(item.rawValue)
@@ -80,7 +81,10 @@ struct AppRootView: View {
                     ToolbarItem {
                         HStack(spacing: DesignTokens.space4) {
                             Image(systemName: "mic")
+                                .accessibilityHidden(true)
                             Text(settings.selectedMicrophoneName)
+                                .accessibilityLabel("Current microphone")
+                                .accessibilityValue(settings.selectedMicrophoneName)
                         }
                             .font(.system(size: 11))
                             .foregroundStyle(DesignTokens.secondaryText)

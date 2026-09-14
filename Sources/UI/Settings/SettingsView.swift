@@ -49,11 +49,14 @@ struct SettingsView: View {
                     Label(model.apiKeyStatusLabel, systemImage: apiStatusImage)
                         .font(.system(size: 12))
                         .foregroundStyle(apiStatusColor)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityAddTraits(.updatesFrequently)
                     if let errorMessage = model.apiKeyErrorMessage {
                         Label(errorMessage, systemImage: "exclamationmark.triangle")
                             .font(.system(size: 12))
                             .foregroundStyle(DesignTokens.warning)
                             .accessibilityLabel("OpenAI API key error: \(errorMessage)")
+                            .accessibilityAddTraits(.updatesFrequently)
                     }
                 }
 
@@ -94,6 +97,7 @@ struct SettingsView: View {
                         Label(shortcutError, systemImage: "exclamationmark.triangle")
                             .font(.system(size: 12))
                             .foregroundStyle(DesignTokens.warning)
+                            .accessibilityAddTraits(.updatesFrequently)
                     }
                 }
 
@@ -114,6 +118,7 @@ struct SettingsView: View {
                             .font(.system(size: 12))
                             .foregroundStyle(DesignTokens.warning)
                             .accessibilityLabel("Launch at Login error: \(errorMessage)")
+                            .accessibilityAddTraits(.updatesFrequently)
                     }
                     Divider().overlay(DesignTokens.border)
                     Toggle("Sound Effects", isOn: soundBinding)

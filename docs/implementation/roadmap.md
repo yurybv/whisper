@@ -69,7 +69,7 @@ Goal: make the approved interface usable for first launch, modes, configuration,
 
 Entry gate: authorized by `WH-M2-007`; begin with `WH-M3-001`.
 
-Progress: `WH-M3-001` and `WH-M3-002` completed on 2026-09-12. The native five-destination shell now includes functional Home, Modes, and Settings screens, persistent custom-mode CRUD, settings/service state, focused-target-safe Home dictation startup, and isolated UI fixtures. Secret-free screenshots match the approved prototype, independent review found no remaining important issue, and the complete scheme passes 193 unit tests plus 6 UI tests. `WH-M3-003` is now ready for the dedicated UI-state, keyboard, and VoiceOver audit.
+Progress: `WH-M3-001` and `WH-M3-002` completed on 2026-09-12, and `WH-M3-003` completed on 2026-09-14. The native five-destination shell includes functional Home, Modes, and Settings screens, persistent custom-mode CRUD, settings/service state, focused-target-safe Home dictation startup, 44-point custom navigation/action targets, explicit non-color-only states, and concise AX semantics. Five focused accessibility UI tests, the macOS system audit with documented SwiftUI platform exceptions, the required build, and secret-free minimum-window screenshot/AX inspection pass. `WH-M3-004` is ready for the milestone review and complete-suite gate.
 
 Deliverables:
 

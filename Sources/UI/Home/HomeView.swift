@@ -47,6 +47,7 @@ struct HomeView: View {
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundStyle(DesignTokens.success)
+                                .accessibilityHidden(true)
                             Text(activeMode.name)
                                 .font(.system(size: 17, weight: .semibold))
                             Spacer()
@@ -87,6 +88,7 @@ struct HomeView: View {
                     if let errorMessage = home.errorMessage {
                         Label(errorMessage, systemImage: "exclamationmark.triangle")
                             .foregroundStyle(DesignTokens.warning)
+                            .accessibilityAddTraits(.updatesFrequently)
                     } else if home.recentHistory.isEmpty {
                         VStack(alignment: .leading, spacing: DesignTokens.space8) {
                             Text("No history yet")
@@ -144,10 +146,13 @@ struct HomeView: View {
         HStack(spacing: DesignTokens.space8) {
             Image(systemName: isReady ? "checkmark.circle.fill" : "exclamationmark.circle")
                 .foregroundStyle(isReady ? DesignTokens.success : DesignTokens.warning)
+                .accessibilityHidden(true)
             Text(title)
                 .foregroundStyle(DesignTokens.primaryText)
         }
         .frame(minHeight: 32)
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.updatesFrequently)
     }
 
     private func recentRow(_ item: RecentHistoryItem) -> some View {

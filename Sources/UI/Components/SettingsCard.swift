@@ -21,6 +21,7 @@ struct SettingsCard<Content: View>: View {
                 Text(title)
                     .font(.system(size: 16, weight: .semibold))
                     .foregroundStyle(DesignTokens.primaryText)
+                    .accessibilityAddTraits(.isHeader)
                 if let subtitle {
                     Text(subtitle)
                         .font(.system(size: 13))
@@ -67,6 +68,7 @@ struct ScreenHeader: View {
             Text(title)
                 .font(.system(size: 28, weight: .semibold))
                 .foregroundStyle(DesignTokens.primaryText)
+                .accessibilityAddTraits(.isHeader)
             Text(subtitle)
                 .font(.system(size: 14))
                 .foregroundStyle(DesignTokens.secondaryText)

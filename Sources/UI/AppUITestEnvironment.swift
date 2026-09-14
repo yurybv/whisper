@@ -20,6 +20,7 @@ final class AppUITestEnvironment {
         defaults.set(!arguments.contains("--onboarding-incomplete"), forKey: OnboardingModel.completionKey)
 
         let validKey = Self.argumentValue(after: "--api-key-state", in: arguments) == "valid"
+        let connectionResult = Self.argumentValue(after: "--connection-result", in: arguments)
         let secureStore = InMemorySecureStore()
         if validKey {
             secureStore.saveOpenAIKey("ui-test-key")
@@ -42,6 +43,17 @@ final class AppUITestEnvironment {
             userDefaults: defaults
         )
         try modeRepository.seedDefaultMode()
+        if arguments.contains("--long-content") {
+            _ = try modeRepository.create(
+                ModeDraft(
+                    name: "Long mode 12345 67890 12345 67890 12345 67890",
+                    instructions: "12345 67890 12345 67890 12345 67890 12345 67890",
+                    languageHint: nil,
+                    isEnabled: false,
+                    sortIndex: 1
+                )
+            )
+        }
         let modes = try ModesModel(repository: modeRepository)
 
         let testRoot = FileManager.default.temporaryDirectory
@@ -58,9 +70,29 @@ final class AppUITestEnvironment {
             launchAtLoginService: LaunchAtLoginService(backend: AppUITestLaunchBackend()),
             microphoneProvider: AppUITestMicrophoneProvider(),
             testConnection: {
-                if !validKey { throw URLError(.userAuthenticationRequired) }
+                if connectionResult == "testing" {
+                    try await Task.sleep(for: .seconds(600))
+                }
+                if connectionResult == "failed" {
+                    try await Task.sleep(for: .milliseconds(200))
+                }
+                if !validKey || connectionResult == "failed" {
+                    throw URLError(.userAuthenticationRequired)
+                }
             }
         )
+        if arguments.contains("--shortcut-conflict") {
+            settings.beginShortcutCapture(.changeMode)
+            settings.acceptCapturedShortcut(
+                CapturedShortcut(
+                    action: .changeMode,
+                    shortcut: AppSettings.defaults.shortcuts[.recordMeeting]!
+                )
+            )
+        }
+        if connectionResult != nil {
+            Task { await settings.testAPIConnection() }
+        }
 
         let initialDestination = Self.argumentValue(after: "--ui-destination", in: arguments)
             .flatMap { value in SidebarDestination.allCases.first { $0.rawValue.lowercased() == value.lowercased() } }

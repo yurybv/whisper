@@ -4,7 +4,7 @@
 
 - **Title:** Capture microphone and system audio with ScreenCaptureKit
 - **Type:** feature
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Capture Mac system audio and selected microphone simultaneously, write separate durable tracks continuously, expose meters/duration, and finalize safely on stop or source loss.
 - **Out of scope:** Individual remote-speaker tracks, video capture, and live cloud streaming.
@@ -14,12 +14,14 @@
 - **Expected files:** `Sources/Audio/MeetingRecorder.swift`, ScreenCaptureKit adapters, track writers, meters, matching tests.
 - **Source:** implementation plan Task 12.
 - **Blockers:** Screen Recording and microphone permissions for manual QA.
+- **Implementation (2026-09-14):** Added ScreenCaptureKit capture for Mac system audio and the selected microphone, continuously writing independent mono AAC tracks under Application Support. Capture publishes live per-source meters and monotonic elapsed time, preserves common-timeline start offsets, stops at three hours, reports automatic completion/source loss, protects existing meeting directories, and makes stop/cancel/start races first-wins and file-safe. Low disk blocks start below 2 GB and warns below 4 GB.
+- **Verification:** 18 focused disk, writer, routing, timeline, deadline, interruption, durability, and lifecycle-race tests passed; the required app build and `git diff --check` passed. A real three-second ScreenCaptureKit smoke captured playable nonempty microphone (25,328 bytes, 3.06 seconds) and system-audio (10,556 bytes, 3.10 seconds) tracks. Privacy scan found no application logging of audio, transcript, instruction, key, or authorization data. Independent read-only review passed after its lifecycle findings were corrected.
 
 ## WH-M4-002
 
 - **Title:** Export size-bounded long-audio chunks
 - **Type:** feature
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Plan and export overlapping audio chunks below 20 MB for each source, persist chunk progress, and support up to three hours without unbounded memory use.
 - **Out of scope:** Transcript merge and processed-result generation.
@@ -28,7 +30,7 @@
 - **Dependencies:** WH-M4-001, WH-M2-001.
 - **Expected files:** `Sources/Meetings/ChunkPlanner.swift`, `AudioChunkExporter.swift`, progress models, matching tests.
 - **Source:** implementation plan Task 13.
-- **Blockers:** WH-M4-001.
+- **Blockers:** None.
 
 ## WH-M4-003
 

@@ -86,6 +86,8 @@ Review: passed on 2026-09-14. `WH-M4-001` is ready.
 
 Goal: record system audio and microphone for up to three hours, preserve the sources, and produce a resumable You/Others transcript and processed result.
 
+Progress: `WH-M4-001` completed on 2026-09-14. ScreenCaptureKit now writes selected-microphone and system audio continuously to separate durable mono AAC files, preserves their shared-timeline offsets, publishes meters and automatic terminal outcomes, and safely handles source loss, low disk, cancellation, and concurrent lifecycle commands. `WH-M4-002` is ready.
+
 Deliverables:
 
 - ScreenCaptureKit dual-source capture;

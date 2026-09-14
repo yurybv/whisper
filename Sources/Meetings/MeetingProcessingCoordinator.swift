@@ -9,9 +9,21 @@ protocol MeetingJobStore: Sendable {
     func meeting(id: UUID) throws -> MeetingSnapshot?
     func transcriptSegments(meetingID: UUID) throws -> [TranscriptSegment]
     func incompleteMeetings() throws -> [MeetingSnapshot]
+    func deleteMeeting(id: UUID) throws
 }
 
 extension HistoryRepository: MeetingJobStore {}
+
+enum MeetingRuntimeState: Sendable, Equatable {
+    case idle
+    case recording(meetingID: UUID)
+    case finalizing(meetingID: UUID)
+    case captured(meetingID: UUID)
+    case transcribing(meetingID: UUID, completed: Int, total: Int)
+    case processing(meetingID: UUID)
+    case ready(meetingID: UUID)
+    case failed(meetingID: UUID, message: String)
+}
 
 protocol MeetingTranscribing: Sendable {
     func transcribe(
@@ -48,12 +60,15 @@ actor MeetingProcessingCoordinator {
     private let history: any MeetingJobStore
     private let paths: AppPaths
     private let now: Now
+    private let stateStream: AsyncStream<MeetingRuntimeState>
+    private let stateContinuation: AsyncStream<MeetingRuntimeState>.Continuation
 
     private var activeMeetingID: UUID?
     private var startAttemptID: UUID?
     private var terminalMeetingID: UUID?
     private var completionTask: Task<Void, Never>?
     private var processingTasks: [UUID: Task<Void, Never>] = [:]
+    private var runtimeState: MeetingRuntimeState = .idle
 
     init(
         recorder: any MeetingRecorder,
@@ -69,11 +84,31 @@ actor MeetingProcessingCoordinator {
         self.history = history
         self.paths = paths
         self.now = now
+        let states = AsyncStream<MeetingRuntimeState>.makeStream(
+            bufferingPolicy: .bufferingNewest(30)
+        )
+        stateStream = states.stream
+        stateContinuation = states.continuation
+        stateContinuation.yield(.idle)
     }
 
     deinit {
         completionTask?.cancel()
         for task in processingTasks.values { task.cancel() }
+        stateContinuation.finish()
+    }
+
+    func states() -> AsyncStream<MeetingRuntimeState> { stateStream }
+
+    func currentState() -> MeetingRuntimeState {
+        runtimeState
+    }
+
+    func activeCaptureState() -> MeetingRuntimeState? {
+        guard let meetingID = activeMeetingID else { return nil }
+        return terminalMeetingID == meetingID
+            ? .finalizing(meetingID: meetingID)
+            : .recording(meetingID: meetingID)
     }
 
     @discardableResult
@@ -115,6 +150,7 @@ actor MeetingProcessingCoordinator {
             }
             activeMeetingID = id
             monitorRecorderCompletions(meetingID: id)
+            emit(.recording(meetingID: id))
             return id
         } catch {
             try? await history.updateMeeting(
@@ -125,6 +161,7 @@ actor MeetingProcessingCoordinator {
                     stage: nil
                 )
             )
+            emit(.failed(meetingID: id, message: Self.captureMessage(for: error)))
             throw error
         }
     }
@@ -140,6 +177,7 @@ actor MeetingProcessingCoordinator {
                 id: meetingID,
                 mutation: .status(.finalizing, errorMessage: nil)
             )
+            emit(.finalizing(meetingID: meetingID))
         } catch {
             if terminalMeetingID == meetingID { terminalMeetingID = nil }
             throw error
@@ -155,20 +193,38 @@ actor MeetingProcessingCoordinator {
             throw failure
         } catch {
             finishCaptureLifecycle(meetingID: meetingID)
+            let message = "Meeting capture could not be finalized. Available audio was preserved."
             try? await history.updateMeeting(
                 id: meetingID,
                 mutation: .failure(
-                    message: "Meeting capture could not be finalized. Available audio was preserved.",
+                    message: message,
                     kind: .capture,
                     stage: nil
                 )
             )
+            emit(.failed(meetingID: meetingID, message: message))
             throw error
         }
     }
 
     func blocksDictation() -> Bool {
         activeMeetingID != nil || startAttemptID != nil || terminalMeetingID != nil
+    }
+
+    @discardableResult
+    func cancel() async -> Bool {
+        guard let meetingID = activeMeetingID, terminalMeetingID == nil else { return false }
+        terminalMeetingID = meetingID
+        await recorder.cancel()
+        finishCaptureLifecycle(meetingID: meetingID)
+        do {
+            try await history.deleteMeeting(id: meetingID)
+            emit(.idle)
+            return true
+        } catch {
+            emit(.failed(meetingID: meetingID, message: "The recording stopped, but its local record could not be removed."))
+            return false
+        }
     }
 
     func waitForProcessing(meetingID: UUID) async {
@@ -187,14 +243,16 @@ actor MeetingProcessingCoordinator {
             guard let meeting = try await history.meeting(id: meetingID) else { return }
             switch meeting.status {
             case .recording, .finalizing:
+                let message = "Whisper was closed before capture finished. Preserved files were not deleted."
                 try await history.updateMeeting(
                     id: meetingID,
                     mutation: .failure(
-                        message: "Whisper was closed before capture finished. Preserved files were not deleted.",
+                        message: message,
                         kind: .interruptedCapture,
                         stage: nil
                     )
                 )
+                emit(.failed(meetingID: meetingID, message: message))
             case .captured:
                 let stage: ProcessingStage = meeting.retryStage == .processing
                     ? .processing
@@ -256,6 +314,7 @@ actor MeetingProcessingCoordinator {
                     id: meetingID,
                     mutation: .status(.finalizing, errorMessage: nil)
                 )
+                emit(.finalizing(meetingID: meetingID))
                 try await persistCapture(capture, meetingID: meetingID)
                 finishCaptureLifecycle(meetingID: meetingID)
                 launchProcessing(meetingID: meetingID, stage: .transcription)
@@ -273,6 +332,7 @@ actor MeetingProcessingCoordinator {
                     stage: nil
                 )
             )
+            emit(.failed(meetingID: meetingID, message: "Meeting capture could not be finalized. Available audio was preserved."))
         }
     }
 
@@ -298,6 +358,7 @@ actor MeetingProcessingCoordinator {
             id: meetingID,
             mutation: .status(.captured, errorMessage: nil)
         )
+        emit(.captured(meetingID: meetingID))
     }
 
     private func persistCaptureFailure(
@@ -327,6 +388,7 @@ actor MeetingProcessingCoordinator {
                 stage: nil
             )
         )
+        emit(.failed(meetingID: meetingID, message: failure.localizedDescription))
     }
 
     private func finishCaptureLifecycle(meetingID: UUID) {
@@ -379,12 +441,25 @@ actor MeetingProcessingCoordinator {
                 id: meeting.id,
                 mutation: .status(.transcribing, errorMessage: nil)
             )
+            emit(
+                .transcribing(
+                    meetingID: meeting.id,
+                    completed: meeting.progressCompleted,
+                    total: meeting.progressTotal
+                )
+            )
             let history = history
+            let coordinator = self
             let meetingID = meeting.id
             let segments = try await transcriber.transcribe(meeting: meeting) { completed, total in
                 try? await history.updateMeeting(
                     id: meetingID,
                     mutation: .progress(completed: completed, total: total)
+                )
+                await coordinator.reportProgress(
+                    meetingID: meetingID,
+                    completed: completed,
+                    total: total
                 )
             }
             try await history.replaceSegments(meetingID: meeting.id, segments: segments)
@@ -410,6 +485,7 @@ actor MeetingProcessingCoordinator {
                 id: meeting.id,
                 mutation: .status(.processing, errorMessage: nil)
             )
+            emit(.processing(meetingID: meeting.id))
             let output = try await transformer.transform(
                 text: Self.formattedTranscript(segments),
                 instructions: Self.processingInstructions(for: meeting)
@@ -425,6 +501,7 @@ actor MeetingProcessingCoordinator {
                 id: meeting.id,
                 mutation: .status(.ready, errorMessage: nil)
             )
+            emit(.ready(meetingID: meeting.id))
         } catch {
             try? await persistFailure(error, meetingID: meeting.id, stage: .processing)
         }
@@ -442,6 +519,7 @@ actor MeetingProcessingCoordinator {
                 id: meetingID,
                 mutation: .retryable(message: message, kind: .network, stage: stage)
             )
+            emit(.failed(meetingID: meetingID, message: message))
             return
         }
 
@@ -451,6 +529,7 @@ actor MeetingProcessingCoordinator {
                 id: meetingID,
                 mutation: .retryable(message: message, kind: .missingAPIKey, stage: stage)
             )
+            emit(.failed(meetingID: meetingID, message: message))
             return
         }
 
@@ -466,6 +545,7 @@ actor MeetingProcessingCoordinator {
             id: meetingID,
             mutation: .failure(message: message, kind: kind, stage: stage)
         )
+        emit(.failed(meetingID: meetingID, message: message))
     }
 
     private static func isTransientAPIError(_ error: Error) -> Bool {
@@ -500,5 +580,21 @@ actor MeetingProcessingCoordinator {
         guard let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines),
               !trimmed.isEmpty else { return nil }
         return trimmed
+    }
+
+    private func reportProgress(meetingID: UUID, completed: Int, total: Int) {
+        emit(.transcribing(meetingID: meetingID, completed: completed, total: total))
+    }
+
+    private func emit(_ state: MeetingRuntimeState) {
+        runtimeState = state
+        stateContinuation.yield(state)
+    }
+
+    private static func captureMessage(for error: Error) -> String {
+        if let localized = error as? LocalizedError, let message = localized.errorDescription {
+            return message
+        }
+        return "Meeting capture could not start."
     }
 }

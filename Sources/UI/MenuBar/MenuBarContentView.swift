@@ -67,6 +67,13 @@ final class MenuBarViewModel {
         self.message = message
         self.dictationRecovery = dictationRecovery
     }
+
+    var statusItemTitle: String {
+        guard state == .recordingMeeting,
+              let message,
+              message.hasPrefix("Recording ") else { return "" }
+        return String(message.dropFirst("Recording ".count))
+    }
 }
 
 struct MenuBarContentView: View {
@@ -120,7 +127,12 @@ struct MenuBarContentView: View {
                 )
             }
             menuButton("Change Mode", systemImage: "square.grid.2x2", shortcut: "⌃⌘M", action: onChangeMode)
-            menuButton("Record Meeting", systemImage: "record.circle", shortcut: "⇧⌘R", action: onRecordMeeting)
+            menuButton(
+                viewModel.state == .recordingMeeting ? "Stop Recording" : "Record Meeting",
+                systemImage: "record.circle",
+                shortcut: "⇧⌘R",
+                action: onRecordMeeting
+            )
 
             Divider().overlay(DesignTokens.border)
 

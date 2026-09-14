@@ -5,6 +5,8 @@ final class AppSettingsStore {
     private enum Key {
         static let selectedMicrophoneID = "selectedMicrophoneID"
         static let shortcuts = "shortcuts"
+        static let recordingInstructions = "recordingInstructions"
+        static let recordingResultLanguage = "recordingResultLanguage"
         static let soundEffects = "soundEffects"
         static let retention = "retention"
     }
@@ -37,6 +39,22 @@ final class AppSettingsStore {
         set {
             guard let data = try? JSONEncoder().encode(newValue) else { return }
             defaults.set(data, forKey: Key.shortcuts)
+        }
+    }
+
+    var recordingInstructions: String {
+        get { defaults.string(forKey: Key.recordingInstructions) ?? AppSettings.defaultRecordingInstructions }
+        set { defaults.set(newValue, forKey: Key.recordingInstructions) }
+    }
+
+    var recordingResultLanguage: String? {
+        get { defaults.string(forKey: Key.recordingResultLanguage) }
+        set {
+            if let newValue {
+                defaults.set(newValue, forKey: Key.recordingResultLanguage)
+            } else {
+                defaults.removeObject(forKey: Key.recordingResultLanguage)
+            }
         }
     }
 

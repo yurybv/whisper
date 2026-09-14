@@ -5,6 +5,7 @@ struct AppRootView: View {
     @Bindable var home: HomeModel
     @Bindable var modes: ModesModel
     @Bindable var settings: SettingsModel
+    @Bindable var recordings: RecordingsModel
     let relaunch: () -> Void
     let startDictation: () -> Void
     let changeMode: () -> Void
@@ -16,6 +17,7 @@ struct AppRootView: View {
         home: HomeModel,
         modes: ModesModel,
         settings: SettingsModel,
+        recordings: RecordingsModel,
         initialDestination: SidebarDestination = .home,
         relaunch: @escaping () -> Void,
         startDictation: @escaping () -> Void,
@@ -26,6 +28,7 @@ struct AppRootView: View {
         self.home = home
         self.modes = modes
         self.settings = settings
+        self.recordings = recordings
         self.relaunch = relaunch
         self.startDictation = startDictation
         self.changeMode = changeMode
@@ -121,11 +124,7 @@ struct AppRootView: View {
         case .modes:
             ModesListView(model: modes)
         case .recordings:
-            futureDestination(
-                title: "Recordings",
-                symbol: "record.circle",
-                message: "Durable meeting recording arrives in Milestone 4."
-            )
+            RecordingsView(model: recordings)
         case .history:
             futureDestination(
                 title: "History",

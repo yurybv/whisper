@@ -61,8 +61,8 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 | WH-M4-002 | Export size-bounded long-audio chunks | done | WH-M4-001 |
 | WH-M4-003 | Merge diarized chunks into a chronological transcript | done | WH-M4-002 |
 | WH-M4-004 | Implement processing, retry, and relaunch recovery | done | WH-M4-003 |
-| WH-M4-005 | Build Recordings screen and recording states | ready | WH-M4-001..004 |
-| WH-M4-006 | Review durable meeting recording milestone | blocked | WH-M4-001..005 |
+| WH-M4-005 | Build Recordings screen and recording states | done | WH-M4-001..004 |
+| WH-M4-006 | Review durable meeting recording milestone | ready | WH-M4-001..005 |
 
 ## Milestone 5: History and retention
 

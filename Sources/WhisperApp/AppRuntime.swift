@@ -3,6 +3,25 @@ import CoreGraphics
 import Foundation
 import SwiftUI
 
+struct CaptureStartArbiter: Sendable {
+    enum Feature: Sendable {
+        case dictation
+        case meeting
+    }
+
+    private(set) var reservation: Feature?
+
+    mutating func reserve(_ feature: Feature) -> Bool {
+        guard reservation == nil else { return false }
+        reservation = feature
+        return true
+    }
+
+    mutating func release(_ feature: Feature) {
+        if reservation == feature { reservation = nil }
+    }
+}
+
 struct AppRuntimeDictationPresentation: Equatable, Sendable {
     let menuState: MenuBarState
     let message: String?
@@ -48,6 +67,7 @@ final class AppRuntime {
     private let modeRepository: ModeRepository
     private let recorder: AVAudioEngineRecorder
     private let coordinator: DictationCoordinator
+    private let meetingRecorder: ScreenCaptureMeetingRecorder
     private let meetingCoordinator: MeetingProcessingCoordinator
     private let meetingRecovery: MeetingRecoveryService
     private let hotkeys: GlobalHotkeyMonitor
@@ -58,16 +78,22 @@ final class AppRuntime {
     private let homeModel: HomeModel
     private let modesModel: ModesModel
     private let settingsModel: SettingsModel
+    private let recordingsModel: RecordingsModel
+    private var recordingHUDController: RecordingHUDController!
 
     private var hotkeyTask: Task<Void, Never>?
     private var shortcutCaptureTask: Task<Void, Never>?
     private var stateTask: Task<Void, Never>?
     private var levelTask: Task<Void, Never>?
     private var meetingRecoveryTask: Task<Void, Never>?
+    private var meetingStateTask: Task<Void, Never>?
+    private var meetingLevelTask: Task<Void, Never>?
     private var shortcutFailure: String?
     private var lastState: DictationState = .idle
     private var lastLevel: Float = 0
     private var dictationScreen: NSScreen?
+    private var recordingScreen: NSScreen?
+    private var captureStartArbiter = CaptureStartArbiter()
 
     private var modeSwitcherController: ModeSwitcherController!
     private var menuBarController: MenuBarController!
@@ -97,22 +123,24 @@ final class AppRuntime {
             history: history,
             insertion: AXTextInsertionService()
         )
-        let meetingRecorder = ScreenCaptureMeetingRecorder(paths: paths)
+        let newMeetingRecorder = ScreenCaptureMeetingRecorder(paths: paths)
         let meetingTranscriber = MeetingTranscriber(
             client: openAI,
             chunkPreparer: AVAssetMeetingChunkPreparer(paths: paths),
             resultStore: DiarizedChunkResultStore(paths: paths)
         )
-        meetingCoordinator = MeetingProcessingCoordinator(
-            recorder: meetingRecorder,
+        let newMeetingCoordinator = MeetingProcessingCoordinator(
+            recorder: newMeetingRecorder,
             transcriber: meetingTranscriber,
             transformer: openAI,
             history: history,
             paths: paths
         )
+        meetingRecorder = newMeetingRecorder
+        meetingCoordinator = newMeetingCoordinator
         meetingRecovery = MeetingRecoveryService(
             history: history,
-            coordinator: meetingCoordinator,
+            coordinator: newMeetingCoordinator,
             processingAvailable: {
                 guard let key = try? store.readOpenAIKey() else { return false }
                 return !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
@@ -137,6 +165,24 @@ final class AppRuntime {
                 Task { await hotkeys.updateShortcuts(shortcuts) }
             }
         )
+        recordingsModel = RecordingsModel(
+            settingsStore: settingsStore,
+            settings: settingsModel,
+            diskState: { try DiskSpaceMonitor().state(for: paths.recordingsURL) },
+            start: { title, instructions, resultLanguage, microphoneID in
+                try await newMeetingCoordinator.start(
+                    title: title,
+                    instructions: instructions,
+                    resultLanguage: resultLanguage,
+                    microphoneDeviceID: microphoneID
+                )
+            },
+            stop: { try await newMeetingCoordinator.stop() },
+            cancel: { await newMeetingCoordinator.cancel() }
+        )
+        recordingHUDController = RecordingHUDController(onStop: { [weak self] in
+            self?.scheduleMeetingToggle()
+        })
 
         modeSwitcherController = ModeSwitcherController(
             panel: ModeSwitcherPanel(),
@@ -176,7 +222,7 @@ final class AppRuntime {
                 Task { await self.toggleDictation() }
             },
             onChangeMode: { [weak self] in self?.showModeSwitcher() },
-            onRecordMeeting: { [weak self] in self?.showMeetingStub() },
+            onRecordMeeting: { [weak self] in self?.scheduleMeetingToggle() },
             onRetryDictation: { [weak self] in self?.recoveryActionRouter.scheduleRetry() },
             onDiscardDictation: { [weak self] in self?.recoveryActionRouter.scheduleDiscard() },
             onRecentHistory: { [weak self] in self?.openMainWindow() },
@@ -196,25 +242,26 @@ final class AppRuntime {
                 await self.finishDictation()
             },
             onChangeMode: { [weak self] in self?.showModeSwitcher() },
-            onRecordMeeting: { [weak self] in self?.showMeetingStub() },
+            onRecordMeeting: { [weak self] in self?.scheduleMeetingToggle() },
             onCancel: { [weak self] in
                 guard let self else { return false }
                 return await self.cancelTopFeature()
             }
         )
-        mainWindowController = MainWindowController { [weak self, onboarding, homeModel, modesModel, settingsModel] relaunch in
+        mainWindowController = MainWindowController { [weak self, onboarding, homeModel, modesModel, settingsModel, recordingsModel] relaunch in
             AnyView(
                 AppRootView(
                     onboarding: onboarding,
                     home: homeModel,
                     modes: modesModel,
                     settings: settingsModel,
+                    recordings: recordingsModel,
                     relaunch: relaunch,
                     startDictation: { [weak self] in
                         self?.startDictationFromHome()
                     },
                     changeMode: { [weak self] in self?.showModeSwitcher() },
-                    recordMeeting: { [weak self] in self?.showMeetingStub() }
+                    recordMeeting: { [weak self] in self?.scheduleMeetingToggle() }
                 )
             )
         }
@@ -262,6 +309,32 @@ final class AppRuntime {
                 }
             }
         }
+
+        meetingStateTask = Task { [weak self] in
+            guard let self else { return }
+            let states = await meetingCoordinator.states()
+            for await _ in states {
+                guard !Task.isCancelled else { return }
+                let authoritativeState: MeetingRuntimeState
+                if let activeCaptureState = await meetingCoordinator.activeCaptureState() {
+                    authoritativeState = activeCaptureState
+                } else {
+                    authoritativeState = await meetingCoordinator.currentState()
+                }
+                recordingsModel.consumeAuthoritative(authoritativeState)
+                renderMeetingState()
+            }
+        }
+
+        meetingLevelTask = Task { [weak self] in
+            guard let self else { return }
+            let levels = await meetingRecorder.levels()
+            for await level in levels {
+                guard !Task.isCancelled else { return }
+                recordingsModel.consume(level)
+                renderMeetingState()
+            }
+        }
     }
 
     func stop() {
@@ -270,11 +343,15 @@ final class AppRuntime {
         stateTask?.cancel()
         levelTask?.cancel()
         meetingRecoveryTask?.cancel()
+        meetingStateTask?.cancel()
+        meetingLevelTask?.cancel()
         hotkeyTask = nil
         shortcutCaptureTask = nil
         stateTask = nil
         levelTask = nil
         meetingRecoveryTask = nil
+        meetingStateTask = nil
+        meetingLevelTask = nil
         hotkeyRouter.stop()
         recoveryActionRouter.stop()
         Task { await hotkeys.stop() }
@@ -285,6 +362,7 @@ final class AppRuntime {
         settingsModel.refresh()
         Task { [weak self] in await self?.refreshHotkeys() }
         resumeMeetingJobs()
+        recordingsModel.refresh()
     }
 
     private func resumeMeetingJobs() {
@@ -364,6 +442,15 @@ final class AppRuntime {
 
     private func beginDictation() async {
         guard !AppRuntimeDictationPresentation(state: lastState).blocksNewDictation else { return }
+        guard captureStartArbiter.reserve(.dictation) else { return }
+        defer { captureStartArbiter.release(.dictation) }
+        guard !(await meetingCoordinator.blocksDictation()) else {
+            menuBarController.render(
+                state: .error,
+                message: "Stop the meeting recording before starting dictation."
+            )
+            return
+        }
         onboarding.refreshPermissions()
         guard onboarding.canDictate else {
             onboarding.showPermissionRecovery(.microphone)
@@ -373,6 +460,7 @@ final class AppRuntime {
         dictationScreen = TargetScreenResolver.screenForFrontmostApplication()
         do {
             try await coordinator.begin(deviceID: settingsStore.selectedMicrophoneID)
+            render(await coordinator.currentState())
             await hotkeys.setFeatureActive(true)
         } catch {
             menuBarController.render(
@@ -410,6 +498,11 @@ final class AppRuntime {
             modeSwitcherController.close()
             return false
         }
+        if case .recording = recordingsModel.state {
+            let cancelled = await recordingsModel.cancelRecording()
+            renderMeetingState()
+            return cancelled
+        }
         guard isDictationActive else { return false }
         guard await coordinator.cancel() else { return false }
         hudController.render(status: .cancelled, screen: dictationScreen)
@@ -427,18 +520,64 @@ final class AppRuntime {
         }
     }
 
-    private func showMeetingStub() {
+    private func scheduleMeetingToggle() {
         menuBarController.closePopover()
-        menuBarController.render(
-            state: .error,
-            message: "Meeting recording arrives in the next milestone."
-        )
-        hudController.render(
-            status: .error(
-                message: "Meeting recording arrives in the next milestone.",
-                textOnClipboard: false
+        Task { [weak self] in await self?.toggleMeetingRecording() }
+    }
+
+    private func toggleMeetingRecording() async {
+        guard captureStartArbiter.reserve(.meeting) else { return }
+        defer { captureStartArbiter.release(.meeting) }
+        guard !isDictationActive else {
+            menuBarController.render(
+                state: .error,
+                message: "Finish or cancel dictation before recording a meeting."
             )
-        )
+            return
+        }
+        if let captureState = await meetingCoordinator.activeCaptureState() {
+            recordingsModel.consumeAuthoritative(captureState)
+            if case .recording = captureState {
+                await recordingsModel.toggleRecording()
+            }
+        } else {
+            recordingsModel.consumeAuthoritative(await meetingCoordinator.currentState())
+            recordingScreen = TargetScreenResolver.screenForFrontmostApplication()
+            await recordingsModel.toggleRecording()
+        }
+        renderMeetingState()
+    }
+
+    private func renderMeetingState() {
+        recordingHUDController.render(model: recordingsModel, screen: recordingScreen)
+        let meetingActive: Bool
+        if case .recording = recordingsModel.state {
+            meetingActive = true
+        } else {
+            meetingActive = false
+        }
+        Task { [hotkeys] in
+            await hotkeys.setMeetingActive(meetingActive)
+            await hotkeys.setFeatureActive(meetingActive || isDictationActive)
+        }
+        guard !isDictationActive else { return }
+        if recordingsModel.hasActionError {
+            menuBarController.render(state: .error, message: recordingsModel.statusMessage)
+            return
+        }
+        switch recordingsModel.state {
+        case .recording:
+            menuBarController.render(
+                state: .recordingMeeting,
+                message: "Recording \(recordingsModel.elapsedLabel)"
+            )
+        case .finalizing, .captured, .transcribing, .processing:
+            menuBarController.render(state: .processing, message: recordingsModel.statusMessage)
+        case .failed:
+            menuBarController.render(state: .error, message: recordingsModel.statusMessage)
+        case .idle, .ready:
+            menuBarController.render(state: .ready, message: recordingsModel.statusMessage)
+        }
     }
 
     private func render(_ state: DictationState) {

@@ -55,6 +55,19 @@ final class OverlayLifecycleTests: XCTestCase {
         XCTAssertEqual(frame.origin.y, 74)
     }
 
+    func testRecordingHUDIsNonactivatingAndBottomCentered() {
+        let panel = RecordingHUDPanel()
+        let frame = RecordingHUDController.frame(
+            panelSize: RecordingHUDController.panelSize,
+            visibleFrame: NSRect(x: 100, y: 50, width: 1_200, height: 800)
+        )
+
+        XCTAssertTrue(panel.styleMask.contains(.nonactivatingPanel))
+        XCTAssertFalse(panel.canBecomeKey)
+        XCTAssertEqual(frame.origin.x, 480)
+        XCTAssertEqual(frame.origin.y, 74)
+    }
+
     func testModeSwitcherPanelCanBecomeKey() {
         let panel = ModeSwitcherPanel()
 

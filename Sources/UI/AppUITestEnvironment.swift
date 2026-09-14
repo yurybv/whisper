@@ -12,6 +12,7 @@ final class AppUITestEnvironment {
     private let home: HomeModel
     private let modes: ModesModel
     private let settings: SettingsModel
+    private let recordings: RecordingsModel
 
     init(arguments: [String]) throws {
         let suiteName = "Whisper.AppUITests"
@@ -58,14 +59,16 @@ final class AppUITestEnvironment {
 
         let testRoot = FileManager.default.temporaryDirectory
             .appendingPathComponent("Whisper-AppUITests-\(UUID().uuidString)", isDirectory: true)
+        let appPaths = try AppPaths(rootURL: testRoot)
         let historyRepository = HistoryRepository(
             context: persistence.container.mainContext,
-            appPaths: try AppPaths(rootURL: testRoot)
+            appPaths: appPaths
         )
         let home = HomeModel(historyRepository: historyRepository)
+        let appSettingsStore = AppSettingsStore(defaults: defaults)
         let settings = SettingsModel(
             secureStore: secureStore,
-            settingsStore: AppSettingsStore(defaults: defaults),
+            settingsStore: appSettingsStore,
             permissionService: permissionService,
             launchAtLoginService: LaunchAtLoginService(backend: AppUITestLaunchBackend()),
             microphoneProvider: AppUITestMicrophoneProvider(),
@@ -93,6 +96,32 @@ final class AppUITestEnvironment {
         if connectionResult != nil {
             Task { await settings.testAPIConnection() }
         }
+        let recordingDiskState: DiskSpaceMonitor.State = arguments.contains("--recording-low-disk")
+            ? .blocked(availableBytes: 1_500_000_000)
+            : .ready(availableBytes: 10_000_000_000)
+        let recordingDriver = AppUITestRecordingDriver()
+        let recordings = RecordingsModel(
+            settingsStore: appSettingsStore,
+            settings: settings,
+            diskState: { recordingDiskState },
+            start: { [recordingDriver] _, _, _, _ in recordingDriver.start() },
+            stop: { [recordingDriver] in recordingDriver.stop() },
+            cancel: { true },
+            now: { Date(timeIntervalSinceReferenceDate: 1_000) }
+        )
+        recordingDriver.model = recordings
+        if arguments.contains("--recording-active") {
+            recordings.consume(.recording(meetingID: UUID()))
+            recordings.consume(
+                MeetingAudioLevels(
+                    microphone: 0.7,
+                    systemAudio: 0.45,
+                    elapsedTime: 2_238
+                )
+            )
+        } else if arguments.contains("--recording-finalizing") {
+            recordings.consume(.finalizing(meetingID: UUID()))
+        }
 
         let initialDestination = Self.argumentValue(after: "--ui-destination", in: arguments)
             .flatMap { value in SidebarDestination.allCases.first { $0.rawValue.lowercased() == value.lowercased() } }
@@ -104,6 +133,7 @@ final class AppUITestEnvironment {
                     home: home,
                     modes: modes,
                     settings: settings,
+                    recordings: recordings,
                     initialDestination: initialDestination,
                     relaunch: relaunch,
                     startDictation: {},
@@ -118,6 +148,7 @@ final class AppUITestEnvironment {
         self.home = home
         self.modes = modes
         self.settings = settings
+        self.recordings = recordings
         self.window = window
     }
 
@@ -126,6 +157,35 @@ final class AppUITestEnvironment {
             return nil
         }
         return arguments[index + 1]
+    }
+}
+
+@MainActor
+private final class AppUITestRecordingDriver {
+    weak var model: RecordingsModel?
+    private let meetingID = UUID()
+
+    func start() -> UUID {
+        Task { [weak model] in
+            try? await Task.sleep(for: .milliseconds(150))
+            model?.consume(
+                MeetingAudioLevels(
+                    microphone: 0.7,
+                    systemAudio: 0.45,
+                    elapsedTime: 2_238
+                )
+            )
+        }
+        return meetingID
+    }
+
+    func stop() {
+        Task { [weak model, meetingID] in
+            try? await Task.sleep(for: .milliseconds(750))
+            model?.consume(.transcribing(meetingID: meetingID, completed: 1, total: 2))
+            try? await Task.sleep(for: .milliseconds(750))
+            model?.consume(.ready(meetingID: meetingID))
+        }
     }
 }
 

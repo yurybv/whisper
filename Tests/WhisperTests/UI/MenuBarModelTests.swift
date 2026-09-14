@@ -66,4 +66,27 @@ final class MenuBarModelTests: XCTestCase {
         XCTAssertEqual(manualPaste.menuState, .ready)
         XCTAssertTrue(manualPaste.message?.contains("Paste manually") == true)
     }
+
+    @MainActor
+    func testMeetingTimerIsVisibleInStatusItemPresentation() {
+        let viewModel = MenuBarViewModel(
+            state: .recordingMeeting,
+            message: "Recording 00:37:18"
+        )
+
+        XCTAssertEqual(viewModel.statusItemTitle, "00:37:18")
+        viewModel.state = .ready
+        XCTAssertEqual(viewModel.statusItemTitle, "")
+    }
+
+    @MainActor
+    func testFeatureStartReservationRejectsMeetingDuringSuspendedDictationStart() async {
+        var arbiter = CaptureStartArbiter()
+
+        XCTAssertTrue(arbiter.reserve(.dictation))
+        await Task.yield()
+        XCTAssertFalse(arbiter.reserve(.meeting))
+        arbiter.release(.dictation)
+        XCTAssertTrue(arbiter.reserve(.meeting))
+    }
 }

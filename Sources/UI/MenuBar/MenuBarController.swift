@@ -85,8 +85,13 @@ final class MenuBarController: NSObject {
         guard let button = statusItem.button else { return }
         let image = NSImage(systemSymbolName: viewModel.state.systemImage, accessibilityDescription: viewModel.state.label)
         image?.isTemplate = viewModel.state != .error
+        let title = viewModel.statusItemTitle
+        statusItem.length = title.isEmpty ? NSStatusItem.squareLength : NSStatusItem.variableLength
         button.image = image
-        button.toolTip = viewModel.state.label
-        button.setAccessibilityLabel(viewModel.state.label)
+        button.title = title
+        button.imagePosition = title.isEmpty ? .imageOnly : .imageLeading
+        let accessibleLabel = title.isEmpty ? viewModel.state.label : "\(viewModel.state.label), \(title)"
+        button.toolTip = accessibleLabel
+        button.setAccessibilityLabel(accessibleLabel)
     }
 }

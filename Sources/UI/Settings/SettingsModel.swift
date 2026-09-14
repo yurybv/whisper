@@ -296,6 +296,20 @@ final class SettingsModel {
     private static let keychainReadError = "The API key status could not be read from Keychain."
 }
 
+@MainActor
+protocol RecordingSettingsProviding: AnyObject {
+    var microphones: [MicrophoneDevice] { get }
+    var selectedMicrophoneID: String? { get }
+    var selectedMicrophoneName: String { get }
+    var shortcuts: [ShortcutAction: Shortcut] { get }
+    var permissions: PermissionSnapshot { get }
+    func refresh()
+    func selectMicrophone(_ id: String?)
+    func openPermissionSettings(_ kind: PermissionKind)
+}
+
+extension SettingsModel: RecordingSettingsProviding {}
+
 extension ShortcutAction {
     var title: String {
         switch self {

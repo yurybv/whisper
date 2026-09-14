@@ -72,7 +72,7 @@
 
 - **Title:** Build Recordings screen and recording states
 - **Type:** feature
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Implement the Recordings destination with Start/Stop, source status, microphone, hotkey, processing instructions, result language, elapsed time, meters, finalizing, low-disk, and permission errors.
 - **Out of scope:** History details and transcript editing.
@@ -82,12 +82,14 @@
 - **Expected files:** `Sources/UI/Recordings/**`, UI tests.
 - **Source:** implementation plan Task 14 and approved Open Design prototype.
 - **Blockers:** None.
+- **Implementation (2026-09-15):** Replaced the Recordings placeholder with the approved native composition: persistent processing instructions and result language, selected microphone and source permission recovery, exact low-disk blocking, three-hour limit, live dual-source meters and elapsed time, and explicit recording, finalizing, transcription, processing, ready, and failure states. The production runtime owns the model across window recreation and routes Home, menu-bar, Command-Shift-R, Cancel, and a nonactivating HUD through one coordinator. A shared pre-await start arbiter prevents dictation/meeting races, authoritative meeting-ID-aware state keeps active capture controls visible, meeting capture suppresses push-to-talk, and the status item shows the live recording timer.
+- **Verification:** 72 focused recording-model, coordinator, HUD, menu-bar, settings, and hotkey tests passed with zero failures. The UI target compiled a deterministic Start → 00:37:18 → Finalizing → Transcribing 1 of 2 → Ready flow without launching it, and offscreen idle/active screenshots were visually compared and retained under `docs/testing/evidence/WH-M4-005/`. The Debug app build, ad-hoc signature verification, `git diff --check`, privacy logging scan, and independent read-only review passed. Per the owner's instruction not to control the cursor or interrupt foreground work, live XCUITest and physical clicks were explicitly not applicable; equivalent model/coordinator paths and offscreen UI states were exercised without cursor automation.
 
 ## WH-M4-006
 
 - **Title:** Review durable meeting recording milestone
 - **Type:** review
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Audit source durability, chunk limits, transcript ordering, processing recovery, three-hour behavior, permission loss, disk handling, and UI evidence.
 - **Out of scope:** Unified history implementation.
@@ -96,4 +98,4 @@
 - **Dependencies:** WH-M4-001 through WH-M4-005.
 - **Expected files:** `docs/implementation/reviews/m4-review.md`, backlog updates.
 - **Source:** roadmap Milestone 4.
-- **Blockers:** Completion of meeting tasks.
+- **Blockers:** None.

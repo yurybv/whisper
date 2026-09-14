@@ -31,6 +31,14 @@ final class MeetingProcessingCoordinatorTests: XCTestCase {
     @MainActor
     func testStopPersistsCaptureBeforeNetworkAndProducesReadyResult() async throws {
         let fixture = try Fixture()
+        let stateLog = MeetingRuntimeStateLog()
+        let stream = await fixture.coordinator.states()
+        let stateTask = Task {
+            for await state in stream {
+                await stateLog.append(state)
+                if case .ready = state { return }
+            }
+        }
         let id = try await fixture.coordinator.start(
             title: "Call",
             instructions: "Summarize decisions",
@@ -39,6 +47,7 @@ final class MeetingProcessingCoordinatorTests: XCTestCase {
 
         try await fixture.coordinator.stop()
         await fixture.coordinator.waitForProcessing(meetingID: id)
+        await stateTask.value
 
         let meeting = try XCTUnwrap(fixture.history.meetingValue(id: id))
         XCTAssertEqual(meeting.status, .ready)
@@ -59,6 +68,12 @@ final class MeetingProcessingCoordinatorTests: XCTestCase {
         XCTAssertLessThan(try XCTUnwrap(events.firstIndex(of: "history.segments")),
                           try XCTUnwrap(events.firstIndex(of: "transformer.start")))
         XCTAssertFalse(blocksDictation)
+        let runtimeStates = await stateLog.values
+        XCTAssertTrue(runtimeStates.contains(.recording(meetingID: id)))
+        XCTAssertTrue(runtimeStates.contains(.finalizing(meetingID: id)))
+        XCTAssertTrue(runtimeStates.contains(.transcribing(meetingID: id, completed: 1, total: 1)))
+        XCTAssertTrue(runtimeStates.contains(.processing(meetingID: id)))
+        XCTAssertTrue(runtimeStates.contains(.ready(meetingID: id)))
     }
 
     @MainActor
@@ -216,6 +231,27 @@ final class MeetingProcessingCoordinatorTests: XCTestCase {
     }
 
     @MainActor
+    func testCancelDeletesDraftAndUnblocksDictation() async throws {
+        let fixture = try Fixture()
+        let id = try await fixture.coordinator.start(
+            title: "Call",
+            instructions: "Summarize",
+            resultLanguage: nil
+        )
+
+        let cancelled = await fixture.coordinator.cancel()
+        let blocksDictation = await fixture.coordinator.blocksDictation()
+        let cancelCount = await fixture.recorder.cancelCount
+        let state = await fixture.coordinator.currentState()
+
+        XCTAssertTrue(cancelled)
+        XCTAssertNil(fixture.history.meetingValue(id: id))
+        XCTAssertFalse(blocksDictation)
+        XCTAssertEqual(cancelCount, 1)
+        XCTAssertEqual(state, .idle)
+    }
+
+    @MainActor
     func testAutomaticRecorderCompletionPersistsCaptureAndLaunchesProcessing() async throws {
         let fixture = try Fixture()
         let id = try await fixture.coordinator.start(
@@ -322,6 +358,11 @@ final class MeetingProcessingCoordinatorTests: XCTestCase {
     }
 }
 
+private actor MeetingRuntimeStateLog {
+    private(set) var values: [MeetingRuntimeState] = []
+    func append(_ value: MeetingRuntimeState) { values.append(value) }
+}
+
 @MainActor
 private struct Fixture {
     let root: URL
@@ -414,6 +455,13 @@ private final class FakeMeetingJobStore: MeetingJobStore {
         meetings.values.filter { $0.status.isIncomplete }.sorted { $0.startedAt < $1.startedAt }
     }
 
+    func deleteMeeting(id: UUID) throws {
+        guard meetings.removeValue(forKey: id) != nil else {
+            throw PersistenceError.meetingNotFound
+        }
+        segments[id] = nil
+    }
+
     func insert(_ draft: MeetingDraft) { meetings[draft.id] = snapshot(draft) }
     func setSegments(_ value: [TranscriptSegment], meetingID: UUID) { segments[meetingID] = value }
     func meetingValue(id: UUID) -> MeetingSnapshot? { meetings[id] }
@@ -496,6 +544,7 @@ private actor FakeMeetingRecorder: MeetingRecorder {
     private let completionContinuation: AsyncStream<MeetingCaptureCompletion>.Continuation
     private var lastCapture: CapturedMeeting?
     private var nextSubscriptionCompletion: MeetingCaptureCompletion?
+    private(set) var cancelCount = 0
 
     init(paths: AppPaths, events: EventLog, failsWithPartialCapture: Bool) {
         self.paths = paths
@@ -555,7 +604,7 @@ private actor FakeMeetingRecorder: MeetingRecorder {
     }
 
     func interrupt(reason: MeetingCaptureInterruptionReason) async {}
-    func cancel() async {}
+    func cancel() async { cancelCount += 1 }
 
     func emitAutomaticCompletion() async {
         _ = try? await stop()

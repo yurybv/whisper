@@ -97,6 +97,20 @@ final class HistoryRepository: HistoryRepositoryProtocol {
             .filter { $0.status.isIncomplete }
     }
 
+    func meeting(id: UUID) throws -> MeetingSnapshot? {
+        try meetingEntity(id: id)?.snapshot
+    }
+
+    func transcriptSegments(meetingID: UUID) throws -> [TranscriptSegment] {
+        guard let meeting = try meetingEntity(id: meetingID) else {
+            throw PersistenceError.meetingNotFound
+        }
+        return meeting.segments.map(\.segment).sorted {
+            if $0.startTime != $1.startTime { return $0.startTime < $1.startTime }
+            return $0.endTime < $1.endTime
+        }
+    }
+
     func recentHistory(limit: Int) throws -> [RecentHistoryItem] {
         guard limit > 0 else { return [] }
         var dictationDescriptor = FetchDescriptor<DictationEntity>(

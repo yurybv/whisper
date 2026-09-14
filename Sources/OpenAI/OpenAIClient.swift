@@ -191,11 +191,14 @@ struct OpenAIClient: OpenAIClientProtocol, Sendable {
                 }
 
                 guard (200..<300).contains(response.statusCode) else {
-                    if response.statusCode == 401 {
+                    if response.statusCode == 401 || response.statusCode == 403 {
                         throw FeatureError.invalidAPIKey
                     }
                     let message = decoder.decodeOpenAIError(from: data)
                         ?? "OpenAI request failed with status \(response.statusCode)."
+                    if retryPolicy.shouldRetry(statusCode: response.statusCode) {
+                        throw OpenAIClientError.transientAPI(message: message)
+                    }
                     throw OpenAIClientError.api(message: message)
                 }
                 return data
@@ -221,7 +224,7 @@ struct OpenAIClient: OpenAIClientProtocol, Sendable {
     private func apiKey() throws -> String {
         guard let key = try secureStore.readOpenAIKey()?.trimmingCharacters(in: .whitespacesAndNewlines),
               !key.isEmpty else {
-            throw FeatureError.invalidAPIKey
+            throw FeatureError.missingAPIKey
         }
         return key
     }

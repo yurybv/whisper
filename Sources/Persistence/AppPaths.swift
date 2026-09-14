@@ -1,6 +1,6 @@
 import Foundation
 
-struct AppPaths {
+struct AppPaths: @unchecked Sendable {
     let rootURL: URL
     let recordingsURL: URL
     let temporaryURL: URL
@@ -59,6 +59,42 @@ struct AppPaths {
             return
         }
         try fileManager.removeItem(at: safeURL)
+    }
+
+    func relativeRecordingPath(for fileURL: URL) throws -> String {
+        let root = recordingsURL.standardizedFileURL.resolvingSymlinksInPath()
+        let resolved = fileURL.standardizedFileURL.resolvingSymlinksInPath()
+        let prefix = root.path.hasSuffix("/") ? root.path : root.path + "/"
+        guard resolved.path.hasPrefix(prefix) else { throw PersistenceError.unsafePath }
+        let relativePath = String(resolved.path.dropFirst(prefix.count))
+        guard relativePath.split(separator: "/").first?.hasPrefix("meeting-") == true else {
+            throw PersistenceError.unsafePath
+        }
+        return relativePath
+    }
+
+    func relativeRecordingPath(for fileURL: URL, meetingID: UUID) throws -> String {
+        let relativePath = try relativeRecordingPath(for: fileURL)
+        guard relativePath.split(separator: "/").first
+            == Substring("meeting-\(meetingID.uuidString)") else {
+            throw PersistenceError.unsafePath
+        }
+        return relativePath
+    }
+
+    func recordingFileURL(relativePath: String) throws -> URL {
+        guard !relativePath.isEmpty, !relativePath.hasPrefix("/") else {
+            throw PersistenceError.unsafePath
+        }
+        let candidate = recordingsURL.appendingPathComponent(relativePath)
+        _ = try relativeRecordingPath(for: candidate)
+        return candidate.standardizedFileURL.resolvingSymlinksInPath()
+    }
+
+    func recordingFileURL(relativePath: String, meetingID: UUID) throws -> URL {
+        let url = try recordingFileURL(relativePath: relativePath)
+        _ = try relativeRecordingPath(for: url, meetingID: meetingID)
+        return url
     }
 
     private func validatedMeetingDirectory(_ candidate: URL) throws -> URL {

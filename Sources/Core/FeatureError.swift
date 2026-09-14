@@ -2,6 +2,7 @@ import Foundation
 
 enum FeatureError: Error, Sendable, Equatable {
     case keychain
+    case missingAPIKey
     case invalidAPIKey
     case microphoneDisconnected
 }
@@ -11,6 +12,8 @@ extension FeatureError: LocalizedError {
         switch self {
         case .keychain:
             "Whisper could not access the API key in Keychain."
+        case .missingAPIKey:
+            "Open Whisper Settings to add your OpenAI API key."
         case .invalidAPIKey:
             "Open Whisper Settings to add or replace your OpenAI API key."
         case .microphoneDisconnected:
@@ -24,6 +27,8 @@ enum DictationErrorPresentation {
         let baseMessage: String
 
         switch error {
+        case FeatureError.missingAPIKey:
+            baseMessage = "Open Whisper Settings to add your OpenAI API key."
         case FeatureError.invalidAPIKey:
             baseMessage = "Open Whisper Settings to add or replace your OpenAI API key."
         case FeatureError.keychain:
@@ -58,7 +63,7 @@ enum DictationErrorPresentation {
             "The recording is too long to upload. Discard it and record a shorter dictation."
         case .unreadableAudioFile:
             "Whisper could not read the captured audio."
-        case .invalidResponse, .api:
+        case .invalidResponse, .api, .transientAPI:
             "OpenAI could not process this dictation."
         }
     }

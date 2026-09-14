@@ -160,6 +160,44 @@ final class OpenAIClientTests: XCTestCase {
         XCTAssertEqual(requests.count, 1)
     }
 
+    func testMissingKeyIsDistinctFromRejectedKeyAndDoesNotSendRequest() async throws {
+        let session = RecordingURLSession([])
+        let client = OpenAIClient(
+            secureStore: InMemorySecureStore(),
+            session: session,
+            sleep: { _ in }
+        )
+        let fixtureURL = try makeAudioFixture()
+        defer { try? FileManager.default.removeItem(at: fixtureURL) }
+
+        do {
+            _ = try await client.transcribe(fileURL: fixtureURL, languageHint: nil, prompt: nil)
+            XCTFail("Expected missing API key")
+        } catch {
+            XCTAssertEqual(error as? FeatureError, .missingAPIKey)
+        }
+        let requests = await session.requests()
+        XCTAssertTrue(requests.isEmpty)
+    }
+
+    func testForbiddenAuthenticationDoesNotRetry() async throws {
+        let session = RecordingURLSession([
+            .http(statusCode: 403, body: Data(#"{"error":{"message":"Forbidden"}}"#.utf8))
+        ])
+        let client = try makeClient(session: session)
+        let fixtureURL = try makeAudioFixture()
+        defer { try? FileManager.default.removeItem(at: fixtureURL) }
+
+        do {
+            _ = try await client.transcribe(fileURL: fixtureURL, languageHint: nil, prompt: nil)
+            XCTFail("Expected invalid API key")
+        } catch {
+            XCTAssertEqual(error as? FeatureError, .invalidAPIKey)
+        }
+        let requests = await session.requests()
+        XCTAssertEqual(requests.count, 1)
+    }
+
     func testRateLimitRetriesThreeTimesWithBoundedBackoff() async throws {
         let session = RecordingURLSession([
             .http(statusCode: 429, body: Data(#"{"error":{"message":"Try later"}}"#.utf8)),
@@ -182,6 +220,29 @@ final class OpenAIClientTests: XCTestCase {
         let recordedDelays = await delays.values()
         XCTAssertEqual(requests.count, 4)
         XCTAssertEqual(recordedDelays, [1, 2, 4])
+    }
+
+    func testExhaustedTransientStatusRemainsClassifiedForJobRetry() async throws {
+        let response: RecordingURLSession.Stub = .http(
+            statusCode: 503,
+            body: Data(#"{"error":{"message":"Service unavailable"}}"#.utf8)
+        )
+        let session = RecordingURLSession([response, response, response, response])
+        let client = try makeClient(session: session, sleep: { _ in })
+        let fixtureURL = try makeAudioFixture()
+        defer { try? FileManager.default.removeItem(at: fixtureURL) }
+
+        do {
+            _ = try await client.transcribe(fileURL: fixtureURL, languageHint: nil, prompt: nil)
+            XCTFail("Expected retryable service error")
+        } catch {
+            XCTAssertEqual(
+                error as? OpenAIClientError,
+                .transientAPI(message: "Service unavailable")
+            )
+        }
+        let requests = await session.requests()
+        XCTAssertEqual(requests.count, 4)
     }
 
     func testBadRequestExposesOnlyServerMessage() async throws {

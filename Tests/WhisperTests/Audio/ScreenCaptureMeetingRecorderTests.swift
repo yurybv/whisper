@@ -63,7 +63,7 @@ final class ScreenCaptureMeetingRecorderTests: XCTestCase {
 
         let nextCompletion = await completions.next()
         let completion = try XCTUnwrap(nextCompletion)
-        guard case let .failed(failure) = completion else {
+        guard case let .failed(_, failure) = completion else {
             return XCTFail("Expected partial capture completion")
         }
         XCTAssertEqual(failure.unavailableSource, .microphone)
@@ -87,7 +87,7 @@ final class ScreenCaptureMeetingRecorderTests: XCTestCase {
 
         let nextCompletion = await completions.next()
         let completion = try XCTUnwrap(nextCompletion)
-        guard case let .failed(failure) = completion else {
+        guard case let .failed(_, failure) = completion else {
             return XCTFail("Expected partial capture completion")
         }
         XCTAssertEqual(failure.unavailableSource, .systemAudio)
@@ -160,7 +160,7 @@ final class ScreenCaptureMeetingRecorderTests: XCTestCase {
 
         let nextCompletion = await completions.next()
         let completion = try XCTUnwrap(nextCompletion)
-        guard case let .completed(capture) = completion else {
+        guard case let .completed(_, capture) = completion else {
             return XCTFail("Expected successful deadline completion")
         }
         XCTAssertTrue(FileManager.default.fileExists(atPath: capture.microphoneURL.path))
@@ -247,7 +247,7 @@ final class ScreenCaptureMeetingRecorderTests: XCTestCase {
 
         let nextCompletion = await completions.next()
         let completion = try XCTUnwrap(nextCompletion)
-        guard case let .failed(failure) = completion else {
+        guard case let .failed(_, failure) = completion else {
             return XCTFail("Expected partial capture completion")
         }
         XCTAssertEqual(failure.unavailableSource, .bothSources)

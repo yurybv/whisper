@@ -48,6 +48,8 @@ final class AppRuntime {
     private let modeRepository: ModeRepository
     private let recorder: AVAudioEngineRecorder
     private let coordinator: DictationCoordinator
+    private let meetingCoordinator: MeetingProcessingCoordinator
+    private let meetingRecovery: MeetingRecoveryService
     private let hotkeys: GlobalHotkeyMonitor
     private let hudController = DictationHUDController()
     private var mainWindowController: MainWindowController!
@@ -61,6 +63,7 @@ final class AppRuntime {
     private var shortcutCaptureTask: Task<Void, Never>?
     private var stateTask: Task<Void, Never>?
     private var levelTask: Task<Void, Never>?
+    private var meetingRecoveryTask: Task<Void, Never>?
     private var shortcutFailure: String?
     private var lastState: DictationState = .idle
     private var lastLevel: Float = 0
@@ -93,6 +96,27 @@ final class AppRuntime {
             modeProvider: modeRepository,
             history: history,
             insertion: AXTextInsertionService()
+        )
+        let meetingRecorder = ScreenCaptureMeetingRecorder(paths: paths)
+        let meetingTranscriber = MeetingTranscriber(
+            client: openAI,
+            chunkPreparer: AVAssetMeetingChunkPreparer(paths: paths),
+            resultStore: DiarizedChunkResultStore(paths: paths)
+        )
+        meetingCoordinator = MeetingProcessingCoordinator(
+            recorder: meetingRecorder,
+            transcriber: meetingTranscriber,
+            transformer: openAI,
+            history: history,
+            paths: paths
+        )
+        meetingRecovery = MeetingRecoveryService(
+            history: history,
+            coordinator: meetingCoordinator,
+            processingAvailable: {
+                guard let key = try? store.readOpenAIKey() else { return false }
+                return !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            }
         )
         hotkeys = GlobalHotkeyMonitor(
             source: CGEventHotkeyMonitor(),
@@ -199,6 +223,7 @@ final class AppRuntime {
     func start() {
         let initialMode = (try? modeRepository.activeMode()) ?? .defaultMode
         menuBarController.render(state: .ready, modeName: initialMode.name)
+        resumeMeetingJobs()
 
         hotkeyTask = Task { [weak self] in
             guard let self else { return }
@@ -244,10 +269,12 @@ final class AppRuntime {
         shortcutCaptureTask?.cancel()
         stateTask?.cancel()
         levelTask?.cancel()
+        meetingRecoveryTask?.cancel()
         hotkeyTask = nil
         shortcutCaptureTask = nil
         stateTask = nil
         levelTask = nil
+        meetingRecoveryTask = nil
         hotkeyRouter.stop()
         recoveryActionRouter.stop()
         Task { await hotkeys.stop() }
@@ -257,6 +284,14 @@ final class AppRuntime {
         onboarding.refreshPermissions()
         settingsModel.refresh()
         Task { [weak self] in await self?.refreshHotkeys() }
+        resumeMeetingJobs()
+    }
+
+    private func resumeMeetingJobs() {
+        meetingRecoveryTask?.cancel()
+        meetingRecoveryTask = Task { [meetingRecovery] in
+            try? await meetingRecovery.resumeIncompleteJobs()
+        }
     }
 
     private func refreshHotkeys() async {

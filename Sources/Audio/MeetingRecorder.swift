@@ -54,8 +54,14 @@ struct MeetingCaptureFailure: Error, Sendable, Equatable {
 }
 
 enum MeetingCaptureCompletion: Sendable, Equatable {
-    case completed(CapturedMeeting)
-    case failed(MeetingCaptureFailure)
+    case completed(meetingID: UUID, capture: CapturedMeeting)
+    case failed(meetingID: UUID, failure: MeetingCaptureFailure)
+
+    var meetingID: UUID {
+        switch self {
+        case let .completed(meetingID, _), let .failed(meetingID, _): meetingID
+        }
+    }
 }
 
 extension MeetingCaptureFailure: LocalizedError {

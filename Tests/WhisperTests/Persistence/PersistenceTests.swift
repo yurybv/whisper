@@ -174,6 +174,48 @@ final class PersistenceTests: XCTestCase {
     }
 
     @MainActor
+    func testMeetingRecoveryMetadataSurvivesReopeningStore() throws {
+        let root = FileManager.default.temporaryDirectory
+            .appendingPathComponent("WhisperRecoveryStore-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let storeURL = root.appendingPathComponent("Whisper.store")
+        let meetingID = UUID()
+
+        do {
+            let controller = try PersistenceController(storeURL: storeURL)
+            let repository = HistoryRepository(context: controller.container.mainContext)
+            _ = try repository.createMeeting(
+                MeetingDraft(
+                    id: meetingID,
+                    title: "Recoverable",
+                    status: .captured,
+                    instructionsSnapshot: "Stable instruction",
+                    resultLanguage: "Russian",
+                    microphoneRelativePath: "meeting-\(meetingID.uuidString)/microphone.m4a",
+                    systemAudioRelativePath: "meeting-\(meetingID.uuidString)/system.m4a",
+                    microphoneStartOffset: 0.25,
+                    systemAudioStartOffset: 0.75,
+                    errorMessage: "Retry when online",
+                    failureKind: .network,
+                    retryStage: .processing
+                )
+            )
+        }
+
+        let controller = try PersistenceController(storeURL: storeURL)
+        let meeting = try XCTUnwrap(
+            HistoryRepository(context: controller.container.mainContext).meeting(id: meetingID)
+        )
+        XCTAssertEqual(meeting.instructionsSnapshot, "Stable instruction")
+        XCTAssertEqual(meeting.resultLanguage, "Russian")
+        XCTAssertEqual(meeting.microphoneStartOffset, 0.25)
+        XCTAssertEqual(meeting.systemAudioStartOffset, 0.75)
+        XCTAssertEqual(meeting.failureKind, .network)
+        XCTAssertEqual(meeting.retryStage, .processing)
+    }
+
+    @MainActor
     func testStoresAndUpdatesDictationMetadata() throws {
         let controller = try PersistenceController(inMemory: true)
         let repository = HistoryRepository(context: controller.container.mainContext)

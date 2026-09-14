@@ -15,6 +15,22 @@ enum MeetingStatus: String, Sendable, Codable, Equatable {
     }
 }
 
+enum MeetingFailureKind: String, Sendable, Codable, Equatable {
+    case authentication
+    case missingAPIKey
+    case network
+    case capture
+    case processing
+    case interruptedCapture
+
+    var isRetryable: Bool { self == .network || self == .missingAPIKey }
+}
+
+enum MeetingRetryStage: String, Sendable, Codable, Equatable {
+    case transcription
+    case processing
+}
+
 struct MeetingDraft: Sendable, Equatable {
     let id: UUID
     let title: String
@@ -28,8 +44,12 @@ struct MeetingDraft: Sendable, Equatable {
     let resultLanguage: String?
     let microphoneRelativePath: String
     let systemAudioRelativePath: String
+    let microphoneStartOffset: TimeInterval
+    let systemAudioStartOffset: TimeInterval
     let processedText: String
     let errorMessage: String?
+    let failureKind: MeetingFailureKind?
+    let retryStage: MeetingRetryStage?
 
     init(
         id: UUID = UUID(),
@@ -44,8 +64,12 @@ struct MeetingDraft: Sendable, Equatable {
         resultLanguage: String? = nil,
         microphoneRelativePath: String = "",
         systemAudioRelativePath: String = "",
+        microphoneStartOffset: TimeInterval = 0,
+        systemAudioStartOffset: TimeInterval = 0,
         processedText: String = "",
-        errorMessage: String? = nil
+        errorMessage: String? = nil,
+        failureKind: MeetingFailureKind? = nil,
+        retryStage: MeetingRetryStage? = nil
     ) {
         self.id = id
         self.title = title
@@ -59,8 +83,12 @@ struct MeetingDraft: Sendable, Equatable {
         self.resultLanguage = resultLanguage
         self.microphoneRelativePath = microphoneRelativePath
         self.systemAudioRelativePath = systemAudioRelativePath
+        self.microphoneStartOffset = microphoneStartOffset
+        self.systemAudioStartOffset = systemAudioStartOffset
         self.processedText = processedText
         self.errorMessage = errorMessage
+        self.failureKind = failureKind
+        self.retryStage = retryStage
     }
 }
 
@@ -77,19 +105,31 @@ struct MeetingSnapshot: Sendable, Equatable, Identifiable {
     let resultLanguage: String?
     let microphoneRelativePath: String
     let systemAudioRelativePath: String
+    let microphoneStartOffset: TimeInterval
+    let systemAudioStartOffset: TimeInterval
     let processedText: String
     let errorMessage: String?
+    let failureKind: MeetingFailureKind?
+    let retryStage: MeetingRetryStage?
 }
 
 enum MeetingMutation: Sendable, Equatable {
     case title(String)
     case status(MeetingStatus, errorMessage: String?)
+    case retryable(
+        message: String,
+        kind: MeetingFailureKind,
+        stage: MeetingRetryStage
+    )
+    case failure(message: String, kind: MeetingFailureKind, stage: MeetingRetryStage?)
     case progress(completed: Int, total: Int)
     case capture(
         endedAt: Date,
         duration: TimeInterval,
         microphoneRelativePath: String,
-        systemAudioRelativePath: String
+        systemAudioRelativePath: String,
+        microphoneStartOffset: TimeInterval,
+        systemAudioStartOffset: TimeInterval
     )
     case result(processedText: String, resultLanguage: String?)
 }
@@ -108,8 +148,12 @@ final class MeetingEntity {
     var resultLanguage: String?
     var microphoneRelativePath: String
     var systemAudioRelativePath: String
+    var microphoneStartOffset: TimeInterval = 0
+    var systemAudioStartOffset: TimeInterval = 0
     var processedText: String
     var errorMessage: String?
+    var failureKindRaw: String?
+    var retryStageRaw: String?
     @Relationship(deleteRule: .cascade, inverse: \TranscriptSegmentEntity.meeting)
     var segments: [TranscriptSegmentEntity] = []
 
@@ -126,8 +170,12 @@ final class MeetingEntity {
         resultLanguage = draft.resultLanguage
         microphoneRelativePath = draft.microphoneRelativePath
         systemAudioRelativePath = draft.systemAudioRelativePath
+        microphoneStartOffset = draft.microphoneStartOffset
+        systemAudioStartOffset = draft.systemAudioStartOffset
         processedText = draft.processedText
         errorMessage = draft.errorMessage
+        failureKindRaw = draft.failureKind?.rawValue
+        retryStageRaw = draft.retryStage?.rawValue
     }
 
     var snapshot: MeetingSnapshot? {
@@ -147,8 +195,12 @@ final class MeetingEntity {
             resultLanguage: resultLanguage,
             microphoneRelativePath: microphoneRelativePath,
             systemAudioRelativePath: systemAudioRelativePath,
+            microphoneStartOffset: microphoneStartOffset,
+            systemAudioStartOffset: systemAudioStartOffset,
             processedText: processedText,
-            errorMessage: errorMessage
+            errorMessage: errorMessage,
+            failureKind: failureKindRaw.flatMap(MeetingFailureKind.init(rawValue:)),
+            retryStage: retryStageRaw.flatMap(MeetingRetryStage.init(rawValue:))
         )
     }
 
@@ -159,14 +211,35 @@ final class MeetingEntity {
         case let .status(status, errorMessage):
             statusRaw = status.rawValue
             self.errorMessage = errorMessage
+            failureKindRaw = nil
+            retryStageRaw = nil
+        case let .retryable(message, kind, stage):
+            statusRaw = MeetingStatus.captured.rawValue
+            errorMessage = message
+            failureKindRaw = kind.rawValue
+            retryStageRaw = stage.rawValue
+        case let .failure(message, kind, stage):
+            statusRaw = MeetingStatus.failed.rawValue
+            errorMessage = message
+            failureKindRaw = kind.rawValue
+            retryStageRaw = stage?.rawValue
         case let .progress(completed, total):
             progressCompleted = completed
             progressTotal = total
-        case let .capture(endedAt, duration, microphoneRelativePath, systemAudioRelativePath):
+        case let .capture(
+            endedAt,
+            duration,
+            microphoneRelativePath,
+            systemAudioRelativePath,
+            microphoneStartOffset,
+            systemAudioStartOffset
+        ):
             self.endedAt = endedAt
             self.duration = duration
             self.microphoneRelativePath = microphoneRelativePath
             self.systemAudioRelativePath = systemAudioRelativePath
+            self.microphoneStartOffset = microphoneStartOffset
+            self.systemAudioStartOffset = systemAudioStartOffset
         case let .result(processedText, resultLanguage):
             self.processedText = processedText
             self.resultLanguage = resultLanguage

@@ -28,12 +28,12 @@ struct TranscriptionResponse: Decodable, Sendable, Equatable {
     let languages: [DetectedLanguage]?
 }
 
-struct DiarizedTranscriptionResponse: Decodable, Sendable, Equatable {
+struct DiarizedTranscriptionResponse: Codable, Sendable, Equatable {
     let text: String?
     let segments: [DiarizedSegment]
 }
 
-struct DiarizedSegment: Decodable, Sendable, Equatable {
+struct DiarizedSegment: Codable, Sendable, Equatable {
     let speaker: String
     let text: String
     let start: TimeInterval
@@ -42,6 +42,7 @@ struct DiarizedSegment: Decodable, Sendable, Equatable {
 
 enum OpenAIClientError: Error, Sendable, Equatable {
     case api(message: String)
+    case transientAPI(message: String)
     case uploadTooLarge(maximumBytes: Int)
     case unreadableAudioFile
     case invalidResponse
@@ -50,7 +51,7 @@ enum OpenAIClientError: Error, Sendable, Equatable {
 extension OpenAIClientError: LocalizedError {
     var errorDescription: String? {
         switch self {
-        case let .api(message):
+        case let .api(message), let .transientAPI(message):
             message
         case let .uploadTooLarge(maximumBytes):
             "The audio file exceeds the \(maximumBytes)-byte upload limit."

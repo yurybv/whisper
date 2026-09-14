@@ -55,7 +55,7 @@
 
 - **Title:** Implement processing, retry, and relaunch recovery
 - **Type:** feature
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Persist the meeting job state, upload incomplete chunks, merge transcript, apply the saved processing instructions/result language, retry transient failures, and resume on launch.
 - **Out of scope:** Background processing after user logout because the MVP has no accounts; cloud sync.
@@ -65,12 +65,14 @@
 - **Expected files:** `Sources/Meetings/MeetingProcessor.swift`, `MeetingRecoveryService.swift`, job state types, matching tests.
 - **Source:** implementation plan Task 14.
 - **Blockers:** None.
+- **Implementation (2026-09-15):** Added a durable meeting-processing actor that persists capture and stage transitions before external work, uploads at most two diarized chunks concurrently, atomically retains completed chunk responses, merges and stores the transcript, and transforms it with the original instruction and result-language snapshot. Network, exhausted rate-limit/server, missing-key, rejected-key, source-loss, and persistence failures keep distinct recovery states without deleting captured audio. Recorder completion events carry their owning meeting ID, lifecycle commands are race-safe, and startup/app-activation recovery resumes captured, transcribing, and processing jobs through the production runtime.
+- **Verification:** 56 focused coordinator, transcriber, persistence-reopen, OpenAI classification, recorder ownership, stale-completion, retry, and failure-cleanup tests passed. The app build, `git diff --check`, privacy logging scan, and independent read-only review passed. Manual live-network QA was not applicable because deterministic fakes cover upload/retry behavior without sending user audio or consuming the owner's API quota.
 
 ## WH-M4-005
 
 - **Title:** Build Recordings screen and recording states
 - **Type:** feature
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Implement the Recordings destination with Start/Stop, source status, microphone, hotkey, processing instructions, result language, elapsed time, meters, finalizing, low-disk, and permission errors.
 - **Out of scope:** History details and transcript editing.
@@ -79,7 +81,7 @@
 - **Dependencies:** WH-M4-001, WH-M4-002, WH-M4-003, WH-M4-004.
 - **Expected files:** `Sources/UI/Recordings/**`, UI tests.
 - **Source:** implementation plan Task 14 and approved Open Design prototype.
-- **Blockers:** WH-M4-001..004.
+- **Blockers:** None.
 
 ## WH-M4-006
 

@@ -20,6 +20,7 @@ final class ScreenCaptureMeetingRecorder: MeetingRecorder, @unchecked Sendable {
     }
 
     private final class RecordingSession: @unchecked Sendable {
+        let meetingID: UUID
         let directoryURL: URL
         let microphoneWriter: any MeetingTrackWriter
         let systemAudioWriter: any MeetingTrackWriter
@@ -38,12 +39,14 @@ final class ScreenCaptureMeetingRecorder: MeetingRecorder, @unchecked Sendable {
         var acceptsInterruptions = true
 
         init(
+            meetingID: UUID,
             directoryURL: URL,
             microphoneWriter: any MeetingTrackWriter,
             systemAudioWriter: any MeetingTrackWriter,
             startedAt: Date,
             startedUptime: TimeInterval
         ) {
+            self.meetingID = meetingID
             self.directoryURL = directoryURL
             self.microphoneWriter = microphoneWriter
             self.systemAudioWriter = systemAudioWriter
@@ -157,6 +160,7 @@ final class ScreenCaptureMeetingRecorder: MeetingRecorder, @unchecked Sendable {
             }
 
             let activeSession = RecordingSession(
+                meetingID: configuration.meetingID,
                 directoryURL: directory,
                 microphoneWriter: microphoneWriter,
                 systemAudioWriter: systemAudioWriter,
@@ -394,7 +398,9 @@ final class ScreenCaptureMeetingRecorder: MeetingRecorder, @unchecked Sendable {
                         endedAt: endedAt
                     )
                     clearSession(activeSession)
-                    completionContinuation.yield(.failed(failure))
+                    completionContinuation.yield(
+                        .failed(meetingID: activeSession.meetingID, failure: failure)
+                    )
                     throw failure
                 }
 
@@ -407,7 +413,9 @@ final class ScreenCaptureMeetingRecorder: MeetingRecorder, @unchecked Sendable {
                     endedAt: endedAt
                 )
                 clearSession(activeSession)
-                completionContinuation.yield(.completed(capture))
+                completionContinuation.yield(
+                    .completed(meetingID: activeSession.meetingID, capture: capture)
+                )
                 return .captured(capture)
             }
             activeSession.terminalTask = task

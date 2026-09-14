@@ -38,7 +38,7 @@
 
 - **Title:** Merge diarized chunks into a chronological transcript
 - **Type:** feature
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Decode diarized results, map microphone segments to You and system segments to Others, normalize timestamps, remove overlap duplicates, and produce stable chronological segments.
 - **Out of scope:** Identifying remote participants by name.
@@ -48,12 +48,14 @@
 - **Expected files:** `Sources/Meetings/TranscriptMerger.swift`, diarization DTO mapping, matching tests.
 - **Source:** implementation plan Task 13.
 - **Blockers:** None.
+- **Implementation (2026-09-14):** Added a pure transcript merger that validates finite nonnegative chunk offsets and segment ranges, applies chunk timeline offsets, ignores model speaker identities, and deterministically maps microphone audio to You and system audio to Others. It preserves multilingual text while normalizing whitespace, removes same-source boundary duplicates at 50-percent-or-greater overlap, sorts with explicit tie-breakers, and coalesces adjacent same-source segments separated by less than five seconds.
+- **Verification:** 7 focused source-mapping, offset, ordering, exact-overlap-boundary, cross-source collision, coalescing, multilingual, malformed-timestamp, and malformed-JSON tests passed. The combined Task 13 planner/merger check passed 18 tests; the required app build, `git diff --check`, privacy scan, and independent read-only review passed. Manual QA was not applicable because this task exposes a pure merge service without UI or live network behavior.
 
 ## WH-M4-004
 
 - **Title:** Implement processing, retry, and relaunch recovery
 - **Type:** feature
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Persist the meeting job state, upload incomplete chunks, merge transcript, apply the saved processing instructions/result language, retry transient failures, and resume on launch.
 - **Out of scope:** Background processing after user logout because the MVP has no accounts; cloud sync.
@@ -62,7 +64,7 @@
 - **Dependencies:** WH-M4-003, WH-M1-003, WH-M2-001.
 - **Expected files:** `Sources/Meetings/MeetingProcessor.swift`, `MeetingRecoveryService.swift`, job state types, matching tests.
 - **Source:** implementation plan Task 14.
-- **Blockers:** WH-M4-003.
+- **Blockers:** None.
 
 ## WH-M4-005
 

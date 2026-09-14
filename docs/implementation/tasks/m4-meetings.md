@@ -21,7 +21,7 @@
 
 - **Title:** Export size-bounded long-audio chunks
 - **Type:** feature
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Plan and export overlapping audio chunks below 20 MB for each source, persist chunk progress, and support up to three hours without unbounded memory use.
 - **Out of scope:** Transcript merge and processed-result generation.
@@ -31,12 +31,14 @@
 - **Expected files:** `Sources/Meetings/ChunkPlanner.swift`, `AudioChunkExporter.swift`, progress models, matching tests.
 - **Source:** implementation plan Task 13.
 - **Blockers:** None.
+- **Implementation (2026-09-14):** Added deterministic 20-minute chunk planning with one-second overlap for each captured source, sequential AVAsset M4A export, and recursive range splitting when an export exceeds the 20 MB upload limit. A JSON manifest atomically preserves source, plan and chunk indices, time offsets, relative path, status, retry count, and file size across relaunch; valid exports are reused, missing temporary exports are rebuilt from durable source audio, and completed transcriptions remain intact.
+- **Verification:** 11 focused planner, exporter, split/rebuild, relaunch, concurrency, path-containment, and progress-preservation tests passed. Real M4A range exports were reopened as playable AVAssets. A real sparse three-hour AVAsset timeline exported nine capped chunks while measured peak resident-memory growth stayed below 64 MiB. The required app build, `git diff --check`, privacy scan, and independent read-only review passed.
 
 ## WH-M4-003
 
 - **Title:** Merge diarized chunks into a chronological transcript
 - **Type:** feature
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Decode diarized results, map microphone segments to You and system segments to Others, normalize timestamps, remove overlap duplicates, and produce stable chronological segments.
 - **Out of scope:** Identifying remote participants by name.
@@ -45,7 +47,7 @@
 - **Dependencies:** WH-M4-002.
 - **Expected files:** `Sources/Meetings/TranscriptMerger.swift`, diarization DTO mapping, matching tests.
 - **Source:** implementation plan Task 13.
-- **Blockers:** WH-M4-002.
+- **Blockers:** None.
 
 ## WH-M4-004
 

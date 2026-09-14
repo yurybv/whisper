@@ -17,7 +17,7 @@ struct MeetingCaptureConfiguration: Sendable, Equatable {
     }
 }
 
-enum MeetingAudioSource: String, Sendable, Equatable, Hashable {
+enum MeetingAudioSource: String, Sendable, Equatable, Hashable, Codable {
     case microphone
     case systemAudio
 }

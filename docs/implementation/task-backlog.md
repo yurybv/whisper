@@ -58,8 +58,8 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 | ID | Task | Status | Depends on |
 |---|---|---|---|
 | WH-M4-001 | Capture microphone and system audio with ScreenCaptureKit | done | WH-M3-004 |
-| WH-M4-002 | Export size-bounded long-audio chunks | ready | WH-M4-001 |
-| WH-M4-003 | Merge diarized chunks into a chronological transcript | blocked | WH-M4-002 |
+| WH-M4-002 | Export size-bounded long-audio chunks | done | WH-M4-001 |
+| WH-M4-003 | Merge diarized chunks into a chronological transcript | ready | WH-M4-002 |
 | WH-M4-004 | Implement processing, retry, and relaunch recovery | blocked | WH-M4-003 |
 | WH-M4-005 | Build Recordings screen and recording states | blocked | WH-M4-001..004 |
 | WH-M4-006 | Review durable meeting recording milestone | blocked | WH-M4-001..005 |

@@ -6,6 +6,7 @@ struct AppRootView: View {
     @Bindable var modes: ModesModel
     @Bindable var settings: SettingsModel
     @Bindable var recordings: RecordingsModel
+    @Bindable var history: HistorySearchModel
     let relaunch: () -> Void
     let startDictation: () -> Void
     let changeMode: () -> Void
@@ -18,6 +19,7 @@ struct AppRootView: View {
         modes: ModesModel,
         settings: SettingsModel,
         recordings: RecordingsModel,
+        history: HistorySearchModel,
         initialDestination: SidebarDestination = .home,
         relaunch: @escaping () -> Void,
         startDictation: @escaping () -> Void,
@@ -29,6 +31,7 @@ struct AppRootView: View {
         self.modes = modes
         self.settings = settings
         self.recordings = recordings
+        self.history = history
         self.relaunch = relaunch
         self.startDictation = startDictation
         self.changeMode = changeMode
@@ -106,6 +109,7 @@ struct AppRootView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             onboarding.refreshPermissions()
             settings.refresh()
+            history.reload()
         }
     }
 
@@ -126,11 +130,7 @@ struct AppRootView: View {
         case .recordings:
             RecordingsView(model: recordings)
         case .history:
-            futureDestination(
-                title: "History",
-                symbol: "clock.arrow.circlepath",
-                message: "Complete dictation and recording history arrives in Milestone 5."
-            )
+            HistoryView(model: history)
         case .settings:
             SettingsView(
                 model: settings,
@@ -138,15 +138,5 @@ struct AppRootView: View {
                 resetSetup: { onboarding.presentSetup(reset: true) }
             )
         }
-    }
-
-    private func futureDestination(title: String, symbol: String, message: String) -> some View {
-        ContentUnavailableView(
-            title,
-            systemImage: symbol,
-            description: Text(message)
-        )
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(DesignTokens.canvas)
     }
 }

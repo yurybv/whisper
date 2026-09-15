@@ -104,6 +104,7 @@ final class AppRuntime {
     private let modesModel: ModesModel
     private let settingsModel: SettingsModel
     private let recordingsModel: RecordingsModel
+    private let historyModel: HistorySearchModel
     private var recordingHUDController: RecordingHUDController!
 
     private var hotkeyTask: Task<Void, Never>?
@@ -183,6 +184,7 @@ final class AppRuntime {
             shortcuts: settingsStore.shortcuts
         )
         homeModel = HomeModel(historyRepository: history)
+        historyModel = HistorySearchModel(repository: history)
         modesModel = try ModesModel(repository: modeRepository)
         settingsModel = SettingsModel(
             secureStore: store,
@@ -283,7 +285,7 @@ final class AppRuntime {
                 return await self.cancelTopFeature()
             }
         )
-        mainWindowController = MainWindowController { [weak self, onboarding, homeModel, modesModel, settingsModel, recordingsModel] relaunch in
+        mainWindowController = MainWindowController { [weak self, onboarding, homeModel, modesModel, settingsModel, recordingsModel, historyModel] relaunch in
             AnyView(
                 AppRootView(
                     onboarding: onboarding,
@@ -291,6 +293,7 @@ final class AppRuntime {
                     modes: modesModel,
                     settings: settingsModel,
                     recordings: recordingsModel,
+                    history: historyModel,
                     relaunch: relaunch,
                     startDictation: { [weak self] in
                         self?.startDictationFromHome()
@@ -330,6 +333,7 @@ final class AppRuntime {
             for await state in states {
                 guard !Task.isCancelled else { return }
                 render(state)
+                historyModel.reload()
             }
         }
 
@@ -358,6 +362,7 @@ final class AppRuntime {
                 }
                 recordingsModel.consumeAuthoritative(authoritativeState)
                 renderMeetingState()
+                historyModel.reload()
             }
         }
 
@@ -398,6 +403,7 @@ final class AppRuntime {
         Task { [weak self] in await self?.refreshHotkeys() }
         resumeMeetingJobs()
         recordingsModel.refresh()
+        historyModel.reload()
     }
 
     private func resumeMeetingJobs() {

@@ -68,8 +68,8 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 
 | ID | Task | Status | Depends on |
 |---|---|---|---|
-| WH-M5-001 | Build unified history list and details | ready | WH-M4-006 |
-| WH-M5-002 | Add playback, export, delete, and retention behavior | blocked | WH-M5-001 |
+| WH-M5-001 | Build unified history list and details | done | WH-M4-006 |
+| WH-M5-002 | Add playback, export, delete, and retention behavior | ready | WH-M5-001 |
 | WH-M5-003 | Harden failure, retry, and cleanup behavior | blocked | WH-M5-001..002 |
 | WH-M5-004 | Review history and retention milestone | blocked | WH-M5-001..003 |
 

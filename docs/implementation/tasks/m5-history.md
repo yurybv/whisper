@@ -4,7 +4,7 @@
 
 - **Title:** Build unified history list and details
 - **Type:** feature
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Implement local History navigation, search, type filter, date grouping, statuses, dictation detail, recording detail, transcript/result tabs, and processing details.
 - **Out of scope:** Cloud search, transcript editing, and individual speaker naming.
@@ -14,12 +14,14 @@
 - **Expected files:** `Sources/UI/History/**`, repository query additions, UI tests.
 - **Source:** implementation plan Task 15 and approved Open Design prototype.
 - **Blockers:** None.
+- **Implementation (2026-09-15):** Replaced the History placeholder with a unified local dictation/recording browser backed by complete SwiftData snapshots. Added deterministic newest-first Today/Yesterday/date groups, All/Dictations/Recordings filters, case-insensitive search across titles, instructions, original text, processed results, errors, target applications, and recording transcript segments. Added read-only dictation details plus recording Transcript/Result details with saved processing metadata, progress, retry-needed presentation, explicit empty/error states, selection reconciliation, and descriptive accessibility summaries. The runtime refreshes History on presentation, activation, and dictation/meeting state changes.
+- **Verification:** 9 focused search, grouping, selection, persistence, retry-state, accessibility-summary, and populated/empty/error rendering tests passed. The final unit/service suite passed 274 of 274 tests with zero failures or skips; UI targets compiled without launch and the Debug app built. Three synthetic offscreen screenshots were visually inspected and retained under `docs/testing/evidence/WH-M5-001/`. `git diff --check`, privacy scan, and independent read-only review passed. Live UI automation was omitted under the owner's no-cursor instruction.
 
 ## WH-M5-002
 
 - **Title:** Add playback, export, delete, and retention behavior
 - **Type:** feature
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Add recording playback, copy, plain-text export, confirmed delete, retention preference, and safe metadata/audio cleanup.
 - **Out of scope:** Audio sharing, cloud backup, rich export formats, and automatic compression.
@@ -28,7 +30,7 @@
 - **Dependencies:** WH-M5-001.
 - **Expected files:** `Sources/Audio/PlaybackService.swift`, history actions, retention service, matching tests.
 - **Source:** implementation plan Task 15.
-- **Blockers:** WH-M5-001.
+- **Blockers:** None.
 
 ## WH-M5-003
 

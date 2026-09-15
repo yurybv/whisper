@@ -15,6 +15,17 @@ struct RecentHistoryItem: Identifiable, Equatable, Sendable {
     let status: String
 }
 
+struct HistorySnapshot: Equatable, Sendable {
+    let dictations: [DictationSnapshot]
+    let meetings: [MeetingSnapshot]
+    let segmentsByMeetingID: [UUID: [TranscriptSegment]]
+}
+
+@MainActor
+protocol HistoryReading {
+    func historySnapshot() throws -> HistorySnapshot
+}
+
 @MainActor
 protocol HistoryRepositoryProtocol {
     func createDictation(_ draft: DictationDraft) throws -> UUID
@@ -25,10 +36,11 @@ protocol HistoryRepositoryProtocol {
     func incompleteMeetings() throws -> [MeetingSnapshot]
     func deleteDictation(id: UUID) throws
     func deleteMeeting(id: UUID) throws
+    func historySnapshot() throws -> HistorySnapshot
 }
 
 @MainActor
-final class HistoryRepository: HistoryRepositoryProtocol {
+final class HistoryRepository: HistoryRepositoryProtocol, HistoryReading {
     private let context: ModelContext
     private let appPaths: AppPaths?
 
@@ -150,6 +162,32 @@ final class HistoryRepository: HistoryRepositoryProtocol {
             (dictations + meetings)
                 .sorted { $0.date > $1.date }
                 .prefix(max(0, limit))
+        )
+    }
+
+    func historySnapshot() throws -> HistorySnapshot {
+        let dictations = try context.fetch(
+            FetchDescriptor<DictationEntity>(
+                sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
+            )
+        ).compactMap(\.snapshot)
+        let meetings = try context.fetch(
+            FetchDescriptor<MeetingEntity>(
+                sortBy: [SortDescriptor(\.startedAt, order: .reverse)]
+            )
+        ).compactMap(\.snapshot)
+        let segments = try context.fetch(
+            FetchDescriptor<TranscriptSegmentEntity>(
+                sortBy: [
+                    SortDescriptor(\.startTime),
+                    SortDescriptor(\.endTime),
+                ]
+            )
+        ).map(\.segment)
+        return HistorySnapshot(
+            dictations: dictations,
+            meetings: meetings,
+            segmentsByMeetingID: Dictionary(grouping: segments, by: \.meetingID)
         )
     }
 

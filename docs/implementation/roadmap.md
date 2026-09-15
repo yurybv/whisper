@@ -104,6 +104,8 @@ Review: passed on 2026-09-15. `WH-M5-001` is ready.
 
 Goal: expose reliable local history for dictations and recordings without risking source audio.
 
+Progress: `WH-M5-001` completed on 2026-09-15. History now combines full local dictation and recording snapshots with transcript segments, deterministic date grouping, type filters, case-insensitive search, explicit status/error states, and read-only details for original/processed dictation text and recording Transcript/Result content. `WH-M5-002` is ready for playback, export, deletion, and retention behavior.
+
 Deliverables:
 
 - unified searchable and filterable history;

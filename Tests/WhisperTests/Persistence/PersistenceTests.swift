@@ -287,6 +287,42 @@ final class PersistenceTests: XCTestCase {
     }
 
     @MainActor
+    func testHistorySnapshotReturnsFullRecordsAndChronologicalSegments() throws {
+        let controller = try PersistenceController(inMemory: true)
+        let repository = HistoryRepository(context: controller.container.mainContext)
+        let dictationID = try repository.createDictation(
+            DictationDraft(
+                modeNameSnapshot: "Translate",
+                modeInstructionsSnapshot: "Translate to English",
+                originalText: "Привет",
+                outputText: "Hello",
+                status: .ready
+            )
+        )
+        let meetingID = try repository.createMeeting(
+            MeetingDraft(
+                title: "Planning",
+                status: .ready,
+                instructionsSnapshot: "List decisions",
+                processedText: "Decision summary"
+            )
+        )
+        try repository.replaceSegments(
+            meetingID: meetingID,
+            segments: [
+                TranscriptSegment(meetingID: meetingID, source: .others, startTime: 8, endTime: 9, text: "Second"),
+                TranscriptSegment(meetingID: meetingID, source: .you, startTime: 2, endTime: 3, text: "First"),
+            ]
+        )
+
+        let snapshot = try repository.historySnapshot()
+
+        XCTAssertEqual(snapshot.dictations.map(\.id), [dictationID])
+        XCTAssertEqual(snapshot.meetings.map(\.id), [meetingID])
+        XCTAssertEqual(snapshot.segmentsByMeetingID[meetingID]?.map(\.text), ["First", "Second"])
+    }
+
+    @MainActor
     func testReplacesSegmentsAndCascadesWhenMeetingIsDeleted() throws {
         let controller = try PersistenceController(inMemory: true)
         let repository = HistoryRepository(context: controller.container.mainContext)

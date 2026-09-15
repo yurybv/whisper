@@ -13,6 +13,7 @@ final class AppUITestEnvironment {
     private let modes: ModesModel
     private let settings: SettingsModel
     private let recordings: RecordingsModel
+    private let history: HistorySearchModel
 
     init(arguments: [String]) throws {
         let suiteName = "Whisper.AppUITests"
@@ -65,6 +66,7 @@ final class AppUITestEnvironment {
             appPaths: appPaths
         )
         let home = HomeModel(historyRepository: historyRepository)
+        let history = HistorySearchModel(repository: historyRepository)
         let appSettingsStore = AppSettingsStore(defaults: defaults)
         let settings = SettingsModel(
             secureStore: secureStore,
@@ -135,6 +137,7 @@ final class AppUITestEnvironment {
                     modes: modes,
                     settings: settings,
                     recordings: recordings,
+                    history: history,
                     initialDestination: initialDestination,
                     relaunch: relaunch,
                     startDictation: {},
@@ -150,6 +153,7 @@ final class AppUITestEnvironment {
         self.modes = modes
         self.settings = settings
         self.recordings = recordings
+        self.history = history
         self.window = window
     }
 

@@ -77,8 +77,8 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 
 | ID | Task | Status | Depends on |
 |---|---|---|---|
-| WH-M6-001 | Add deterministic ad-hoc packaging | ready | WH-M5-004 |
-| WH-M6-002 | Add full automated verification command | blocked | WH-M6-001 |
+| WH-M6-001 | Add deterministic ad-hoc packaging | done | WH-M5-004 |
+| WH-M6-002 | Add full automated verification command | ready | WH-M6-001 |
 | WH-M6-003 | Run target-app and failure-state acceptance matrix | blocked | WH-M6-002 |
 | WH-M6-004 | Complete privacy, security, and logging review | blocked | WH-M6-002 |
 | WH-M6-005 | Write installation and operating runbook | blocked | WH-M6-001..004 |

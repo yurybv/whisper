@@ -121,6 +121,8 @@ Review: passed on 2026-09-15. `WH-M6-001` is ready.
 
 Goal: produce an ad-hoc signed personal build with clear installation, permission, recovery, and troubleshooting instructions.
 
+Progress: `WH-M6-001` completed on 2026-09-15. The canonical packaging script produces a clean, deterministic-path, arm64-only Release bundle at `build/Whisper.app`, applies a timestamp-free ad-hoc signature, and verifies the result. Unsupported architecture, Xcode, and SDK versions fail before generation or build. `WH-M6-002` is ready to compose the full automated verification command.
+
 Deliverables:
 
 - deterministic packaging script;

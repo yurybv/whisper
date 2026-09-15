@@ -4,7 +4,7 @@
 
 - **Title:** Add deterministic ad-hoc packaging
 - **Type:** build
-- **Status:** blocked
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Build, archive or assemble, ad-hoc sign, verify, and output a local `Whisper.app` for Apple Silicon with a reproducible script.
 - **Out of scope:** Developer ID signing, notarization, App Store packaging, and automatic updates.
@@ -13,13 +13,15 @@
 - **Dependencies:** WH-M5-004.
 - **Expected files:** `scripts/package.sh`, build configuration, packaging tests or smoke helpers.
 - **Source:** implementation plan Task 16.
-- **Blockers:** Previous milestone review.
+- **Blockers:** None.
+- **Implementation (2026-09-15):** Added `scripts/package.sh` as the canonical deterministic packaging entry point plus `scripts/package-local.sh` for compatibility with the approved implementation plan. The script refuses non-arm64 hosts, Xcode older than 26.6, SDKs older than macOS 15, missing tools, unexpected or symlinked output roots, wrong bundle identifiers, and non-arm64 executables. It regenerates the Xcode project, removes only the fixed local package outputs, builds an unsigned arm64 Release into `build/DerivedData`, copies exactly `build/Whisper.app`, applies a timestamp-free ad-hoc signature, verifies it deeply and strictly, and prints the absolute result path. Generated package output is ignored by Git.
+- **Verification:** Four shell rejection tests passed for unsupported architecture, Xcode, SDK, and a symlinked build root. `scripts/package.sh` completed two independent clean Release builds; both produced byte-identical SHA-256 manifests for every bundle file at the deterministic output path. `build/Whisper.app` reports bundle identifier `dev.yury.whisper`, an arm64-only executable, `Signature=adhoc`, and passes `codesign --verify --deep --strict`. `bash -n` passed; ShellCheck was unavailable. The app was not launched under the owner's no-cursor/no-interference instruction; live packaged-app launch remains part of the later release acceptance matrix.
 
 ## WH-M6-002
 
 - **Title:** Add full automated verification command
 - **Type:** testing
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Add one script that validates environment, regenerates project, builds, runs unit/UI tests where supported, checks privacy patterns, packages, and verifies the signature.
 - **Out of scope:** Network calls to OpenAI and unattended macOS permission UI.
@@ -28,7 +30,7 @@
 - **Dependencies:** WH-M6-001.
 - **Expected files:** `scripts/verify.sh`, package/build scripts, test documentation.
 - **Source:** implementation plan Task 16 and test strategy.
-- **Blockers:** WH-M6-001.
+- **Blockers:** None.
 
 ## WH-M6-003
 

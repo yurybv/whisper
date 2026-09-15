@@ -7,8 +7,13 @@ final class MainWindowController: NSObject, NSWindowDelegate {
 
     private var window: NSWindow?
     private let rootViewBuilder: RootViewBuilder
+    private let preferredScreen: (() -> NSScreen?)?
 
-    init(rootViewBuilder: @escaping RootViewBuilder) {
+    init(
+        preferredScreen: (() -> NSScreen?)? = nil,
+        rootViewBuilder: @escaping RootViewBuilder
+    ) {
+        self.preferredScreen = preferredScreen
         self.rootViewBuilder = rootViewBuilder
         super.init()
     }
@@ -47,7 +52,19 @@ final class MainWindowController: NSObject, NSWindowDelegate {
         window.title = "Whisper"
         window.minSize = NSSize(width: 1120, height: 760)
         window.isReleasedWhenClosed = false
-        window.center()
+        if let visibleFrame = preferredScreen?()?.visibleFrame {
+            window.setFrame(
+                NSRect(
+                    x: visibleFrame.midX - window.frame.width / 2,
+                    y: visibleFrame.midY - window.frame.height / 2,
+                    width: window.frame.width,
+                    height: window.frame.height
+                ),
+                display: false
+            )
+        } else {
+            window.center()
+        }
         window.delegate = self
         window.contentViewController = NSHostingController(
             rootView: rootViewBuilder { [weak self] in self?.relaunch() }

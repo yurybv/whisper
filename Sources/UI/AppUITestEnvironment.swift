@@ -129,7 +129,7 @@ final class AppUITestEnvironment {
         let initialDestination = Self.argumentValue(after: "--ui-destination", in: arguments)
             .flatMap { value in SidebarDestination.allCases.first { $0.rawValue.lowercased() == value.lowercased() } }
             ?? .home
-        let window = MainWindowController { relaunch in
+        let window = MainWindowController(preferredScreen: Self.builtInScreen) { relaunch in
             AnyView(
                 AppRootView(
                     onboarding: onboarding,
@@ -163,6 +163,17 @@ final class AppUITestEnvironment {
         }
         return arguments[index + 1]
     }
+
+    private static func builtInScreen() -> NSScreen? {
+        NSScreen.screens.first { screen in
+            guard let screenNumber = screen.deviceDescription[
+                NSDeviceDescriptionKey("NSScreenNumber")
+            ] as? NSNumber else {
+                return false
+            }
+            return CGDisplayIsBuiltin(CGDirectDisplayID(screenNumber.uint32Value)) != 0
+        }
+    }
 }
 
 @MainActor
@@ -186,9 +197,9 @@ private final class AppUITestRecordingDriver {
 
     func stop() {
         Task { [weak model, meetingID] in
-            try? await Task.sleep(for: .milliseconds(750))
+            try? await Task.sleep(for: .seconds(2))
             model?.consume(.transcribing(meetingID: meetingID, completed: 1, total: 2))
-            try? await Task.sleep(for: .milliseconds(750))
+            try? await Task.sleep(for: .seconds(2))
             model?.consume(.ready(meetingID: meetingID))
         }
     }

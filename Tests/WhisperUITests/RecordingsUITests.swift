@@ -33,7 +33,8 @@ final class RecordingsUITests: XCTestCase {
         let app = launch(extraArguments: ["--recording-low-disk"])
 
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(
-            format: "label CONTAINS[c] %@",
+            format: "label CONTAINS[c] %@ OR value CONTAINS[c] %@",
+            "2 GB",
             "2 GB"
         )).firstMatch.waitForExistence(timeout: 3))
         XCTAssertFalse(app.buttons["Start Recording"].isEnabled)

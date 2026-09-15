@@ -45,6 +45,7 @@ final class RecordingsModel {
     ) async throws -> UUID
     typealias Stop = @MainActor () async throws -> Void
     typealias Cancel = @MainActor () async -> Bool
+    typealias Retry = @MainActor (_ meetingID: UUID) async throws -> Void
     typealias Now = @MainActor () -> Date
 
     private let settingsStore: AppSettingsStore
@@ -53,6 +54,7 @@ final class RecordingsModel {
     private let start: Start
     private let stop: Stop
     private let cancel: Cancel
+    private let retry: Retry
     private let now: Now
 
     var instructions: String {
@@ -76,6 +78,7 @@ final class RecordingsModel {
         start: @escaping Start,
         stop: @escaping Stop,
         cancel: @escaping Cancel,
+        retry: @escaping Retry,
         now: @escaping Now = Date.init
     ) {
         self.settingsStore = settingsStore
@@ -84,6 +87,7 @@ final class RecordingsModel {
         self.start = start
         self.stop = stop
         self.cancel = cancel
+        self.retry = retry
         self.now = now
         instructions = settingsStore.recordingInstructions
         resultLanguage = RecordingResultLanguage(
@@ -147,7 +151,7 @@ final class RecordingsModel {
             "Applying the saved processing instructions."
         case .ready:
             "The recording transcript and processed result are ready in local history."
-        case let .failed(_, message):
+        case let .failed(_, message, _):
             message
         }
     }
@@ -173,6 +177,7 @@ final class RecordingsModel {
         switch state {
         case .recording: return true
         case .finalizing, .captured, .transcribing, .processing: return false
+        case let .failed(_, _, retryable) where retryable: return false
         default:
             guard !instructions.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
                   microphonePermission == .granted,
@@ -183,6 +188,12 @@ final class RecordingsModel {
     }
 
     var hasActionError: Bool { localErrorMessage != nil }
+
+    var canRetryProcessing: Bool {
+        guard !isActionPending else { return false }
+        guard case let .failed(_, _, retryable) = state else { return false }
+        return retryable
+    }
 
     func refresh() {
         settings.refresh()
@@ -255,6 +266,19 @@ final class RecordingsModel {
         localErrorMessage = nil
         refresh()
         return true
+    }
+
+    func retryProcessing() async {
+        guard canRetryProcessing,
+              case let .failed(meetingID, _, _) = state else { return }
+        localErrorMessage = nil
+        isActionPending = true
+        defer { isActionPending = false }
+        do {
+            try await retry(meetingID)
+        } catch {
+            localErrorMessage = Self.message(for: error)
+        }
     }
 
     func consume(_ newState: MeetingRuntimeState) {
@@ -335,7 +359,7 @@ extension MeetingRuntimeState {
              let .processing(meetingID),
              let .ready(meetingID): meetingID
         case let .transcribing(meetingID, _, _),
-             let .failed(meetingID, _): meetingID
+             let .failed(meetingID, _, _): meetingID
         }
     }
 

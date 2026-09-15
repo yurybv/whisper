@@ -107,6 +107,7 @@ final class AppUITestEnvironment {
             start: { [recordingDriver] _, _, _, _ in recordingDriver.start() },
             stop: { [recordingDriver] in recordingDriver.stop() },
             cancel: { true },
+            retry: { _ in },
             now: { Date(timeIntervalSinceReferenceDate: 1_000) }
         )
         recordingDriver.model = recordings

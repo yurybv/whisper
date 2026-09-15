@@ -115,6 +115,23 @@ final class RecordingsModelTests: XCTestCase {
         XCTAssertEqual(fixture.model.state, .processing(meetingID: fixture.actions.meetingID))
     }
 
+    func testRetryableFailureExposesRetryAndKeepsOriginalMeeting() async {
+        let fixture = Fixture()
+        fixture.model.consume(
+            MeetingRuntimeState.failed(
+                meetingID: fixture.actions.meetingID,
+                message: "Check your network connection, then retry.",
+                retryable: true
+            )
+        )
+
+        XCTAssertTrue(fixture.model.canRetryProcessing)
+        XCTAssertFalse(fixture.model.canToggleRecording)
+        await fixture.model.retryProcessing()
+
+        XCTAssertEqual(fixture.actions.retriedMeetingIDs, [fixture.actions.meetingID])
+    }
+
     func testActiveCaptureIgnoresRuntimeEventsFromAnotherMeeting() {
         let fixture = Fixture()
         let activeID = fixture.actions.meetingID
@@ -220,6 +237,7 @@ private struct Fixture {
                 if let stopError { throw stopError }
             },
             cancel: { [actions] in actions.cancelCount += 1; return true },
+            retry: { [actions] meetingID in actions.retriedMeetingIDs.append(meetingID) },
             now: { Date(timeIntervalSinceReferenceDate: 1_000) }
         )
     }
@@ -257,4 +275,5 @@ private final class RecordingActionSpy {
     var starts: [Start] = []
     var stopCount = 0
     var cancelCount = 0
+    var retriedMeetingIDs: [UUID] = []
 }

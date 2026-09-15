@@ -252,6 +252,32 @@ final class MeetingProcessingCoordinatorTests: XCTestCase {
     }
 
     @MainActor
+    func testAutomaticCompletionStillWorksAfterCancellingPreviousRecording() async throws {
+        let fixture = try Fixture()
+        _ = try await fixture.coordinator.start(
+            title: "Cancelled",
+            instructions: "Summarize",
+            resultLanguage: nil
+        )
+        let cancelled = await fixture.coordinator.cancel()
+        XCTAssertTrue(cancelled)
+
+        let secondID = try await fixture.coordinator.start(
+            title: "Completed automatically",
+            instructions: "Summarize",
+            resultLanguage: nil
+        )
+        await fixture.recorder.emitAutomaticCompletion()
+        await fixture.coordinator.waitForProcessing(meetingID: secondID)
+
+        let transcriberCalls = await fixture.transcriber.callCount
+        let blocksDictation = await fixture.coordinator.blocksDictation()
+        XCTAssertEqual(fixture.history.meetingValue(id: secondID)?.status, .ready)
+        XCTAssertEqual(transcriberCalls, 1)
+        XCTAssertFalse(blocksDictation)
+    }
+
+    @MainActor
     func testAutomaticRecorderCompletionPersistsCaptureAndLaunchesProcessing() async throws {
         let fixture = try Fixture()
         let id = try await fixture.coordinator.start(
@@ -324,6 +350,29 @@ final class MeetingProcessingCoordinatorTests: XCTestCase {
         let transformerCalls = await fixture.transformer.callCount
         XCTAssertEqual(transcriberCalls, 1)
         XCTAssertEqual(transformerCalls, 2)
+    }
+
+    @MainActor
+    func testRecoveryDoesNotInterruptRecordingOwnedByRunningCoordinator() async throws {
+        let fixture = try Fixture()
+        let id = try await fixture.coordinator.start(
+            title: "Live call",
+            instructions: "Summarize",
+            resultLanguage: nil
+        )
+        let recovery = MeetingRecoveryService(
+            history: fixture.history,
+            coordinator: fixture.coordinator,
+            processingAvailable: { true }
+        )
+
+        try await recovery.resumeIncompleteJobs()
+
+        let runtimeState = await fixture.coordinator.currentState()
+        let blocksDictation = await fixture.coordinator.blocksDictation()
+        XCTAssertEqual(fixture.history.meetingValue(id: id)?.status, .recording)
+        XCTAssertEqual(runtimeState, .recording(meetingID: id))
+        XCTAssertTrue(blocksDictation)
     }
 
     @MainActor

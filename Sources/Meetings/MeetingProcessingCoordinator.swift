@@ -22,7 +22,7 @@ enum MeetingRuntimeState: Sendable, Equatable {
     case transcribing(meetingID: UUID, completed: Int, total: Int)
     case processing(meetingID: UUID)
     case ready(meetingID: UUID)
-    case failed(meetingID: UUID, message: String)
+    case failed(meetingID: UUID, message: String, retryable: Bool)
 }
 
 protocol MeetingTranscribing: Sendable {
@@ -65,6 +65,7 @@ actor MeetingProcessingCoordinator {
 
     private var activeMeetingID: UUID?
     private var startAttemptID: UUID?
+    private var startingMeetingID: UUID?
     private var terminalMeetingID: UUID?
     private var completionTask: Task<Void, Never>?
     private var processingTasks: [UUID: Task<Void, Never>] = [:]
@@ -122,12 +123,14 @@ actor MeetingProcessingCoordinator {
             throw MeetingProcessingError.busy
         }
         let attemptID = UUID()
+        let id = UUID()
         startAttemptID = attemptID
+        startingMeetingID = id
         defer {
             if startAttemptID == attemptID { startAttemptID = nil }
+            if startingMeetingID == id { startingMeetingID = nil }
         }
 
-        let id = UUID()
         let draft = MeetingDraft(
             id: id,
             title: title,
@@ -149,7 +152,7 @@ actor MeetingProcessingCoordinator {
                 throw MeetingProcessingError.busy
             }
             activeMeetingID = id
-            monitorRecorderCompletions(meetingID: id)
+            monitorRecorderCompletions()
             emit(.recording(meetingID: id))
             return id
         } catch {
@@ -161,7 +164,7 @@ actor MeetingProcessingCoordinator {
                     stage: nil
                 )
             )
-            emit(.failed(meetingID: id, message: Self.captureMessage(for: error)))
+            emit(.failed(meetingID: id, message: Self.captureMessage(for: error), retryable: false))
             throw error
         }
     }
@@ -202,7 +205,7 @@ actor MeetingProcessingCoordinator {
                     stage: nil
                 )
             )
-            emit(.failed(meetingID: meetingID, message: message))
+            emit(.failed(meetingID: meetingID, message: message, retryable: false))
             throw error
         }
     }
@@ -222,7 +225,7 @@ actor MeetingProcessingCoordinator {
             emit(.idle)
             return true
         } catch {
-            emit(.failed(meetingID: meetingID, message: "The recording stopped, but its local record could not be removed."))
+            emit(.failed(meetingID: meetingID, message: "The recording stopped, but its local record could not be removed.", retryable: false))
             return false
         }
     }
@@ -239,6 +242,9 @@ actor MeetingProcessingCoordinator {
     }
 
     func resume(meetingID: UUID) async {
+        guard meetingID != startingMeetingID,
+              meetingID != activeMeetingID,
+              meetingID != terminalMeetingID else { return }
         do {
             guard let meeting = try await history.meeting(id: meetingID) else { return }
             switch meeting.status {
@@ -252,7 +258,7 @@ actor MeetingProcessingCoordinator {
                         stage: nil
                     )
                 )
-                emit(.failed(meetingID: meetingID, message: message))
+                emit(.failed(meetingID: meetingID, message: message, retryable: false))
             case .captured:
                 let stage: ProcessingStage = meeting.retryStage == .processing
                     ? .processing
@@ -291,21 +297,21 @@ actor MeetingProcessingCoordinator {
         await launchAndWait(meetingID: meetingID, stage: .processing)
     }
 
-    private func monitorRecorderCompletions(meetingID: UUID) {
-        completionTask?.cancel()
+    private func monitorRecorderCompletions() {
+        guard completionTask == nil else { return }
         completionTask = Task { [weak self, recorder] in
             let completions = await recorder.completions()
             for await completion in completions {
                 guard !Task.isCancelled else { return }
-                guard completion.meetingID == meetingID else { continue }
                 await self?.handleRecorderCompletion(completion)
-                return
             }
         }
     }
 
     private func handleRecorderCompletion(_ completion: MeetingCaptureCompletion) async {
-        guard let meetingID = activeMeetingID, terminalMeetingID == nil else { return }
+        guard let meetingID = activeMeetingID,
+              completion.meetingID == meetingID,
+              terminalMeetingID == nil else { return }
         terminalMeetingID = meetingID
         do {
             switch completion {
@@ -332,7 +338,7 @@ actor MeetingProcessingCoordinator {
                     stage: nil
                 )
             )
-            emit(.failed(meetingID: meetingID, message: "Meeting capture could not be finalized. Available audio was preserved."))
+            emit(.failed(meetingID: meetingID, message: "Meeting capture could not be finalized. Available audio was preserved.", retryable: false))
         }
     }
 
@@ -388,14 +394,12 @@ actor MeetingProcessingCoordinator {
                 stage: nil
             )
         )
-        emit(.failed(meetingID: meetingID, message: failure.localizedDescription))
+        emit(.failed(meetingID: meetingID, message: failure.localizedDescription, retryable: false))
     }
 
     private func finishCaptureLifecycle(meetingID: UUID) {
         if activeMeetingID == meetingID { activeMeetingID = nil }
         if terminalMeetingID == meetingID { terminalMeetingID = nil }
-        completionTask?.cancel()
-        completionTask = nil
     }
 
     private func launchProcessing(meetingID: UUID, stage: ProcessingStage) {
@@ -519,7 +523,7 @@ actor MeetingProcessingCoordinator {
                 id: meetingID,
                 mutation: .retryable(message: message, kind: .network, stage: stage)
             )
-            emit(.failed(meetingID: meetingID, message: message))
+            emit(.failed(meetingID: meetingID, message: message, retryable: true))
             return
         }
 
@@ -529,7 +533,7 @@ actor MeetingProcessingCoordinator {
                 id: meetingID,
                 mutation: .retryable(message: message, kind: .missingAPIKey, stage: stage)
             )
-            emit(.failed(meetingID: meetingID, message: message))
+            emit(.failed(meetingID: meetingID, message: message, retryable: true))
             return
         }
 
@@ -545,7 +549,7 @@ actor MeetingProcessingCoordinator {
             id: meetingID,
             mutation: .failure(message: message, kind: kind, stage: stage)
         )
-        emit(.failed(meetingID: meetingID, message: message))
+        emit(.failed(meetingID: meetingID, message: message, retryable: false))
     }
 
     private static func isTransientAPIError(_ error: Error) -> Bool {

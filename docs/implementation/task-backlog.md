@@ -62,13 +62,13 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 | WH-M4-003 | Merge diarized chunks into a chronological transcript | done | WH-M4-002 |
 | WH-M4-004 | Implement processing, retry, and relaunch recovery | done | WH-M4-003 |
 | WH-M4-005 | Build Recordings screen and recording states | done | WH-M4-001..004 |
-| WH-M4-006 | Review durable meeting recording milestone | ready | WH-M4-001..005 |
+| WH-M4-006 | Review durable meeting recording milestone | done | WH-M4-001..005 |
 
 ## Milestone 5: History and retention
 
 | ID | Task | Status | Depends on |
 |---|---|---|---|
-| WH-M5-001 | Build unified history list and details | blocked | WH-M4-006 |
+| WH-M5-001 | Build unified history list and details | ready | WH-M4-006 |
 | WH-M5-002 | Add playback, export, delete, and retention behavior | blocked | WH-M5-001 |
 | WH-M5-003 | Harden failure, retry, and cleanup behavior | blocked | WH-M5-001..002 |
 | WH-M5-004 | Review history and retention milestone | blocked | WH-M5-001..003 |

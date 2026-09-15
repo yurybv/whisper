@@ -1,6 +1,6 @@
 # Whisper MVP Roadmap
 
-Status: Milestones 0 through 3 complete; Milestone 4 authorized on 2026-09-14.
+Status: Milestones 0 through 4 complete; Milestone 5 authorized on 2026-09-15.
 
 ## Principles
 
@@ -86,7 +86,7 @@ Review: passed on 2026-09-14. `WH-M4-001` is ready.
 
 Goal: record system audio and microphone for up to three hours, preserve the sources, and produce a resumable You/Others transcript and processed result.
 
-Progress: `WH-M4-001` through `WH-M4-005` completed by 2026-09-15. ScreenCaptureKit writes selected-microphone and system audio continuously to separate durable mono AAC files, preserves their shared-timeline offsets, publishes meters and automatic terminal outcomes, and safely handles source loss, low disk, cancellation, and concurrent lifecycle commands. Durable source tracks export sequentially into deterministic 20-minute M4A chunks with one-second overlap; oversized ranges split recursively below 20 MB, and atomic manifests/results resume progress or rebuild missing temporary exports without losing completed transcription state. Diarized results map deterministically to You/Others and merge chronologically. The production runtime resumes incomplete processing with stable instruction snapshots, owner-correlated completion events, bounded concurrent uploads, and distinct retry states while preserving all captured audio. The Recordings destination, nonactivating HUD, menu bar, and Command-Shift-R now share durable Start/Stop/Cancel state, live timer and meters, saved processing preferences, exact permission/storage recovery, and dictation exclusion. `WH-M4-006` is ready for the milestone review.
+Progress: `WH-M4-001` through `WH-M4-006` completed by 2026-09-15. ScreenCaptureKit writes selected-microphone and system audio continuously to separate durable mono AAC files, preserves their shared-timeline offsets, publishes meters and automatic terminal outcomes, and safely handles source loss, low disk, cancellation, and concurrent lifecycle commands. Durable source tracks export sequentially into deterministic 20-minute M4A chunks with one-second overlap; oversized ranges split recursively below 20 MB, and atomic manifests/results resume progress or rebuild missing temporary exports without losing completed transcription state. Diarized results map deterministically to You/Others and merge chronologically. The production runtime resumes incomplete processing with stable instruction snapshots, owner-correlated completion events, bounded concurrent uploads, and explicit retry actions while preserving all captured audio. The Recordings destination, nonactivating HUD, menu bar, and Command-Shift-R share durable Start/Stop/Cancel state, live timer and meters, saved processing preferences, exact permission/storage recovery, and dictation exclusion. See [Milestone 4 review](reviews/m4-review.md).
 
 Deliverables:
 
@@ -97,6 +97,8 @@ Deliverables:
 - Recordings screen and live recording states.
 
 Exit gate: a synthetic long recording survives processing interruption and `WH-M4-006` is done.
+
+Review: passed on 2026-09-15. `WH-M5-001` is ready.
 
 ## Milestone 5: History and retention
 

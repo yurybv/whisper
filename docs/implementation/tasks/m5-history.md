@@ -4,7 +4,7 @@
 
 - **Title:** Build unified history list and details
 - **Type:** feature
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Implement local History navigation, search, type filter, date grouping, statuses, dictation detail, recording detail, transcript/result tabs, and processing details.
 - **Out of scope:** Cloud search, transcript editing, and individual speaker naming.
@@ -13,7 +13,7 @@
 - **Dependencies:** WH-M4-006.
 - **Expected files:** `Sources/UI/History/**`, repository query additions, UI tests.
 - **Source:** implementation plan Task 15 and approved Open Design prototype.
-- **Blockers:** Previous milestone review.
+- **Blockers:** None.
 
 ## WH-M5-002
 

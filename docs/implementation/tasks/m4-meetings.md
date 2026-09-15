@@ -89,7 +89,7 @@
 
 - **Title:** Review durable meeting recording milestone
 - **Type:** review
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Audit source durability, chunk limits, transcript ordering, processing recovery, three-hour behavior, permission loss, disk handling, and UI evidence.
 - **Out of scope:** Unified history implementation.
@@ -99,3 +99,5 @@
 - **Expected files:** `docs/implementation/reviews/m4-review.md`, backlog updates.
 - **Source:** roadmap Milestone 4.
 - **Blockers:** None.
+- **Implementation (2026-09-15):** Audited the complete capture-to-result pipeline and corrected four cross-task integration gaps: recorder completion monitoring now survives Cancel and later sessions; activation recovery excludes starting, active, and finalizing work owned by the running coordinator; retryability reaches the Recordings action for the original meeting; and every production meeting start shares the dictation gate and start arbiter. Published the milestone review and authorized Milestone 5.
+- **Verification:** 265 of 265 unit/service tests passed, including the focused three-hour sparse-asset size/memory harness and new cancel/start, live-recovery, meeting-retry, and dictation-exclusion regressions. UI targets compiled without launch; the Debug build, strict signature verification, environment check, privacy scan, and `git diff --check` passed. Existing real dual-source smoke and offscreen visual evidence were re-audited. Independent read-only review passed with no Critical or Important findings. Live UI automation was omitted per the owner's explicit no-cursor instruction.

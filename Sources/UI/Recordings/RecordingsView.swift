@@ -119,6 +119,14 @@ struct RecordingsView: View {
                     .controlSize(.large)
                     .accessibilityIdentifier("Cancel Recording")
                 }
+                if model.canRetryProcessing {
+                    Button("Retry Processing") {
+                        Task { await model.retryProcessing() }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .accessibilityIdentifier("Retry Processing")
+                }
                 Button(model.primaryButtonTitle) {
                     Task { await model.toggleRecording() }
                 }

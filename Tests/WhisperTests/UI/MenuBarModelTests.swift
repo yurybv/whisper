@@ -81,12 +81,35 @@ final class MenuBarModelTests: XCTestCase {
 
     @MainActor
     func testFeatureStartReservationRejectsMeetingDuringSuspendedDictationStart() async {
-        var arbiter = CaptureStartArbiter()
+        let arbiter = CaptureStartArbiter()
 
         XCTAssertTrue(arbiter.reserve(.dictation))
         await Task.yield()
         XCTAssertFalse(arbiter.reserve(.meeting))
         arbiter.release(.dictation)
         XCTAssertTrue(arbiter.reserve(.meeting))
+    }
+
+    @MainActor
+    func testMeetingStartGateRejectsRecordingsButtonWhileDictationIsActive() async {
+        let arbiter = CaptureStartArbiter()
+        let gate = MeetingStartGate(
+            arbiter: arbiter,
+            dictationState: { .recording(modeName: "Default") }
+        )
+        var didStart = false
+
+        do {
+            _ = try await gate.start {
+                didStart = true
+                return UUID()
+            }
+            XCTFail("Expected meeting start to be rejected")
+        } catch {
+            XCTAssertEqual(error as? CaptureStartError, .dictationActive)
+        }
+
+        XCTAssertFalse(didStart)
+        XCTAssertTrue(arbiter.reserve(.meeting), "Rejected start must release its reservation")
     }
 }

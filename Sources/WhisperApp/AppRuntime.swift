@@ -3,7 +3,8 @@ import CoreGraphics
 import Foundation
 import SwiftUI
 
-struct CaptureStartArbiter: Sendable {
+@MainActor
+final class CaptureStartArbiter {
     enum Feature: Sendable {
         case dictation
         case meeting
@@ -11,14 +12,38 @@ struct CaptureStartArbiter: Sendable {
 
     private(set) var reservation: Feature?
 
-    mutating func reserve(_ feature: Feature) -> Bool {
+    func reserve(_ feature: Feature) -> Bool {
         guard reservation == nil else { return false }
         reservation = feature
         return true
     }
 
-    mutating func release(_ feature: Feature) {
+    func release(_ feature: Feature) {
         if reservation == feature { reservation = nil }
+    }
+}
+
+enum CaptureStartError: Error, Equatable, LocalizedError {
+    case dictationActive
+
+    var errorDescription: String? {
+        "Finish or cancel dictation before recording a meeting."
+    }
+}
+
+@MainActor
+struct MeetingStartGate {
+    let arbiter: CaptureStartArbiter
+    let dictationState: @MainActor () async -> DictationState
+
+    func start(operation: @MainActor () async throws -> UUID) async throws -> UUID {
+        guard arbiter.reserve(.meeting) else { throw MeetingProcessingError.busy }
+        defer { arbiter.release(.meeting) }
+        let state = await dictationState()
+        guard !AppRuntimeDictationPresentation(state: state).blocksNewDictation else {
+            throw CaptureStartError.dictationActive
+        }
+        return try await operation()
     }
 }
 
@@ -93,7 +118,7 @@ final class AppRuntime {
     private var lastLevel: Float = 0
     private var dictationScreen: NSScreen?
     private var recordingScreen: NSScreen?
-    private var captureStartArbiter = CaptureStartArbiter()
+    private let captureStartArbiter: CaptureStartArbiter
 
     private var modeSwitcherController: ModeSwitcherController!
     private var menuBarController: MenuBarController!
@@ -101,6 +126,8 @@ final class AppRuntime {
     private var recoveryActionRouter: DictationRecoveryActionRouter!
 
     init() throws {
+        let sharedCaptureStartArbiter = CaptureStartArbiter()
+        captureStartArbiter = sharedCaptureStartArbiter
         let store = CachingSecureStore(backingStore: KeychainSecureStore())
         let openAI = OpenAIClient(secureStore: store)
         let permissions = PermissionService()
@@ -116,13 +143,14 @@ final class AppRuntime {
             appPaths: paths
         )
         recorder = AVAudioEngineRecorder(paths: paths)
-        coordinator = DictationCoordinator(
+        let newDictationCoordinator = DictationCoordinator(
             recorder: recorder,
             openAI: openAI,
             modeProvider: modeRepository,
             history: history,
             insertion: AXTextInsertionService()
         )
+        coordinator = newDictationCoordinator
         let newMeetingRecorder = ScreenCaptureMeetingRecorder(paths: paths)
         let meetingTranscriber = MeetingTranscriber(
             client: openAI,
@@ -138,6 +166,10 @@ final class AppRuntime {
         )
         meetingRecorder = newMeetingRecorder
         meetingCoordinator = newMeetingCoordinator
+        let meetingStartGate = MeetingStartGate(
+            arbiter: sharedCaptureStartArbiter,
+            dictationState: { await newDictationCoordinator.currentState() }
+        )
         meetingRecovery = MeetingRecoveryService(
             history: history,
             coordinator: newMeetingCoordinator,
@@ -170,15 +202,18 @@ final class AppRuntime {
             settings: settingsModel,
             diskState: { try DiskSpaceMonitor().state(for: paths.recordingsURL) },
             start: { title, instructions, resultLanguage, microphoneID in
-                try await newMeetingCoordinator.start(
-                    title: title,
-                    instructions: instructions,
-                    resultLanguage: resultLanguage,
-                    microphoneDeviceID: microphoneID
-                )
+                try await meetingStartGate.start {
+                    try await newMeetingCoordinator.start(
+                        title: title,
+                        instructions: instructions,
+                        resultLanguage: resultLanguage,
+                        microphoneDeviceID: microphoneID
+                    )
+                }
             },
             stop: { try await newMeetingCoordinator.stop() },
-            cancel: { await newMeetingCoordinator.cancel() }
+            cancel: { await newMeetingCoordinator.cancel() },
+            retry: { meetingID in try await newMeetingCoordinator.retry(meetingID: meetingID) }
         )
         recordingHUDController = RecordingHUDController(onStop: { [weak self] in
             self?.scheduleMeetingToggle()
@@ -526,8 +561,6 @@ final class AppRuntime {
     }
 
     private func toggleMeetingRecording() async {
-        guard captureStartArbiter.reserve(.meeting) else { return }
-        defer { captureStartArbiter.release(.meeting) }
         guard !isDictationActive else {
             menuBarController.render(
                 state: .error,

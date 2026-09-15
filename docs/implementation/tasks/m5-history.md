@@ -55,7 +55,7 @@
 
 - **Title:** Review history and retention milestone
 - **Type:** review
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Audit search/filter/detail correctness, source-file safety, export/privacy, deletion containment, retry idempotency, and UI state coverage.
 - **Out of scope:** Packaging.
@@ -65,3 +65,4 @@
 - **Expected files:** `docs/implementation/reviews/m5-review.md`, backlog updates.
 - **Source:** roadmap Milestone 5.
 - **Blockers:** None.
+- **Review (2026-09-15):** PASS — AUTHORIZE NEXT MILESTONE. All Milestone 5 task commits are present on `origin/master`; the 293-test unit/service suite and 66-test failure/recovery suite passed, strict ad-hoc signature and environment checks passed, retained populated/empty/error screenshots were inspected, and no Critical or Important finding remains. See `docs/implementation/reviews/m5-review.md`. Live XCUITest was omitted under the owner's no-cursor instruction.

@@ -47,30 +47,43 @@ final class AVPlayerPlaybackTransport: AudioPlaybackTransport {
         let requestGeneration = generation
         player?.pause()
         player = nil
-        let item: AVPlayerItem
-        if plan.tracks.count == 1, let track = plan.tracks.first, track.offset == 0 {
-            item = AVPlayerItem(url: track.url)
-        } else {
-            let composition = AVMutableComposition()
-            for plannedTrack in plan.tracks {
+        var validatedTracks: [(plan: AudioPlaybackTrack, asset: AVURLAsset, duration: CMTime, track: AVAssetTrack)] = []
+        for plannedTrack in plan.tracks {
+            do {
                 let asset = AVURLAsset(url: plannedTrack.url)
                 let duration = try await asset.load(.duration)
                 guard generation == requestGeneration else { throw CancellationError() }
-                guard
-                    duration.isNumeric,
-                    duration.seconds > 0,
-                    let sourceTrack = try await asset.loadTracks(withMediaType: .audio).first,
-                    let destinationTrack = composition.addMutableTrack(
+                guard duration.isNumeric,
+                      duration.seconds > 0,
+                      let sourceTrack = try await asset.loadTracks(withMediaType: .audio).first else {
+                    throw AudioPlaybackError.invalidAudio
+                }
+                validatedTracks.append((plannedTrack, asset, duration, sourceTrack))
+            } catch is CancellationError {
+                throw CancellationError()
+            } catch {
+                throw AudioPlaybackError.invalidAudio
+            }
+        }
+
+        let item: AVPlayerItem
+        if validatedTracks.count == 1,
+           let validated = validatedTracks.first,
+           validated.plan.offset == 0 {
+            item = AVPlayerItem(asset: validated.asset)
+        } else {
+            let composition = AVMutableComposition()
+            for validated in validatedTracks {
+                guard let destinationTrack = composition.addMutableTrack(
                         withMediaType: .audio,
                         preferredTrackID: kCMPersistentTrackID_Invalid
-                    )
-                else {
+                ) else {
                     throw AudioPlaybackError.invalidAudio
                 }
                 try destinationTrack.insertTimeRange(
-                    CMTimeRange(start: .zero, duration: duration),
-                    of: sourceTrack,
-                    at: CMTime(seconds: max(0, plannedTrack.offset), preferredTimescale: 600)
+                    CMTimeRange(start: .zero, duration: validated.duration),
+                    of: validated.track,
+                    at: CMTime(seconds: max(0, validated.plan.offset), preferredTimescale: 600)
                 )
             }
             item = AVPlayerItem(asset: composition)

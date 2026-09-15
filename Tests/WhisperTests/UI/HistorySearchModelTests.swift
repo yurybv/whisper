@@ -23,6 +23,40 @@ final class HistorySearchModelTests: XCTestCase {
         XCTAssertEqual(spy.deletedIDs, [fixture.dictation.id])
     }
 
+    func testRetryAndReprocessExposeSafeSelectedRecordingActions() async {
+        let retryableMeeting = retryableCopy(of: Fixture().meeting)
+        let segment = TranscriptSegment(
+            meetingID: retryableMeeting.id,
+            source: .others,
+            startTime: 0,
+            endTime: 1,
+            text: "Preserved transcript"
+        )
+        let model = HistorySearchModel(
+            repository: StaticHistoryReader(
+                snapshot: HistorySnapshot(
+                    dictations: [],
+                    meetings: [retryableMeeting],
+                    segmentsByMeetingID: [retryableMeeting.id: [segment]]
+                )
+            )
+        )
+        let spy = HistoryActionsSpy()
+        model.setActions(spy.actions)
+        model.reload()
+
+        XCTAssertTrue(try! XCTUnwrap(model.selectedEntry).canRetry)
+        XCTAssertTrue(try! XCTUnwrap(model.selectedEntry).canReprocess)
+
+        await model.retrySelected()
+        await model.reprocessSelected()
+
+        XCTAssertEqual(spy.retriedIDs, [retryableMeeting.id])
+        XCTAssertEqual(spy.reprocessedIDs, [retryableMeeting.id])
+        XCTAssertEqual(model.actionMessage, "Recording reprocessed.")
+        XCTAssertNil(model.actionErrorMessage)
+    }
+
     func testPlaybackTracksSelectedMeetingAndStopsWhenSelectionChanges() async {
         let fixture = Fixture()
         let spy = HistoryActionsSpy()
@@ -217,6 +251,8 @@ private final class HistoryActionsSpy {
     var exports: [(UUID, URL)] = []
     var deletedIDs: [UUID] = []
     var played: [(UUID, MeetingPlaybackSource)] = []
+    var retriedIDs: [UUID] = []
+    var reprocessedIDs: [UUID] = []
     var stopCount = 0
     var suspendPlayback = false
     private var playbackContinuation: CheckedContinuation<Void, Never>?
@@ -232,6 +268,8 @@ private final class HistoryActionsSpy {
                 }
             },
             stopPlayback: { [unowned self] in stopCount += 1 },
+            retry: { [unowned self] meetingID in retriedIDs.append(meetingID) },
+            reprocess: { [unowned self] meetingID in reprocessedIDs.append(meetingID) },
             copy: { [unowned self] entry in copiedIDs.append(entry.id) },
             export: { [unowned self] entry, url in exports.append((entry.id, url)) },
             delete: { [unowned self] entry in deletedIDs.append(entry.id) }

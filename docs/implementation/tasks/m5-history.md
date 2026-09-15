@@ -38,7 +38,7 @@
 
 - **Title:** Harden failure, retry, and cleanup behavior
 - **Type:** testing
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Verify and correct failed, retrying, interrupted, missing-file, corrupted-file, partial-track, and relaunch states across history and meeting processing.
 - **Out of scope:** New recovery features beyond approved behavior.
@@ -48,12 +48,14 @@
 - **Expected files:** recovery tests and targeted fixes across `Sources/Meetings`, `Sources/Persistence`, and `Sources/UI/History`.
 - **Source:** spec error handling and state machines.
 - **Blockers:** None.
+- **Implementation (2026-09-15):** Added single-flight Retry and Reprocess actions to recording details, wired them to the durable meeting coordinator, and reload History after success or failure. Retry remains limited to explicitly retryable network/missing-key states; Reprocess requires a preserved transcript and is hidden during active capture or processing. Playback now validates every source asset, including zero-offset single tracks, before reporting playback as active, so corrupted files produce an explicit safe error while missing and partial tracks retain whatever source remains. Existing durable recovery and cleanup behavior was confirmed across interrupted capture, relaunch, missing chunks, tombstone retries, path containment, and partial capture.
+- **Verification:** The focused failure/recovery suite passed 66 of 66 tests, covering retry/reprocess idempotency, relaunch stages, missing chunk exports, corrupted and missing playback sources, partial capture, interrupted capture, invalid/missing keys, transient failures, and cleanup tombstones. The complete unit/service suite passed 293 of 293 tests. A service-level `Retry → Reprocess → Reprocess` smoke preserved one transcript segment and one processed result with no UI, network, production history, or cursor interaction. Live XCUITest was intentionally omitted under the owner's no-cursor instruction.
 
 ## WH-M5-004
 
 - **Title:** Review history and retention milestone
 - **Type:** review
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Audit search/filter/detail correctness, source-file safety, export/privacy, deletion containment, retry idempotency, and UI state coverage.
 - **Out of scope:** Packaging.
@@ -62,4 +64,4 @@
 - **Dependencies:** WH-M5-001, WH-M5-002, WH-M5-003.
 - **Expected files:** `docs/implementation/reviews/m5-review.md`, backlog updates.
 - **Source:** roadmap Milestone 5.
-- **Blockers:** Completion of history tasks.
+- **Blockers:** None.

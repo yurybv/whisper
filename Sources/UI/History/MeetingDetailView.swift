@@ -13,11 +13,15 @@ struct MeetingDetailView: View {
     var playingSource: MeetingPlaybackSource?
     var onPlay: (MeetingPlaybackSource) -> Void = { _ in }
     var onStop: () -> Void = {}
+    var onRetry: () -> Void = {}
+    var onReprocess: () -> Void = {}
     var onCopy: () -> Void = {}
     var onExport: () -> Void = {}
     var onDelete: () -> Void = {}
     var canDelete = true
     var canCopy = true
+    var canRetry = false
+    var canReprocess = false
     @State private var tab: Tab = .transcript
     @State private var selectedSource: MeetingPlaybackSource = .mix
 
@@ -59,6 +63,14 @@ struct MeetingDetailView: View {
                     }
                     Divider().overlay(DesignTokens.border)
                     HStack(spacing: DesignTokens.space8) {
+                        if canRetry {
+                            Button("Retry", systemImage: "arrow.clockwise", action: onRetry)
+                                .accessibilityIdentifier("Retry Recording")
+                        }
+                        if canReprocess {
+                            Button("Reprocess", systemImage: "wand.and.stars", action: onReprocess)
+                                .accessibilityIdentifier("Reprocess Recording")
+                        }
                         Button("Copy Result", systemImage: "doc.on.doc", action: onCopy)
                             .disabled(!canCopy)
                         Button("Export Text", systemImage: "square.and.arrow.up", action: onExport)

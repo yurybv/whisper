@@ -109,6 +109,34 @@ final class MeetingProcessingCoordinatorTests: XCTestCase {
     }
 
     @MainActor
+    func testTranscriptionRetryAndRepeatedReprocessReplaceDurableResultsWithoutDuplicates() async throws {
+        let fixture = try Fixture(transcriptionFailures: [URLError(.notConnectedToInternet)])
+        let id = try await fixture.coordinator.start(
+            title: "Call",
+            instructions: "Stable snapshot",
+            resultLanguage: nil
+        )
+
+        try await fixture.coordinator.stop()
+        await fixture.coordinator.waitForProcessing(meetingID: id)
+        XCTAssertEqual(fixture.history.segmentValues(meetingID: id), [])
+
+        try await fixture.coordinator.retry(meetingID: id)
+        try await fixture.coordinator.reprocess(meetingID: id)
+        try await fixture.coordinator.reprocess(meetingID: id)
+
+        let meeting = try XCTUnwrap(fixture.history.meetingValue(id: id))
+        let segments = fixture.history.segmentValues(meetingID: id)
+        let transcriberCalls = await fixture.transcriber.callCount
+        let transformerCalls = await fixture.transformer.callCount
+        XCTAssertEqual(meeting.status, .ready)
+        XCTAssertEqual(meeting.processedText, "Processed result")
+        XCTAssertEqual(segments.map(\.text), ["Hello"])
+        XCTAssertEqual(transcriberCalls, 2)
+        XCTAssertEqual(transformerCalls, 3)
+    }
+
+    @MainActor
     func testInvalidKeyIsNotRetryableAndPreservesAudioAndTranscript() async throws {
         let fixture = try Fixture(transformFailures: [FeatureError.invalidAPIKey])
         let id = try await fixture.coordinator.start(

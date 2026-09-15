@@ -104,7 +104,7 @@ Review: passed on 2026-09-15. `WH-M5-001` is ready.
 
 Goal: expose reliable local history for dictations and recordings without risking source audio.
 
-Progress: `WH-M5-001` and `WH-M5-002` completed on 2026-09-15. History combines full local dictation and recording snapshots with transcript segments, deterministic date grouping, type filters, case-insensitive search, explicit status/error states, and details for original/processed dictation text and recording Transcript/Result content. Details now support owned-source playback, result-only copy, privacy-minimized text export, and confirmed deletion through durable cleanup tombstones. The approved `Forever` policy performs no automatic history deletion. `WH-M5-003` is ready to harden failure, retry, and cleanup behavior.
+Progress: `WH-M5-001` through `WH-M5-003` completed on 2026-09-15. History combines full local dictation and recording snapshots with transcript segments, deterministic date grouping, type filters, case-insensitive search, explicit status/error states, and details for original/processed dictation text and recording Transcript/Result content. Details support validated owned-source playback, Retry/Reprocess without duplicate durable output, result-only copy, privacy-minimized text export, and confirmed deletion through idempotent cleanup tombstones. Missing, corrupt, partial-track, interrupted, and relaunch states preserve available evidence and expose safe recovery where applicable. The approved `Forever` policy performs no automatic history deletion. `WH-M5-004` is ready for the milestone review.
 
 Deliverables:
 

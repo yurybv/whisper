@@ -40,6 +40,26 @@ final class AudioPlaybackServiceTests: XCTestCase {
         XCTAssertGreaterThan(try Data(contentsOf: secondURL).count, 0)
     }
 
+    func testAVTransportRejectsCorruptedSingleTrackBeforePlayback() async throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("WhisperCorruptedAudio-\(UUID().uuidString).m4a")
+        try Data("not audio".utf8).write(to: url)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let transport = AVPlayerPlaybackTransport()
+
+        do {
+            try await transport.play(
+                AudioPlaybackPlan(
+                    source: .microphone,
+                    tracks: [AudioPlaybackTrack(url: url, offset: 0)]
+                )
+            )
+            XCTFail("Expected corrupted audio to be rejected")
+        } catch {
+            XCTAssertEqual(error as? AudioPlaybackError, .invalidAudio)
+        }
+    }
+
     func testAvailableSourcesRequireOwnedExistingFiles() throws {
         let fixture = try PlaybackFixture()
         defer { fixture.cleanup() }

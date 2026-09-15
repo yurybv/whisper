@@ -70,8 +70,8 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 |---|---|---|---|
 | WH-M5-001 | Build unified history list and details | done | WH-M4-006 |
 | WH-M5-002 | Add playback, export, delete, and retention behavior | done | WH-M5-001 |
-| WH-M5-003 | Harden failure, retry, and cleanup behavior | ready | WH-M5-001..002 |
-| WH-M5-004 | Review history and retention milestone | blocked | WH-M5-001..003 |
+| WH-M5-003 | Harden failure, retry, and cleanup behavior | done | WH-M5-001..002 |
+| WH-M5-004 | Review history and retention milestone | ready | WH-M5-001..003 |
 
 ## Milestone 6: Hardening and local release
 

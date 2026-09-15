@@ -137,11 +137,15 @@ struct HistoryView: View {
                     playingSource: model.playingMeetingID == meeting.id ? model.playingSource : nil,
                     onPlay: { source in Task { await model.play(meeting, source: source) } },
                     onStop: { model.stopPlayback() },
+                    onRetry: { Task { await model.retrySelected() } },
+                    onReprocess: { Task { await model.reprocessSelected() } },
                     onCopy: { model.copySelected() },
                     onExport: { presentExportPanel(for: entry) },
                     onDelete: { confirmsDelete = true },
                     canDelete: entry.canDelete,
-                    canCopy: entry.hasCopyableResult
+                    canCopy: entry.hasCopyableResult,
+                    canRetry: entry.canRetry && !model.isRecoveryActionRunning,
+                    canReprocess: entry.canReprocess && !model.isRecoveryActionRunning
                 )
                 .id(meeting.id)
                 .onDisappear { model.stopPlayback() }

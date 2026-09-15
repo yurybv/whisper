@@ -190,6 +190,12 @@ final class AppRuntime {
             playbackSources: { meeting in playback.availableSources(for: meeting) },
             play: { meeting, source in try await playback.play(meeting: meeting, source: source) },
             stopPlayback: { playback.stop() },
+            retry: { meetingID in
+                try await newMeetingCoordinator.retry(meetingID: meetingID)
+            },
+            reprocess: { meetingID in
+                try await newMeetingCoordinator.reprocess(meetingID: meetingID)
+            },
             copy: { entry in
                 guard let result = HistoryTextExporter.resultText(for: entry) else {
                     throw HistoryActionError.resultUnavailable

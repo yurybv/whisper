@@ -113,6 +113,8 @@ struct HistoryActions {
     let playbackSources: (MeetingSnapshot) -> [MeetingPlaybackSource]
     let play: (MeetingSnapshot, MeetingPlaybackSource) async throws -> Void
     let stopPlayback: () -> Void
+    let retry: (UUID) async throws -> Void
+    let reprocess: (UUID) async throws -> Void
     let copy: (HistoryEntry) throws -> Void
     let export: (HistoryEntry, URL) throws -> Void
     let delete: (HistoryEntry) throws -> Void
@@ -121,6 +123,8 @@ struct HistoryActions {
         playbackSources: { _ in [] },
         play: { _, _ in throw AudioPlaybackError.sourceUnavailable },
         stopPlayback: {},
+        retry: { _ in throw MeetingProcessingError.notRetryable },
+        reprocess: { _ in throw MeetingProcessingError.transcriptUnavailable },
         copy: { _ in },
         export: { entry, url in try HistoryTextExporter.export(entry, to: url) },
         delete: { _ in }
@@ -148,6 +152,7 @@ final class HistorySearchModel {
     private(set) var actionErrorMessage: String?
     private(set) var playingMeetingID: UUID?
     private(set) var playingSource: MeetingPlaybackSource?
+    private(set) var isRecoveryActionRunning = false
     private var pendingPlaybackMeetingID: UUID?
     private var playbackGeneration = 0
 
@@ -263,6 +268,30 @@ final class HistorySearchModel {
         playingSource = nil
     }
 
+    func retrySelected() async {
+        guard !isRecoveryActionRunning,
+              let entry = selectedEntry,
+              entry.canRetry else { return }
+        await performRecoveryAction(
+            meetingID: entry.id,
+            successMessage: "Recording retry completed.",
+            failureMessage: "The recording could not be retried.",
+            action: actions.retry
+        )
+    }
+
+    func reprocessSelected() async {
+        guard !isRecoveryActionRunning,
+              let entry = selectedEntry,
+              entry.canReprocess else { return }
+        await performRecoveryAction(
+            meetingID: entry.id,
+            successMessage: "Recording reprocessed.",
+            failureMessage: "The recording could not be reprocessed.",
+            action: actions.reprocess
+        )
+    }
+
     func copySelected() {
         guard let entry = selectedEntry else { return }
         guard entry.hasCopyableResult else {
@@ -320,6 +349,26 @@ final class HistorySearchModel {
         return date.formatted(date: .abbreviated, time: .omitted)
     }
 
+    private func performRecoveryAction(
+        meetingID: UUID,
+        successMessage: String,
+        failureMessage: String,
+        action: (UUID) async throws -> Void
+    ) async {
+        stopPlayback()
+        isRecoveryActionRunning = true
+        defer { isRecoveryActionRunning = false }
+        do {
+            try await action(meetingID)
+            reload()
+            actionMessage = successMessage
+            actionErrorMessage = nil
+        } catch {
+            reload()
+            actionErrorMessage = failureMessage
+        }
+    }
+
     private func reconcileSelection() {
         let visibleEntries = filteredEntries
         if let selectedID, visibleEntries.contains(where: { $0.id == selectedID }) { return }
@@ -360,6 +409,19 @@ extension HistoryEntry {
                 && value.status != .transcribing
                 && value.status != .processing
         }
+    }
+
+    var canRetry: Bool {
+        guard case let .recording(value, _) = content else { return false }
+        return value.failureKind?.isRetryable == true && value.retryStage != nil
+    }
+
+    var canReprocess: Bool {
+        guard case let .recording(value, segments) = content, !segments.isEmpty else { return false }
+        return value.status != .recording
+            && value.status != .finalizing
+            && value.status != .transcribing
+            && value.status != .processing
     }
 }
 

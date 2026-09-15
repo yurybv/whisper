@@ -41,8 +41,8 @@ struct DiarizedSegment: Codable, Sendable, Equatable {
 }
 
 enum OpenAIClientError: Error, Sendable, Equatable {
-    case api(message: String)
-    case transientAPI(message: String)
+    case api
+    case transientAPI
     case uploadTooLarge(maximumBytes: Int)
     case unreadableAudioFile
     case invalidResponse
@@ -51,8 +51,10 @@ enum OpenAIClientError: Error, Sendable, Equatable {
 extension OpenAIClientError: LocalizedError {
     var errorDescription: String? {
         switch self {
-        case let .api(message), let .transientAPI(message):
-            message
+        case .api:
+            "OpenAI rejected the request."
+        case .transientAPI:
+            "OpenAI is temporarily unavailable."
         case let .uploadTooLarge(maximumBytes):
             "The audio file exceeds the \(maximumBytes)-byte upload limit."
         case .unreadableAudioFile:
@@ -61,14 +63,6 @@ extension OpenAIClientError: LocalizedError {
             "OpenAI returned an invalid response."
         }
     }
-}
-
-private struct OpenAIErrorEnvelope: Decodable {
-    struct APIError: Decodable {
-        let message: String
-    }
-
-    let error: APIError
 }
 
 struct ResponsesAPIResponse: Decodable, Sendable {
@@ -90,11 +84,5 @@ struct ResponsesAPIResponse: Decodable, Sendable {
             .flatMap { $0.content ?? [] }
             .first { $0.type == "output_text" }?
             .text
-    }
-}
-
-extension JSONDecoder {
-    func decodeOpenAIError(from data: Data) -> String? {
-        try? decode(OpenAIErrorEnvelope.self, from: data).error.message
     }
 }

@@ -123,17 +123,14 @@ final class ScreenCaptureMeetingRecorder: MeetingRecorder, @unchecked Sendable {
 
             let directory: URL
             do {
-                directory = try paths.recordingDirectory(
+                let candidate = try paths.recordingDirectory(
                     for: configuration.meetingID,
                     create: false
                 )
-                guard !FileManager.default.fileExists(atPath: directory.path) else {
+                guard !FileManager.default.fileExists(atPath: candidate.path) else {
                     throw MeetingRecorderError.recordingAlreadyExists
                 }
-                try FileManager.default.createDirectory(
-                    at: directory,
-                    withIntermediateDirectories: false
-                )
+                directory = try paths.recordingDirectory(for: configuration.meetingID)
             } catch let error as MeetingRecorderError {
                 throw error
             } catch {

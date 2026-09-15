@@ -25,7 +25,7 @@ final class DictationErrorPresentationTests: XCTestCase {
 
     func testProviderMessageCannotLeakAuthorizationOrCredentialText() {
         let message = DictationErrorPresentation.message(
-            for: OpenAIClientError.api(message: "Authorization Bearer sk-unit-test-secret"),
+            for: OpenAIClientError.api,
             recovery: .retryOrDiscard
         )
 

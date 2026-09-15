@@ -54,7 +54,7 @@
 
 - **Title:** Complete privacy, security, and logging review
 - **Type:** review
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Review Keychain use, file permissions, path containment, logs, error payloads, Authorization handling, audio lifecycle, deletion, and network request boundaries.
 - **Out of scope:** Formal penetration test, compliance certification, and cloud security.
@@ -63,7 +63,9 @@
 - **Dependencies:** WH-M6-002.
 - **Expected files:** `docs/implementation/reviews/privacy-security-review.md`, targeted tests/fixes.
 - **Source:** spec privacy and error-handling constraints.
-- **Blockers:** WH-M6-002.
+- **Blockers:** None.
+- **Implementation (2026-09-15):** Audited Keychain storage, in-process key caching, Authorization construction, runtime logging, provider error payloads, app-owned file permissions, relative-path containment, audio lifecycle, tombstone-backed deletion, dependencies, entitlements, and outbound URLSession boundaries. Resolved two findings: OpenAI HTTP error bodies are now discarded before they can reach localized or reflective formatting, and the Application Support audio root, Recordings, Temporary, and meeting directories are verified as real directories and restricted to `0700`. Added provider-payload redaction coverage plus permission and symbolic-link-root regression tests. The numbered severity review is in `docs/implementation/reviews/privacy-security-review.md`.
+- **Verification:** Redaction TDD first failed 24 assertions, then 39 selected OpenAI/presentation/processing tests passed. Storage TDD first failed five assertions, then 33 selected persistence/retention/recorder tests passed. `./scripts/verify.sh --skip-ui-tests` passed all twelve stages, executed 295 unit/service tests with zero failures, built both test products, packaged `build/Whisper.app`, and passed deep strict signature verification. Privacy scans found no runtime logging API or live credential pattern in production files; source/dependency review found only the documented OpenAI REST client plus the user-initiated API-key link and no package dependency. UI automation was explicitly skipped to honor the owner's no-focus/no-cursor-interference instruction; foreground release coverage remains isolated in blocked task WH-M6-003.
 
 ## WH-M6-005
 

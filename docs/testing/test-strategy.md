@@ -9,6 +9,8 @@
 
 Automated tests must not send audio, transcripts, instructions, API keys, or network requests to OpenAI.
 
+Security regression coverage injects only synthetic private-looking values and verifies that provider error bodies cannot reach localized, debug, reflective, or user-presented error text. Persistence coverage also asserts owner-only permissions for app-owned audio directories and rejects path traversal, cross-meeting paths, symbolic-link roots or redirects, and out-of-root deletion.
+
 ## Required quality gates
 
 Every code task runs:

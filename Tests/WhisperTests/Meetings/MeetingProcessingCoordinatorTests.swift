@@ -327,7 +327,7 @@ final class MeetingProcessingCoordinatorTests: XCTestCase {
     @MainActor
     func testExhaustedTransientAPIErrorRemainsRetryable() async throws {
         let fixture = try Fixture(
-            transformFailures: [OpenAIClientError.transientAPI(message: "Service unavailable")]
+            transformFailures: [OpenAIClientError.transientAPI]
         )
         let id = try await fixture.coordinator.start(
             title: "Call",

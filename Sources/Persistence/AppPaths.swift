@@ -5,6 +5,8 @@ protocol RecordingDirectoryCleaning: AnyObject {
 }
 
 struct AppPaths: @unchecked Sendable {
+    private static let privateDirectoryPermissions = 0o700
+
     let rootURL: URL
     let recordingsURL: URL
     let temporaryURL: URL
@@ -31,14 +33,9 @@ struct AppPaths: @unchecked Sendable {
         recordingsURL = self.rootURL.appendingPathComponent("Recordings", isDirectory: true)
         temporaryURL = self.rootURL.appendingPathComponent("Temporary", isDirectory: true)
 
-        try fileManager.createDirectory(
-            at: recordingsURL,
-            withIntermediateDirectories: true
-        )
-        try fileManager.createDirectory(
-            at: temporaryURL,
-            withIntermediateDirectories: true
-        )
+        try createPrivateDirectory(at: self.rootURL, withIntermediateDirectories: true)
+        try createPrivateDirectory(at: recordingsURL, withIntermediateDirectories: false)
+        try createPrivateDirectory(at: temporaryURL, withIntermediateDirectories: false)
     }
 
     func recordingDirectory(for meetingID: UUID, create: Bool = true) throws -> URL {
@@ -49,7 +46,7 @@ struct AppPaths: @unchecked Sendable {
         )
         let safeURL = try validatedMeetingDirectory(candidate, expectedName: expectedName)
         if create {
-            try fileManager.createDirectory(at: safeURL, withIntermediateDirectories: true)
+            try createPrivateDirectory(at: safeURL, withIntermediateDirectories: false)
         }
         return safeURL
     }
@@ -114,6 +111,27 @@ struct AppPaths: @unchecked Sendable {
             throw PersistenceError.unsafePath
         }
         return URL(fileURLWithPath: resolved.path, isDirectory: true)
+    }
+
+    private func createPrivateDirectory(
+        at url: URL,
+        withIntermediateDirectories: Bool
+    ) throws {
+        if fileManager.fileExists(atPath: url.path) {
+            let values = try url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey])
+            guard values.isDirectory == true, values.isSymbolicLink != true else {
+                throw PersistenceError.unsafePath
+            }
+        } else {
+            try fileManager.createDirectory(
+                at: url,
+                withIntermediateDirectories: withIntermediateDirectories
+            )
+        }
+        try fileManager.setAttributes(
+            [.posixPermissions: Self.privateDirectoryPermissions],
+            ofItemAtPath: url.path
+        )
     }
 }
 

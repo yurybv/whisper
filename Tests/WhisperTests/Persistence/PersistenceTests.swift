@@ -76,6 +76,26 @@ final class PersistenceTests: XCTestCase {
         )
         XCTAssertTrue(FileManager.default.fileExists(atPath: meetingDirectory.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: paths.temporaryURL.path))
+
+        for directory in [paths.rootURL, paths.recordingsURL, paths.temporaryURL, meetingDirectory] {
+            let attributes = try FileManager.default.attributesOfItem(atPath: directory.path)
+            let permissions = try XCTUnwrap(attributes[.posixPermissions] as? NSNumber)
+            XCTAssertEqual(permissions.intValue & 0o777, 0o700)
+        }
+    }
+
+    func testRejectsSymlinkedApplicationSupportRoot() throws {
+        let sandbox = FileManager.default.temporaryDirectory
+            .appendingPathComponent("WhisperRootSymlink-\(UUID().uuidString)", isDirectory: true)
+        let destination = sandbox.appendingPathComponent("outside", isDirectory: true)
+        let root = sandbox.appendingPathComponent("Whisper", isDirectory: true)
+        try FileManager.default.createDirectory(at: destination, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(at: root, withDestinationURL: destination)
+        defer { try? FileManager.default.removeItem(at: sandbox) }
+
+        XCTAssertThrowsError(try AppPaths(rootURL: root)) {
+            XCTAssertEqual($0 as? PersistenceError, .unsafePath)
+        }
     }
 
     func testRejectsDeletionOutsideRecordingsRoot() throws {

@@ -238,14 +238,14 @@ final class OpenAIClientTests: XCTestCase {
         } catch {
             XCTAssertEqual(
                 error as? OpenAIClientError,
-                .transientAPI(message: "Service unavailable")
+                .transientAPI
             )
         }
         let requests = await session.requests()
         XCTAssertEqual(requests.count, 4)
     }
 
-    func testBadRequestExposesOnlyServerMessage() async throws {
+    func testBadRequestDiscardsServerMessage() async throws {
         let session = RecordingURLSession([
             .http(statusCode: 400, body: Data(#"{"error":{"message":"Unsupported audio format"}}"#.utf8))
         ])
@@ -257,7 +257,8 @@ final class OpenAIClientTests: XCTestCase {
             _ = try await client.transcribe(fileURL: fixtureURL, languageHint: nil, prompt: nil)
             XCTFail("Expected API error")
         } catch {
-            XCTAssertEqual(error as? OpenAIClientError, .api(message: "Unsupported audio format"))
+            XCTAssertEqual(error as? OpenAIClientError, .api)
+            XCTAssertFalse(error.localizedDescription.contains("Unsupported audio format"))
             XCTAssertFalse(error.localizedDescription.contains("Authorization"))
             XCTAssertFalse(error.localizedDescription.contains("unit-test-key"))
         }

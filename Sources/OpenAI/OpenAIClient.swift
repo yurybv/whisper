@@ -194,12 +194,10 @@ struct OpenAIClient: OpenAIClientProtocol, Sendable {
                     if response.statusCode == 401 || response.statusCode == 403 {
                         throw FeatureError.invalidAPIKey
                     }
-                    let message = decoder.decodeOpenAIError(from: data)
-                        ?? "OpenAI request failed with status \(response.statusCode)."
                     if retryPolicy.shouldRetry(statusCode: response.statusCode) {
-                        throw OpenAIClientError.transientAPI(message: message)
+                        throw OpenAIClientError.transientAPI
                     }
-                    throw OpenAIClientError.api(message: message)
+                    throw OpenAIClientError.api
                 }
                 return data
             } catch is CancellationError {

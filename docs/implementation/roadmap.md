@@ -121,7 +121,7 @@ Review: passed on 2026-09-15. `WH-M6-001` is ready.
 
 Goal: produce an ad-hoc signed personal build with clear installation, permission, recovery, and troubleshooting instructions.
 
-Progress: `WH-M6-001` and `WH-M6-002` completed on 2026-09-15. The canonical packaging script produces a clean, deterministic-path, arm64-only Release bundle at `build/Whisper.app`, applies a timestamp-free ad-hoc signature, and verifies the result. `scripts/verify.sh` now composes environment validation, clean project generation, repository and privacy checks, shell validation, build-for-testing, unit/UI test selection, Release packaging, and strict signature verification into one fail-fast command. The acceptance matrix and privacy review are ready.
+Progress: `WH-M6-001` and `WH-M6-002` completed on 2026-09-15. The canonical packaging script produces a clean, deterministic-path, arm64-only Release bundle at `build/Whisper.app`, applies a timestamp-free ad-hoc signature, and verifies the result. `scripts/verify.sh` now composes environment validation, clean project generation, repository and privacy checks, shell validation, build-for-testing, unit/UI test selection, Release packaging, and strict signature verification into one fail-fast command. `WH-M6-003` has a complete row-level evidence audit but remains blocked on one owner-available foreground session for current-package target-app, permission, capture, and Gatekeeper checks. The independent privacy review remains ready.
 
 Deliverables:
 

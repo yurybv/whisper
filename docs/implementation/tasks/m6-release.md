@@ -47,13 +47,14 @@
 - **Dependencies:** WH-M6-002.
 - **Expected files:** `docs/testing/release-acceptance.md`, sanitized evidence directories.
 - **Source:** spec testing strategy and distribution sections.
-- **Blockers:** Owner interaction only for permission dialogs and Gatekeeper confirmation if automation cannot drive them safely.
+- **Blockers:** Current packaged-app foreground QA is not run. The owner requested no cursor/focus interference while working; TextEdit/Notes/Safari/VS Code, physical shortcuts, live capture, permission revocation/recovery, `/Applications` installation, and Gatekeeper confirmation therefore remain pending. See `docs/testing/release-acceptance.md` for row-level evidence, affected tasks, and the exact release-session requirement.
+- **Acceptance audit (2026-09-15):** Recorded every required dictation, meeting, accessibility, and distribution row against commit `1fda779`. Existing production TextEdit and permission/focus evidence is distinguished from current automated coverage; no automated result is represented as a current manual pass. The current package passes clean verification, bundle/signature checks, and the expected ad-hoc Gatekeeper assessment (`spctl` exit 3). No private content was collected.
 
 ## WH-M6-004
 
 - **Title:** Complete privacy, security, and logging review
 - **Type:** review
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Review Keychain use, file permissions, path containment, logs, error payloads, Authorization handling, audio lifecycle, deletion, and network request boundaries.
 - **Out of scope:** Formal penetration test, compliance certification, and cloud security.

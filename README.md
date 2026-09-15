@@ -4,10 +4,10 @@ Personal macOS menu-bar dictation MVP. Requires Apple Silicon, macOS 15+, Xcode 
 
 ```bash
 ./scripts/bootstrap.sh
-xcodegen generate
-xcodebuild -project Whisper.xcodeproj -scheme Whisper -destination 'platform=macOS' build
-xcodebuild -project Whisper.xcodeproj -scheme Whisper -destination 'platform=macOS' test
+./scripts/verify.sh
 ```
+
+`verify.sh` is the canonical full check: it validates the environment, regenerates the project, checks repository and privacy patterns, lints and tests shell scripts, builds the test products, runs unit and UI tests, packages the Release app, and verifies its signature. Use `./scripts/verify.sh --skip-ui-tests` only for an explicitly documented noninteractive run; it still builds the UI-test target but does not launch UI automation.
 
 To create the local Apple Silicon Release bundle without launching it:
 
@@ -27,4 +27,4 @@ After setup, **Settings → Preview Setup** reopens the flow without clearing co
 
 Automated onboarding, main-window, mode CRUD, and mode-switcher UI tests use DEBUG-only `--ui-testing` fixtures, without Keychain, user databases, permission prompts or OpenAI requests. Unit tests use protocol fakes. The scheme includes both unit and UI targets.
 
-Task status and verification evidence: [local backlog](docs/implementation/task-backlog.md), [onboarding QA](docs/testing/evidence/WH-M3-001/qa.md), [main UI QA](docs/testing/evidence/WH-M3-002/qa.md), [accessibility QA](docs/testing/evidence/WH-M3-003/qa.md), [Recordings QA](docs/testing/evidence/WH-M4-005/qa.md), [History QA](docs/testing/evidence/WH-M5-001/qa.md), [History actions QA](docs/testing/evidence/WH-M5-002/qa.md), [History recovery QA](docs/testing/evidence/WH-M5-003/qa.md), [Packaging QA](docs/testing/evidence/WH-M6-001/qa.md), [Milestone 4 review](docs/implementation/reviews/m4-review.md), [Milestone 5 review](docs/implementation/reviews/m5-review.md), [test strategy](docs/testing/test-strategy.md).
+Task status and verification evidence: [local backlog](docs/implementation/task-backlog.md), [onboarding QA](docs/testing/evidence/WH-M3-001/qa.md), [main UI QA](docs/testing/evidence/WH-M3-002/qa.md), [accessibility QA](docs/testing/evidence/WH-M3-003/qa.md), [Recordings QA](docs/testing/evidence/WH-M4-005/qa.md), [History QA](docs/testing/evidence/WH-M5-001/qa.md), [History actions QA](docs/testing/evidence/WH-M5-002/qa.md), [History recovery QA](docs/testing/evidence/WH-M5-003/qa.md), [Packaging QA](docs/testing/evidence/WH-M6-001/qa.md), [verification-command QA](docs/testing/evidence/WH-M6-002/qa.md), [Milestone 4 review](docs/implementation/reviews/m4-review.md), [Milestone 5 review](docs/implementation/reviews/m5-review.md), [test strategy](docs/testing/test-strategy.md).

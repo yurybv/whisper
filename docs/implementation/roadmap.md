@@ -1,6 +1,6 @@
 # Whisper MVP Roadmap
 
-Status: Milestones 0 through 4 complete; Milestone 5 authorized on 2026-09-15.
+Status: Milestones 0 through 5 complete; Milestone 6 in progress.
 
 ## Principles
 
@@ -121,7 +121,7 @@ Review: passed on 2026-09-15. `WH-M6-001` is ready.
 
 Goal: produce an ad-hoc signed personal build with clear installation, permission, recovery, and troubleshooting instructions.
 
-Progress: `WH-M6-001` completed on 2026-09-15. The canonical packaging script produces a clean, deterministic-path, arm64-only Release bundle at `build/Whisper.app`, applies a timestamp-free ad-hoc signature, and verifies the result. Unsupported architecture, Xcode, and SDK versions fail before generation or build. `WH-M6-002` is ready to compose the full automated verification command.
+Progress: `WH-M6-001` and `WH-M6-002` completed on 2026-09-15. The canonical packaging script produces a clean, deterministic-path, arm64-only Release bundle at `build/Whisper.app`, applies a timestamp-free ad-hoc signature, and verifies the result. `scripts/verify.sh` now composes environment validation, clean project generation, repository and privacy checks, shell validation, build-for-testing, unit/UI test selection, Release packaging, and strict signature verification into one fail-fast command. The acceptance matrix and privacy review are ready.
 
 Deliverables:
 

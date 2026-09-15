@@ -26,6 +26,14 @@ xcodebuild -project Whisper.xcodeproj -scheme Whisper -destination "platform=mac
 
 Once `scripts/verify.sh` exists, it becomes the canonical full command.
 
+Run the canonical command from the repository root:
+
+```bash
+./scripts/verify.sh
+```
+
+It performs clean project generation, privacy-pattern checks, shell validation, build-for-testing, unit and UI tests, Release packaging, and signature verification without contacting OpenAI. `--skip-ui-tests` is available only for explicitly documented noninteractive work where launching UI automation would interfere with the active Mac session; it still compiles the UI-test target and is not a substitute for the final release-gate UI run.
+
 ## Manual acceptance matrix
 
 Dictation:

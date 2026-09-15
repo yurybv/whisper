@@ -1,7 +1,10 @@
 import Foundation
 
-enum RetentionPolicy: String, Sendable, Codable, Equatable {
+enum RetentionPolicy: String, CaseIterable, Identifiable, Sendable, Codable, Equatable {
     case forever
+
+    var id: String { rawValue }
+    var title: String { "Forever" }
 }
 
 struct AppSettings: Sendable, Codable, Equatable {

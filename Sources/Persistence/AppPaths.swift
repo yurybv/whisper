@@ -1,5 +1,9 @@
 import Foundation
 
+protocol RecordingDirectoryCleaning: AnyObject {
+    func deleteRecordingDirectory(for meetingID: UUID) throws
+}
+
 struct AppPaths: @unchecked Sendable {
     let rootURL: URL
     let recordingsURL: URL
@@ -38,11 +42,12 @@ struct AppPaths: @unchecked Sendable {
     }
 
     func recordingDirectory(for meetingID: UUID, create: Bool = true) throws -> URL {
+        let expectedName = "meeting-\(meetingID.uuidString)"
         let candidate = recordingsURL.appendingPathComponent(
-            "meeting-\(meetingID.uuidString)",
+            expectedName,
             isDirectory: true
         )
-        let safeURL = try validatedMeetingDirectory(candidate)
+        let safeURL = try validatedMeetingDirectory(candidate, expectedName: expectedName)
         if create {
             try fileManager.createDirectory(at: safeURL, withIntermediateDirectories: true)
         }
@@ -97,16 +102,29 @@ struct AppPaths: @unchecked Sendable {
         return url
     }
 
-    private func validatedMeetingDirectory(_ candidate: URL) throws -> URL {
+    private func validatedMeetingDirectory(_ candidate: URL, expectedName: String? = nil) throws -> URL {
         let root = recordingsURL.standardizedFileURL.resolvingSymlinksInPath()
         let resolved = candidate.standardizedFileURL.resolvingSymlinksInPath()
         guard
             resolved != root,
             resolved.deletingLastPathComponent() == root,
-            resolved.lastPathComponent.hasPrefix("meeting-")
+            resolved.lastPathComponent.hasPrefix("meeting-"),
+            expectedName == nil || resolved.lastPathComponent == expectedName
         else {
             throw PersistenceError.unsafePath
         }
         return URL(fileURLWithPath: resolved.path, isDirectory: true)
+    }
+}
+
+final class AppPathsRecordingDirectoryCleaner: RecordingDirectoryCleaning {
+    private let paths: AppPaths
+
+    init(paths: AppPaths) {
+        self.paths = paths
+    }
+
+    func deleteRecordingDirectory(for meetingID: UUID) throws {
+        try paths.deleteRecordingDirectory(for: meetingID)
     }
 }

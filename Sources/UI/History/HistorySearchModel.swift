@@ -109,11 +109,31 @@ struct HistoryDateGroup: Identifiable, Equatable, Sendable {
 }
 
 @MainActor
+struct HistoryActions {
+    let playbackSources: (MeetingSnapshot) -> [MeetingPlaybackSource]
+    let play: (MeetingSnapshot, MeetingPlaybackSource) async throws -> Void
+    let stopPlayback: () -> Void
+    let copy: (HistoryEntry) throws -> Void
+    let export: (HistoryEntry, URL) throws -> Void
+    let delete: (HistoryEntry) throws -> Void
+
+    static let disabled = HistoryActions(
+        playbackSources: { _ in [] },
+        play: { _, _ in throw AudioPlaybackError.sourceUnavailable },
+        stopPlayback: {},
+        copy: { _ in },
+        export: { entry, url in try HistoryTextExporter.export(entry, to: url) },
+        delete: { _ in }
+    )
+}
+
+@MainActor
 @Observable
 final class HistorySearchModel {
     private let repository: any HistoryReading
     private let calendar: Calendar
     private let now: () -> Date
+    private var actions: HistoryActions
 
     var query = "" {
         didSet { reconcileSelection() }
@@ -124,15 +144,23 @@ final class HistorySearchModel {
     private(set) var entries: [HistoryEntry] = []
     private(set) var selectedID: UUID?
     private(set) var errorMessage: String?
+    private(set) var actionMessage: String?
+    private(set) var actionErrorMessage: String?
+    private(set) var playingMeetingID: UUID?
+    private(set) var playingSource: MeetingPlaybackSource?
+    private var pendingPlaybackMeetingID: UUID?
+    private var playbackGeneration = 0
 
     init(
         repository: any HistoryReading,
         calendar: Calendar = .current,
-        now: @escaping () -> Date = Date.init
+        now: @escaping () -> Date = Date.init,
+        actions: HistoryActions = .disabled
     ) {
         self.repository = repository
         self.calendar = calendar
         self.now = now
+        self.actions = actions
     }
 
     var filteredEntries: [HistoryEntry] {
@@ -190,7 +218,99 @@ final class HistorySearchModel {
     }
 
     func select(_ id: UUID?) {
+        let playbackMeetingID = playingMeetingID ?? pendingPlaybackMeetingID
+        if playbackMeetingID != nil, playbackMeetingID != id {
+            stopPlayback()
+        }
         selectedID = id
+    }
+
+    func setActions(_ actions: HistoryActions) {
+        stopPlayback()
+        self.actions = actions
+    }
+
+    func playbackSources(for meeting: MeetingSnapshot) -> [MeetingPlaybackSource] {
+        actions.playbackSources(meeting)
+    }
+
+    func play(_ meeting: MeetingSnapshot, source: MeetingPlaybackSource) async {
+        playbackGeneration += 1
+        let generation = playbackGeneration
+        pendingPlaybackMeetingID = meeting.id
+        do {
+            try await actions.play(meeting, source)
+            guard generation == playbackGeneration, selectedID == meeting.id else { return }
+            pendingPlaybackMeetingID = nil
+            playingMeetingID = meeting.id
+            playingSource = source
+            actionErrorMessage = nil
+        } catch {
+            guard generation == playbackGeneration else { return }
+            pendingPlaybackMeetingID = nil
+            playingMeetingID = nil
+            playingSource = nil
+            actionErrorMessage = error.localizedDescription
+        }
+    }
+
+    func stopPlayback() {
+        guard playingMeetingID != nil || pendingPlaybackMeetingID != nil else { return }
+        playbackGeneration += 1
+        actions.stopPlayback()
+        pendingPlaybackMeetingID = nil
+        playingMeetingID = nil
+        playingSource = nil
+    }
+
+    func copySelected() {
+        guard let entry = selectedEntry else { return }
+        guard entry.hasCopyableResult else {
+            actionErrorMessage = HistoryActionError.resultUnavailable.localizedDescription
+            return
+        }
+        do {
+            try actions.copy(entry)
+            actionMessage = "Copied to the clipboard."
+            actionErrorMessage = nil
+        } catch {
+            actionErrorMessage = "The selected text could not be copied."
+        }
+    }
+
+    func exportSelected(to destination: URL) throws {
+        guard let entry = selectedEntry else { return }
+        try actions.export(entry, destination)
+        actionMessage = "Text exported."
+        actionErrorMessage = nil
+    }
+
+    func exportSelectedForPresentation(to destination: URL) {
+        do {
+            try exportSelected(to: destination)
+        } catch {
+            actionErrorMessage = "The selected text could not be exported."
+        }
+    }
+
+    func deleteSelected() throws {
+        guard let entry = selectedEntry else { return }
+        guard entry.canDelete else { throw HistoryActionError.activeItem }
+        stopPlayback()
+        try actions.delete(entry)
+        actionMessage = "History item deleted."
+        actionErrorMessage = nil
+        reload()
+    }
+
+    func deleteSelectedForPresentation() {
+        do {
+            try deleteSelected()
+        } catch HistoryActionError.activeItem {
+            actionErrorMessage = HistoryActionError.activeItem.localizedDescription
+        } catch {
+            actionErrorMessage = "The selected history item could not be deleted."
+        }
     }
 
     private func groupTitle(for date: Date) -> String {
@@ -203,12 +323,43 @@ final class HistorySearchModel {
     private func reconcileSelection() {
         let visibleEntries = filteredEntries
         if let selectedID, visibleEntries.contains(where: { $0.id == selectedID }) { return }
+        if playingMeetingID != nil || pendingPlaybackMeetingID != nil { stopPlayback() }
         selectedID = visibleEntries.first?.id
     }
 
     private static func newestFirst(_ lhs: HistoryEntry, _ rhs: HistoryEntry) -> Bool {
         if lhs.date != rhs.date { return lhs.date > rhs.date }
         return lhs.id.uuidString < rhs.id.uuidString
+    }
+}
+
+enum HistoryActionError: LocalizedError, Equatable {
+    case activeItem
+    case clipboardUnavailable
+    case resultUnavailable
+
+    var errorDescription: String? {
+        switch self {
+        case .activeItem: "Active or processing items cannot be deleted."
+        case .clipboardUnavailable: "The clipboard is unavailable."
+        case .resultUnavailable: "No processed result is available to copy."
+        }
+    }
+}
+
+extension HistoryEntry {
+    var hasCopyableResult: Bool { HistoryTextExporter.resultText(for: self) != nil }
+
+    var canDelete: Bool {
+        switch content {
+        case let .dictation(value):
+            value.status != .processing
+        case let .recording(value, _):
+            value.status != .recording
+                && value.status != .finalizing
+                && value.status != .transcribing
+                && value.status != .processing
+        }
     }
 }
 

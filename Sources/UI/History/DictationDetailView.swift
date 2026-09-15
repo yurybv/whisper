@@ -2,11 +2,24 @@ import SwiftUI
 
 struct DictationDetailView: View {
     let dictation: DictationSnapshot
+    var onCopy: () -> Void = {}
+    var onExport: () -> Void = {}
+    var onDelete: () -> Void = {}
+    var canDelete = true
+    var canCopy = true
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: DesignTokens.space24) {
                 detailHeader
+                HStack(spacing: DesignTokens.space8) {
+                    Button("Copy Result", systemImage: "doc.on.doc", action: onCopy)
+                        .disabled(!canCopy)
+                    Button("Export Text", systemImage: "square.and.arrow.up", action: onExport)
+                    Spacer()
+                    Button("Delete", systemImage: "trash", role: .destructive, action: onDelete)
+                        .disabled(!canDelete)
+                }
                 SettingsCard("Original Transcript") {
                     detailText(dictation.originalText, empty: "No original transcript is available.")
                 }

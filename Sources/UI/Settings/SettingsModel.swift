@@ -211,6 +211,11 @@ final class SettingsModel {
         settingsStore.soundEffects = enabled
     }
 
+    func setRetention(_ policy: RetentionPolicy) {
+        retention = policy
+        settingsStore.retention = policy
+    }
+
     func setLaunchAtLogin(_ enabled: Bool) {
         do {
             try launchAtLoginService.setEnabled(enabled)

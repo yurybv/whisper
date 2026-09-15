@@ -6,6 +6,78 @@ import XCTest
 
 @MainActor
 final class HistorySearchModelTests: XCTestCase {
+    func testSelectedActionsCopyExportAndDeleteOnlyThatEntry() throws {
+        let fixture = Fixture()
+        let spy = HistoryActionsSpy()
+        fixture.model.setActions(spy.actions)
+        fixture.model.select(fixture.dictation.id)
+        let destination = FileManager.default.temporaryDirectory.appendingPathComponent("history.txt")
+
+        fixture.model.copySelected()
+        try fixture.model.exportSelected(to: destination)
+        try fixture.model.deleteSelected()
+
+        XCTAssertEqual(spy.copiedIDs, [fixture.dictation.id])
+        XCTAssertEqual(spy.exports.map(\.0), [fixture.dictation.id])
+        XCTAssertEqual(spy.exports.map(\.1), [destination])
+        XCTAssertEqual(spy.deletedIDs, [fixture.dictation.id])
+    }
+
+    func testPlaybackTracksSelectedMeetingAndStopsWhenSelectionChanges() async {
+        let fixture = Fixture()
+        let spy = HistoryActionsSpy()
+        spy.sources = [.mix, .microphone]
+        fixture.model.setActions(spy.actions)
+
+        await fixture.model.play(fixture.meeting, source: .mix)
+
+        XCTAssertEqual(fixture.model.playingMeetingID, fixture.meeting.id)
+        XCTAssertEqual(fixture.model.playingSource, .mix)
+        XCTAssertEqual(spy.played.map(\.0), [fixture.meeting.id])
+
+        fixture.model.select(fixture.dictation.id)
+        XCTAssertNil(fixture.model.playingMeetingID)
+        XCTAssertEqual(spy.stopCount, 1)
+    }
+
+    func testPendingPlaybackCannotBecomeActiveAfterSelectionChanges() async {
+        let fixture = Fixture()
+        let spy = HistoryActionsSpy()
+        spy.sources = [.mix]
+        spy.suspendPlayback = true
+        fixture.model.setActions(spy.actions)
+
+        let playback = Task { await fixture.model.play(fixture.meeting, source: .mix) }
+        for _ in 0..<20 where !spy.isPlaybackSuspended { await Task.yield() }
+        XCTAssertTrue(spy.isPlaybackSuspended)
+        fixture.model.select(fixture.dictation.id)
+        spy.finishPlayback()
+        await playback.value
+
+        XCTAssertNil(fixture.model.playingMeetingID)
+        XCTAssertNil(fixture.model.playingSource)
+        XCTAssertEqual(spy.stopCount, 1)
+    }
+
+    func testFilteringAwayPendingPlaybackStopsPreparation() async {
+        let fixture = Fixture()
+        let spy = HistoryActionsSpy()
+        spy.sources = [.mix]
+        spy.suspendPlayback = true
+        fixture.model.setActions(spy.actions)
+
+        let playback = Task { await fixture.model.play(fixture.meeting, source: .mix) }
+        for _ in 0..<20 where !spy.isPlaybackSuspended { await Task.yield() }
+        XCTAssertTrue(spy.isPlaybackSuspended)
+        fixture.model.query = "translated"
+        spy.finishPlayback()
+        await playback.value
+
+        XCTAssertEqual(fixture.model.selectedID, fixture.dictation.id)
+        XCTAssertNil(fixture.model.playingMeetingID)
+        XCTAssertEqual(spy.stopCount, 1)
+    }
+
     func testSearchesBothKindsAndFiltersNewestFirst() {
         let fixture = Fixture()
 
@@ -135,6 +207,40 @@ final class HistorySearchModelTests: XCTestCase {
             failureKind: .network,
             retryStage: .processing
         )
+    }
+}
+
+@MainActor
+private final class HistoryActionsSpy {
+    var sources: [MeetingPlaybackSource] = []
+    var copiedIDs: [UUID] = []
+    var exports: [(UUID, URL)] = []
+    var deletedIDs: [UUID] = []
+    var played: [(UUID, MeetingPlaybackSource)] = []
+    var stopCount = 0
+    var suspendPlayback = false
+    private var playbackContinuation: CheckedContinuation<Void, Never>?
+    var isPlaybackSuspended: Bool { playbackContinuation != nil }
+
+    var actions: HistoryActions {
+        HistoryActions(
+            playbackSources: { [unowned self] _ in sources },
+            play: { [unowned self] meeting, source in
+                played.append((meeting.id, source))
+                if suspendPlayback {
+                    await withCheckedContinuation { playbackContinuation = $0 }
+                }
+            },
+            stopPlayback: { [unowned self] in stopCount += 1 },
+            copy: { [unowned self] entry in copiedIDs.append(entry.id) },
+            export: { [unowned self] entry, url in exports.append((entry.id, url)) },
+            delete: { [unowned self] entry in deletedIDs.append(entry.id) }
+        )
+    }
+
+    func finishPlayback() {
+        playbackContinuation?.resume()
+        playbackContinuation = nil
     }
 }
 

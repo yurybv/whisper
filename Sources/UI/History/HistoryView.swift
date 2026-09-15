@@ -1,7 +1,10 @@
+import AppKit
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct HistoryView: View {
     @Bindable var model: HistorySearchModel
+    @State private var confirmsDelete = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: DesignTokens.space16) {
@@ -23,6 +26,18 @@ struct HistoryView: View {
                 .frame(width: 320)
             }
 
+            if let message = model.actionErrorMessage {
+                Label(message, systemImage: "exclamationmark.triangle")
+                    .font(.system(size: 12))
+                    .foregroundStyle(DesignTokens.warning)
+                    .accessibilityAddTraits(.updatesFrequently)
+            } else if let message = model.actionMessage {
+                Label(message, systemImage: "checkmark.circle")
+                    .font(.system(size: 12))
+                    .foregroundStyle(DesignTokens.success)
+                    .accessibilityAddTraits(.updatesFrequently)
+            }
+
             HSplitView {
                 historyList
                     .frame(minWidth: 320, idealWidth: 380, maxWidth: 460)
@@ -40,6 +55,12 @@ struct HistoryView: View {
         .frame(maxWidth: DesignTokens.contentMaxWidth, maxHeight: .infinity, alignment: .topLeading)
         .background(DesignTokens.canvas)
         .onAppear { model.reload() }
+        .alert("Delete selected history item?", isPresented: $confirmsDelete) {
+            Button("Cancel", role: .cancel) {}
+            Button("Delete", role: .destructive) { model.deleteSelectedForPresentation() }
+        } message: {
+            Text("This permanently removes the selected history record and its owned recording audio, if any.")
+        }
     }
 
     @ViewBuilder
@@ -100,9 +121,30 @@ struct HistoryView: View {
         if let entry = model.selectedEntry {
             switch entry.content {
             case let .dictation(dictation):
-                DictationDetailView(dictation: dictation)
+                DictationDetailView(
+                    dictation: dictation,
+                    onCopy: { model.copySelected() },
+                    onExport: { presentExportPanel(for: entry) },
+                    onDelete: { confirmsDelete = true },
+                    canDelete: entry.canDelete,
+                    canCopy: entry.hasCopyableResult
+                )
             case let .recording(meeting, segments):
-                MeetingDetailView(meeting: meeting, segments: segments)
+                MeetingDetailView(
+                    meeting: meeting,
+                    segments: segments,
+                    playbackSources: model.playbackSources(for: meeting),
+                    playingSource: model.playingMeetingID == meeting.id ? model.playingSource : nil,
+                    onPlay: { source in Task { await model.play(meeting, source: source) } },
+                    onStop: { model.stopPlayback() },
+                    onCopy: { model.copySelected() },
+                    onExport: { presentExportPanel(for: entry) },
+                    onDelete: { confirmsDelete = true },
+                    canDelete: entry.canDelete,
+                    canCopy: entry.hasCopyableResult
+                )
+                .id(meeting.id)
+                .onDisappear { model.stopPlayback() }
             }
         } else {
             ContentUnavailableView(
@@ -112,6 +154,16 @@ struct HistoryView: View {
             )
             .accessibilityIdentifier("History Detail Empty")
         }
+    }
+
+    private func presentExportPanel(for entry: HistoryEntry) {
+        let panel = NSSavePanel()
+        panel.allowedContentTypes = [.plainText]
+        panel.canCreateDirectories = true
+        panel.nameFieldStringValue = HistoryTextExporter.suggestedFilename(for: entry)
+        panel.title = "Export History Text"
+        guard panel.runModal() == .OK, let destination = panel.url else { return }
+        model.exportSelectedForPresentation(to: destination)
     }
 }
 

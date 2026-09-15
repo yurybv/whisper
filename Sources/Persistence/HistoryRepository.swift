@@ -42,11 +42,16 @@ protocol HistoryRepositoryProtocol {
 @MainActor
 final class HistoryRepository: HistoryRepositoryProtocol, HistoryReading {
     private let context: ModelContext
-    private let appPaths: AppPaths?
+    private let recordingDirectoryCleaner: (any RecordingDirectoryCleaning)?
 
     init(context: ModelContext, appPaths: AppPaths? = nil) {
         self.context = context
-        self.appPaths = appPaths
+        recordingDirectoryCleaner = appPaths.map(AppPathsRecordingDirectoryCleaner.init(paths:))
+    }
+
+    init(context: ModelContext, recordingDirectoryCleaner: any RecordingDirectoryCleaning) {
+        self.context = context
+        self.recordingDirectoryCleaner = recordingDirectoryCleaner
     }
 
     func createDictation(_ draft: DictationDraft) throws -> UUID {
@@ -203,13 +208,38 @@ final class HistoryRepository: HistoryRepositoryProtocol, HistoryReading {
         guard let entity = try meetingEntity(id: id) else {
             throw PersistenceError.meetingNotFound
         }
-        try appPaths?.deleteRecordingDirectory(for: id)
+        if recordingDirectoryCleaner != nil {
+            context.insert(RecordingCleanupEntity(meetingID: id))
+        }
         for segment in entity.segments {
             context.delete(segment)
         }
-        try context.save()
         context.delete(entity)
         try context.save()
+        try? retryPendingFileCleanup()
+    }
+
+    @discardableResult
+    func retryPendingFileCleanup() throws -> [UUID] {
+        guard let recordingDirectoryCleaner else { return [] }
+        let cleanups = try context.fetch(
+            FetchDescriptor<RecordingCleanupEntity>(sortBy: [SortDescriptor(\.createdAt)])
+        )
+        var pending: [UUID] = []
+        for cleanup in cleanups {
+            guard cleanup.relativeDirectoryPath == "meeting-\(cleanup.meetingID.uuidString)" else {
+                pending.append(cleanup.meetingID)
+                continue
+            }
+            do {
+                try recordingDirectoryCleaner.deleteRecordingDirectory(for: cleanup.meetingID)
+                context.delete(cleanup)
+                try context.save()
+            } catch {
+                pending.append(cleanup.meetingID)
+            }
+        }
+        return pending
     }
 
     private func dictationEntity(id: UUID) throws -> DictationEntity? {

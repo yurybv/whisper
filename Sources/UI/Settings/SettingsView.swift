@@ -127,8 +127,14 @@ struct SettingsView: View {
                     HStack {
                         Text("Keep Recordings")
                         Spacer()
-                        Text("Forever")
-                            .foregroundStyle(DesignTokens.secondaryText)
+                        Picker("Keep Recordings", selection: retentionBinding) {
+                            ForEach(RetentionPolicy.allCases) { policy in
+                                Text(policy.title).tag(policy)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .frame(width: 160)
                     }
                     .frame(minHeight: 36)
                 }
@@ -196,6 +202,10 @@ struct SettingsView: View {
 
     private var soundBinding: Binding<Bool> {
         Binding(get: { model.soundEffects }, set: { model.setSoundEffects($0) })
+    }
+
+    private var retentionBinding: Binding<RetentionPolicy> {
+        Binding(get: { model.retention }, set: { model.setRetention($0) })
     }
 
     private var apiStatusImage: String {

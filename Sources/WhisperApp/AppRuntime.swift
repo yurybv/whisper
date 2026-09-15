@@ -105,6 +105,7 @@ final class AppRuntime {
     private let settingsModel: SettingsModel
     private let recordingsModel: RecordingsModel
     private let historyModel: HistorySearchModel
+    private let retentionService: RetentionService
     private var recordingHUDController: RecordingHUDController!
 
     private var hotkeyTask: Task<Void, Never>?
@@ -184,7 +185,33 @@ final class AppRuntime {
             shortcuts: settingsStore.shortcuts
         )
         homeModel = HomeModel(historyRepository: history)
-        historyModel = HistorySearchModel(repository: history)
+        let playback = AudioPlaybackService(paths: paths)
+        let historyActions = HistoryActions(
+            playbackSources: { meeting in playback.availableSources(for: meeting) },
+            play: { meeting, source in try await playback.play(meeting: meeting, source: source) },
+            stopPlayback: { playback.stop() },
+            copy: { entry in
+                guard let result = HistoryTextExporter.resultText(for: entry) else {
+                    throw HistoryActionError.resultUnavailable
+                }
+                let pasteboard = NSPasteboard.general
+                pasteboard.clearContents()
+                guard pasteboard.setString(result, forType: .string) else {
+                    throw HistoryActionError.clipboardUnavailable
+                }
+            },
+            export: { entry, destination in
+                try HistoryTextExporter.export(entry, to: destination)
+            },
+            delete: { entry in
+                switch entry.content {
+                case let .dictation(dictation): try history.deleteDictation(id: dictation.id)
+                case let .recording(meeting, _): try history.deleteMeeting(id: meeting.id)
+                }
+            }
+        )
+        historyModel = HistorySearchModel(repository: history, actions: historyActions)
+        retentionService = RetentionService(repository: history)
         modesModel = try ModesModel(repository: modeRepository)
         settingsModel = SettingsModel(
             secureStore: store,
@@ -309,6 +336,7 @@ final class AppRuntime {
         let initialMode = (try? modeRepository.activeMode()) ?? .defaultMode
         menuBarController.render(state: .ready, modeName: initialMode.name)
         resumeMeetingJobs()
+        try? retentionService.perform(policy: settingsStore.retention)
 
         hotkeyTask = Task { [weak self] in
             guard let self else { return }
@@ -378,6 +406,7 @@ final class AppRuntime {
     }
 
     func stop() {
+        historyModel.stopPlayback()
         hotkeyTask?.cancel()
         shortcutCaptureTask?.cancel()
         stateTask?.cancel()

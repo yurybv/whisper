@@ -21,7 +21,7 @@
 
 - **Title:** Add playback, export, delete, and retention behavior
 - **Type:** feature
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Add recording playback, copy, plain-text export, confirmed delete, retention preference, and safe metadata/audio cleanup.
 - **Out of scope:** Audio sharing, cloud backup, rich export formats, and automatic compression.
@@ -31,12 +31,14 @@
 - **Expected files:** `Sources/Audio/PlaybackService.swift`, history actions, retention service, matching tests.
 - **Source:** implementation plan Task 15.
 - **Blockers:** None.
+- **Implementation (2026-09-15):** Added owned-source playback for microphone, system audio, and offset-aligned mixes without modifying originals; playback preparation is invalidated when its detail closes, selection/search/filter changes, deletion starts, or the app stops. History details now copy only the processed result, export a privacy-minimized plain-text document, and require confirmation before deleting. Meeting deletion atomically removes SwiftData metadata while creating a cleanup tombstone, removes only the exact UUID-owned directory, rejects traversal and symlink redirection, and retries failed file cleanup on launch. The approved MVP retention preference remains `Forever`, which performs no automatic history deletion while still retrying explicit cleanup tombstones.
+- **Verification:** 24 focused playback/export/action/deletion/retention tests passed, including a real silent dual-M4A AVPlayer mix smoke, atomic text-file export, exact-directory and symlink containment, failed-cleanup relaunch retry, and pending-playback cancellation. The complete unit/service suite passed 290 of 290 tests; UI targets compiled without launch, the Debug app built and passed strict ad-hoc signature verification, `scripts/check-environment.sh` and `git diff --check` passed, and independent read-only review passed. Live XCUITest was omitted under the owner's no-cursor instruction; the service-level playback/export smoke required no UI or production data.
 
 ## WH-M5-003
 
 - **Title:** Harden failure, retry, and cleanup behavior
 - **Type:** testing
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Verify and correct failed, retrying, interrupted, missing-file, corrupted-file, partial-track, and relaunch states across history and meeting processing.
 - **Out of scope:** New recovery features beyond approved behavior.
@@ -45,7 +47,7 @@
 - **Dependencies:** WH-M5-001, WH-M5-002.
 - **Expected files:** recovery tests and targeted fixes across `Sources/Meetings`, `Sources/Persistence`, and `Sources/UI/History`.
 - **Source:** spec error handling and state machines.
-- **Blockers:** WH-M5-001..002.
+- **Blockers:** None.
 
 ## WH-M5-004
 

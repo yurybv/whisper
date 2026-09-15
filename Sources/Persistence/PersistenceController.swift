@@ -10,7 +10,8 @@ final class PersistenceController {
             ModeEntity.self,
             DictationEntity.self,
             MeetingEntity.self,
-            TranscriptSegmentEntity.self
+            TranscriptSegmentEntity.self,
+            RecordingCleanupEntity.self
         ])
         let configuration: ModelConfiguration
         if let storeURL {

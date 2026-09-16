@@ -83,7 +83,7 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 | WH-M6-004 | Complete privacy, security, and logging review | done | WH-M6-002 |
 | WH-M6-005 | Write installation and operating runbook | blocked | WH-M6-001..004 |
 | WH-M6-006 | Review MVP release readiness | blocked | WH-M6-001..005 |
-| WH-M6-007 | Prevent Keychain authorization from blocking startup | review | WH-M6-004 |
+| WH-M6-007 | Prevent Keychain authorization from blocking startup | done | WH-M6-004 |
 
 ## Selection rule
 

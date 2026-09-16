@@ -147,7 +147,7 @@ Terminate only the exact smoke-test PID after the assertions. Do not modify or d
 
 Document the startup recovery under X-07. Narrow the `WH-M6-003` blocker to the remaining live acceptance rows; do not represent the no-cursor smoke as a full manual pass. Update the roadmap. Set `WH-M6-007` to `review`, because verification is complete locally but the account guard and required push are deliberately deferred.
 
-- [ ] **Step 4: Review and deliver a focused commit**
+- [x] **Step 4: Review and deliver a focused commit**
 
 Inspect:
 

@@ -1,7 +1,7 @@
 # Whisper Keychain Startup Recovery Design
 
 **Date:** 2026-09-16
-**Status:** Approved and implemented; origin delivery pending
+**Status:** Approved, implemented, and delivered
 **Related release task:** WH-M6-003
 
 ## Problem

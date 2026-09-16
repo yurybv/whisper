@@ -6,7 +6,7 @@ Date: 2026-09-16
 
 Environment: Apple Silicon MacBook Pro; macOS 26.4.1; Xcode 26.6 (17F113); Swift 6.3.3; macOS SDK 26.5; XcodeGen 2.46.0.
 
-Build under test: commit `b4f7df0` plus the current acceptance-test and Keychain-startup recovery diff; ad-hoc `build/Whisper.app`; bundle identifier `dev.yury.whisper`; arm64.
+Build under test: commit `bccbe65`; ad-hoc `build/Whisper.app`; bundle identifier `dev.yury.whisper`; arm64.
 
 Evidence policy: generated phrases only; no real API key, private dictation, transcript, custom instruction, Authorization value, or user document is recorded. `PASS` means the exact row has current or named prior evidence. `AUTOMATED PASS / LIVE NOT RUN` records useful coverage but does not satisfy the manual release gate. `NOT RUN` is an explicit release blocker, never an inferred pass.
 

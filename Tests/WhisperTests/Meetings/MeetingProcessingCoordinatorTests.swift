@@ -423,6 +423,22 @@ final class MeetingProcessingCoordinatorTests: XCTestCase {
         XCTAssertEqual(transformerCalls, 0)
     }
 
+    @MainActor
+    func testRecoveryDoesNotCheckProcessingAvailabilityWhenNoDurableJobNeedsIt() async throws {
+        let fixture = try Fixture()
+        let availability = ProcessingAvailabilityProbe()
+        let recovery = MeetingRecoveryService(
+            history: fixture.history,
+            coordinator: fixture.coordinator,
+            processingAvailable: { await availability.check() }
+        )
+
+        try await recovery.resumeIncompleteJobs()
+
+        let callCount = await availability.callCount
+        XCTAssertEqual(callCount, 0)
+    }
+
     private func draft(id: UUID, status: MeetingStatus) -> MeetingDraft {
         MeetingDraft(
             id: id,
@@ -438,6 +454,15 @@ final class MeetingProcessingCoordinatorTests: XCTestCase {
 private actor MeetingRuntimeStateLog {
     private(set) var values: [MeetingRuntimeState] = []
     func append(_ value: MeetingRuntimeState) { values.append(value) }
+}
+
+private actor ProcessingAvailabilityProbe {
+    private(set) var callCount = 0
+
+    func check() -> Bool {
+        callCount += 1
+        return true
+    }
 }
 
 @MainActor

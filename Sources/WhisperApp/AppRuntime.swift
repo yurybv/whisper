@@ -176,8 +176,7 @@ final class AppRuntime {
             history: history,
             coordinator: newMeetingCoordinator,
             processingAvailable: {
-                guard let key = try? store.readOpenAIKey() else { return false }
-                return !key.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                (try? store.containsOpenAIKey()) == true
             }
         )
         hotkeys = GlobalHotkeyMonitor(

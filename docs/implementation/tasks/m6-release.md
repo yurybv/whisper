@@ -47,7 +47,7 @@
 - **Dependencies:** WH-M6-002.
 - **Expected files:** `docs/testing/release-acceptance.md`, sanitized evidence directories.
 - **Source:** spec testing strategy and distribution sections.
-- **Blockers:** The owner made a foreground session available but limited all interaction to the built-in display. macOS placed Gatekeeper and Keychain authorization dialogs on the external display despite launching Finder and Whisper from the built-in display. The dialogs were dismissed without interaction to preserve that constraint. The installed Release app then blocked synchronously while its saved development API-key item requested access because the Keychain ACL contains only older Debug CDHashes, not the current ad-hoc Release CDHash. Completing the live API, permission, capture, target-app, and relaunch rows therefore requires a session in which system authorization dialogs may be handled on the display chosen by macOS.
+- **Blockers:** The owner made a foreground session available but limited all interaction to the built-in display. WH-M6-007 resolved the automatic Keychain authorization and startup hang without changing the saved item. The remaining live API, permission, capture, target-app, Gatekeeper, and authorized relaunch rows still require a session in which macOS system dialogs may be handled on whichever display receives them.
 - **Acceptance audit (2026-09-15):** Recorded every required dictation, meeting, accessibility, and distribution row against commit `b4f7df0` plus the current acceptance-test hardening diff. Existing production TextEdit and permission/focus evidence is distinguished from current automated coverage; no automated result is represented as a current manual pass. The current package passes the complete verification command, bundle/signature checks, installation to `/Applications`, and the expected ad-hoc Gatekeeper assessment (`spctl` exit 3). Right-click Open launched the quarantined bundle through App Translocation. No API key, private content, or external-display screenshot was collected; the saved Keychain item was not changed.
 
 ## WH-M6-004
@@ -96,3 +96,20 @@
 - **Expected files:** `docs/implementation/reviews/m6-release-readiness.md`, final backlog/roadmap updates.
 - **Source:** roadmap Milestone 6.
 - **Blockers:** Completion of hardening tasks.
+
+## WH-M6-007
+
+- **Title:** Prevent Keychain authorization from blocking startup
+- **Type:** bug
+- **Status:** review
+- **Priority:** P0
+- **Scope:** Separate API-key presence from secret retrieval, make automatic Keychain presence and read queries non-interactive, and allow the packaged app to finish startup when an existing item is inaccessible to the current ad-hoc signature.
+- **Out of scope:** Rewriting Keychain ACLs, migrating or deleting the saved key, changing explicit save/remove behavior, Developer ID signing, and completing unrelated live acceptance rows.
+- **Acceptance criteria:** Settings can display saved/missing state without retrieving the API key; automatic presence and secret-read queries cannot show authentication UI; an inaccessible item becomes the existing safe Keychain error instead of blocking startup; the API key remains readable only on the first explicit OpenAI operation and cacheable only in process memory; packaged startup completes without a SecurityAgent window or private evidence.
+- **Required checks:** Focused `KeychainSecureStoreTests`, `SettingsModelTests`, and `OpenAIClientTests`; `./scripts/verify.sh`; `git diff --check`; no-cursor packaged-startup smoke with sanitized process evidence.
+- **Dependencies:** WH-M6-004.
+- **Expected files:** `Sources/Core/SecureStore.swift`, `Sources/Core/KeychainSecureStore.swift`, `Sources/UI/Settings/SettingsModel.swift`, `Sources/WhisperApp/AppRuntime.swift`, `Sources/Meetings/MeetingRecoveryService.swift`, focused unit tests, release acceptance evidence, roadmap, and task records.
+- **Source:** `docs/superpowers/specs/2026-09-16-whisper-keychain-startup-recovery-design.md` and `docs/superpowers/plans/2026-09-16-whisper-keychain-startup-recovery.md`; follow-up to WH-M6-003 X-07 acceptance failure.
+- **Blockers:** None. The repository account guard now returns `yurybv`; the verified commit must be present on `origin/master` before this task moves from `review` to `done`.
+- **Implementation (2026-09-16):** Added secret-free API-key presence checks across the secure-store boundary and changed Settings initialization/refresh plus meeting-recovery availability to use them without loading the secret. Meeting recovery no longer checks processing availability when no durable processing job needs it. Automatic Keychain presence and read operations combine a fresh noninteractive `LAContext` with serialized legacy-Keychain interaction suppression, restoring the process setting immediately afterward; explicit save, replace, and remove operations retain their user-initiated behavior. The in-process cache still loads only from an actual OpenAI request and never caches missing, blank, or failed reads.
+- **Verification:** TDD covered store presence, cache behavior, Settings no-read initialization/refresh, query construction, temporary legacy-interaction suppression, and the empty meeting-recovery startup path. After review closed the remaining automatic secret-read path, 58 focused Keychain/Settings/OpenAI/meeting tests passed. Full `./scripts/verify.sh` then passed all twelve stages with 301 unit/service tests and 15 UI tests, rebuilt the Release package, and verified its signature. A final no-cursor package launch against the mismatched older item remained alive in the application event loop with zero SecurityAgent windows and no Keychain frame in the sanitized process sample. `git diff --check` remains part of the commit gate; no secret or private content entered evidence.

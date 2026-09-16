@@ -1,6 +1,7 @@
 import Foundation
 
 protocol SecureStore: Sendable {
+    func containsOpenAIKey() throws -> Bool
     func readOpenAIKey() throws -> String?
     func saveOpenAIKey(_ value: String) throws
     func deleteOpenAIKey() throws
@@ -9,6 +10,12 @@ protocol SecureStore: Sendable {
 final class InMemorySecureStore: SecureStore, @unchecked Sendable {
     private let lock = NSLock()
     private var value: String?
+
+    func containsOpenAIKey() -> Bool {
+        lock.withLock {
+            value?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        }
+    }
 
     func readOpenAIKey() -> String? {
         lock.withLock { value }
@@ -34,6 +41,15 @@ final class CachingSecureStore: SecureStore, @unchecked Sendable {
 
     init(backingStore: any SecureStore) {
         self.backingStore = backingStore
+    }
+
+    func containsOpenAIKey() throws -> Bool {
+        try lock.withLock {
+            if cachedKey?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false {
+                return true
+            }
+            return try backingStore.containsOpenAIKey()
+        }
     }
 
     func readOpenAIKey() throws -> String? {

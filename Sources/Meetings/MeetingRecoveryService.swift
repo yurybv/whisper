@@ -22,10 +22,12 @@ struct MeetingRecoveryService: Sendable {
         for meeting in meetings where meeting.status == .recording || meeting.status == .finalizing {
             await coordinator.resume(meetingID: meeting.id)
         }
+        let processingMeetings = meetings.filter {
+            $0.status == .captured || $0.status == .transcribing || $0.status == .processing
+        }
+        guard !processingMeetings.isEmpty else { return }
         guard await processingAvailable() else { return }
-        for meeting in meetings where meeting.status == .captured
-            || meeting.status == .transcribing
-            || meeting.status == .processing {
+        for meeting in processingMeetings {
             await coordinator.resume(meetingID: meeting.id)
         }
     }

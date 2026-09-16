@@ -2,11 +2,11 @@
 
 Overall result: **BLOCKED — required macOS dialogs are routed to the unavailable external display**
 
-Date: 2026-09-15
+Date: 2026-09-16
 
 Environment: Apple Silicon MacBook Pro; macOS 26.4.1; Xcode 26.6 (17F113); Swift 6.3.3; macOS SDK 26.5; XcodeGen 2.46.0.
 
-Build under test: commit `b4f7df0` plus the current acceptance-test hardening diff; ad-hoc `build/Whisper.app`; bundle identifier `dev.yury.whisper`; arm64.
+Build under test: commit `b4f7df0` plus the current acceptance-test and Keychain-startup recovery diff; ad-hoc `build/Whisper.app`; bundle identifier `dev.yury.whisper`; arm64.
 
 Evidence policy: generated phrases only; no real API key, private dictation, transcript, custom instruction, Authorization value, or user document is recorded. `PASS` means the exact row has current or named prior evidence. `AUTOMATED PASS / LIVE NOT RUN` records useful coverage but does not satisfy the manual release gate. `NOT RUN` is an explicit release blocker, never an inferred pass.
 
@@ -66,22 +66,22 @@ Evidence policy: generated phrases only; no real API key, private dictation, tra
 
 | ID | Case | Result | Evidence and remaining live check |
 |---|---|---|---|
-| X-01 | Clean supported-Mac build | PASS | Full `scripts/verify.sh` passed all twelve stages: 295 unit/service tests and 15 UI tests completed with zero failures before `build/Whisper.app` was rebuilt and signed. UI-test windows were explicitly placed on the built-in display. |
+| X-01 | Clean supported-Mac build | PASS | Full `scripts/verify.sh` passed all twelve stages on 2026-09-16: 301 unit/service tests and 15 UI tests completed with zero failures before `build/Whisper.app` was rebuilt and signed. UI-test windows were explicitly placed on the built-in display. |
 | X-02 | Signature and bundle identity | PASS | `codesign --verify --deep --strict` passes; identifier is `dev.yury.whisper`; executable is arm64-only. |
 | X-03 | Gatekeeper recognizes the ad-hoc build as unnotarized | PASS | `spctl --assess --type execute build/Whisper.app` returned expected exit 3 and `rejected`. |
-| X-04 | Move exact bundle to `/Applications` | PASS | `/Applications/Whisper.app` did not exist, so the exact verified build was copied without replacement. Deep strict signature, bundle identifier, and executable-size checks passed at the destination. |
-| X-05 | First launch through right-click Open | PASS / SYSTEM DIALOG LIMITATION | Finder's contextual Open launched the quarantined installed bundle through App Translocation. Follow-up Gatekeeper windows were routed by macOS to the external display and dismissed without interaction, as that display was explicitly unavailable. |
+| X-04 | Move exact bundle to `/Applications` | PASS (prior package) / CURRENT NOT RUN | The 2026-09-15 verified package was copied without replacement and rechecked at the destination. The 2026-09-16 Keychain-recovery package has only been launched from `build/Whisper.app` and still needs the installation step repeated. |
+| X-05 | First launch through right-click Open | PASS (prior package) / CURRENT NOT RUN | Finder's contextual Open launched the 2026-09-15 quarantined bundle through App Translocation. Gatekeeper windows were routed by macOS to the external display and dismissed without interaction. Repeat with the 2026-09-16 package. |
 | X-06 | Onboarding links open exact permission panes | PASS (prior live) / CURRENT NOT RUN | WH-M3-001 verified the routes and recovery states; repeat from the packaged build. |
-| X-07 | API key survives relaunch in Keychain and never appears in logs | AUTOMATED PASS / LIVE BLOCKED | Keychain round-trip and safe-error tests pass and the runtime has no logging APIs. The installed app's live read requested authorization because the existing item ACL contains seven older Debug CDHashes but not the current Release CDHash. Sampling confirmed the main thread blocked in `SecItemCopyMatching`; the API key was never read, printed, changed, or logged. macOS routed the authorization dialog to the unavailable external display. |
+| X-07 | API key survives relaunch in Keychain and never appears in logs | AUTOMATED PASS / LIVE BLOCKED | Twelve Keychain lifecycle, cache, query, and legacy-interaction tests pass; Settings startup/refresh now checks item presence without retrieving the secret. A no-cursor launch of the current ad-hoc package against the mismatched older item remained alive in its event loop, showed zero SecurityAgent windows, and had no `SecItemCopyMatching` frame in the sanitized process sample. The key was not read, printed, changed, or logged. A live authorized read after relaunch remains required to prove the full row. |
 
 ## Blocking release session
 
 Failed criterion: `WH-M6-003` requires every manual row to pass or fail on the current packaged version. The rows marked `NOT RUN`, `LIVE NOT RUN`, or `LIVE BLOCKED` cannot be promoted using automated evidence alone.
 
-Reason: the owner authorized foreground QA and use of the saved API key, but required all interaction to remain on the built-in display. Finder and test UI stayed on that display; macOS nevertheless routed Gatekeeper and Keychain authorization windows to the external display. Those windows were dismissed without interaction. The installed app cannot complete initialization until its current ad-hoc Release CDHash is authorized for the existing development Keychain item, so target-app, audio, permission, recovery, and relaunch checks cannot proceed safely under the display constraint.
+Reason: the owner authorized foreground QA and use of the saved API key, but required all interaction to remain on the built-in display. WH-M6-007 removed the automatic Keychain authorization and startup hang, so the current package now completes initialization without a SecurityAgent window. The remaining manual target-app, audio, permission, recovery, Gatekeeper, and authorized Keychain-relaunch checks still require macOS dialogs that may be routed to the unavailable external display and therefore cannot proceed safely under the display constraint.
 
 Affected tasks: `WH-M6-003`, `WH-M6-005`, and `WH-M6-006`.
 
-Recommended default: reserve one foreground acceptance session when macOS authorization dialogs may be handled on whichever display receives them. Use only generated text/audio, authorize the current verified Release build for its existing Keychain item, run D-01 through X-07, and record only outcomes and sanitized notes here.
+Recommended default: reserve one foreground acceptance session when macOS authorization dialogs may be handled on whichever display receives them. Use only generated text/audio, repair access through the explicit Replace/Save action in Settings if the older Keychain item requires authorization, run D-01 through X-07, and record only outcomes and sanitized notes here.
 
 Required external change: the external display becomes available briefly for Gatekeeper, Keychain, and macOS permission confirmations, or it is physically disconnected before the session so macOS must place those dialogs on the built-in display. No credential needs to be disclosed or recorded.

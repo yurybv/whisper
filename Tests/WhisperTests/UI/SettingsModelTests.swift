@@ -151,6 +151,23 @@ final class SettingsModelTests: XCTestCase {
         XCTAssertEqual(model.apiKeyState, .missing)
     }
 
+    func testInitializationAndRefreshCheckPresenceWithoutReadingSecret() throws {
+        let secureStore = SettingsTrackingSecureStore(value: "sk-test-private-settings-key")
+
+        let model = try makeModel(secureStore: secureStore)
+
+        XCTAssertEqual(model.apiKeyState, .saved)
+        XCTAssertEqual(secureStore.presenceCount, 1)
+        XCTAssertEqual(secureStore.readCount, 0)
+
+        secureStore.setValue(nil)
+        model.refresh()
+
+        XCTAssertEqual(model.apiKeyState, .missing)
+        XCTAssertEqual(secureStore.presenceCount, 2)
+        XCTAssertEqual(secureStore.readCount, 0)
+    }
+
     func testKeychainWriteFailuresHaveSafePresentationMessages() throws {
         let secret = "sk-test-private-settings-key"
         let saveStore = SettingsFailingSecureStore(
@@ -181,7 +198,7 @@ final class SettingsModelTests: XCTestCase {
     func testKeychainReadFailureIsRecoverableAndUsesSafePresentation() throws {
         let secret = "sk-test-private-settings-key"
         let secureStore = SettingsFailingSecureStore(
-            readError: NSError(domain: secret, code: 3)
+            presenceError: NSError(domain: secret, code: 3)
         )
 
         let model = try makeModel(secureStore: secureStore)
@@ -291,24 +308,28 @@ private struct SettingsMicrophoneProvider: MicrophoneDeviceProviding {
 
 private final class SettingsFailingSecureStore: SecureStore, @unchecked Sendable {
     private var value: String?
-    private let readError: Error?
+    private let presenceError: Error?
     private let saveError: Error?
     private let deleteError: Error?
 
     init(
         value: String? = nil,
-        readError: Error? = nil,
+        presenceError: Error? = nil,
         saveError: Error? = nil,
         deleteError: Error? = nil
     ) {
         self.value = value
-        self.readError = readError
+        self.presenceError = presenceError
         self.saveError = saveError
         self.deleteError = deleteError
     }
 
+    func containsOpenAIKey() throws -> Bool {
+        if let presenceError { throw presenceError }
+        return value?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+    }
+
     func readOpenAIKey() throws -> String? {
-        if let readError { throw readError }
         return value
     }
 
@@ -320,6 +341,51 @@ private final class SettingsFailingSecureStore: SecureStore, @unchecked Sendable
     func deleteOpenAIKey() throws {
         if let deleteError { throw deleteError }
         value = nil
+    }
+}
+
+private final class SettingsTrackingSecureStore: SecureStore, @unchecked Sendable {
+    private let lock = NSLock()
+    private var value: String?
+    private var storedPresenceCount = 0
+    private var storedReadCount = 0
+
+    init(value: String?) {
+        self.value = value
+    }
+
+    var presenceCount: Int {
+        lock.withLock { storedPresenceCount }
+    }
+
+    var readCount: Int {
+        lock.withLock { storedReadCount }
+    }
+
+    func setValue(_ value: String?) {
+        lock.withLock { self.value = value }
+    }
+
+    func containsOpenAIKey() -> Bool {
+        lock.withLock {
+            storedPresenceCount += 1
+            return value?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
+        }
+    }
+
+    func readOpenAIKey() -> String? {
+        lock.withLock {
+            storedReadCount += 1
+            return value
+        }
+    }
+
+    func saveOpenAIKey(_ value: String) {
+        lock.withLock { self.value = value }
+    }
+
+    func deleteOpenAIKey() {
+        lock.withLock { value = nil }
     }
 }
 

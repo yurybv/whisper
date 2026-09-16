@@ -89,7 +89,7 @@ final class SettingsModel {
         beginCapture = beginShortcutCapture
         self.shortcutsChanged = shortcutsChanged
         do {
-            apiKeyState = try secureStore.readOpenAIKey()?.isEmpty == false ? .saved : .missing
+            apiKeyState = try secureStore.containsOpenAIKey() ? .saved : .missing
             apiKeyErrorMessage = nil
         } catch {
             apiKeyState = .missing
@@ -284,7 +284,7 @@ final class SettingsModel {
     private func refreshAPIKeyState() {
         guard apiKeyState != .testing else { return }
         do {
-            let hasSavedKey = try secureStore.readOpenAIKey()?.isEmpty == false
+            let hasSavedKey = try secureStore.containsOpenAIKey()
             if hasSavedKey {
                 if apiKeyState != .connected { apiKeyState = .saved }
             } else {

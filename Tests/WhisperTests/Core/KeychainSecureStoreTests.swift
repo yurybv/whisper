@@ -1,3 +1,5 @@
+import LocalAuthentication
+import Security
 import XCTest
 @testable import Whisper
 
@@ -8,26 +10,80 @@ final class KeychainSecureStoreTests: XCTestCase {
         )
         defer { try? store.deleteOpenAIKey() }
 
+        XCTAssertFalse(try store.containsOpenAIKey())
         XCTAssertNil(try store.readOpenAIKey())
 
         try store.saveOpenAIKey("first-test-value")
+        XCTAssertTrue(try store.containsOpenAIKey())
         XCTAssertEqual(try store.readOpenAIKey(), "first-test-value")
 
         try store.saveOpenAIKey("replacement-test-value")
         XCTAssertEqual(try store.readOpenAIKey(), "replacement-test-value")
 
         try store.deleteOpenAIKey()
+        XCTAssertFalse(try store.containsOpenAIKey())
         XCTAssertNil(try store.readOpenAIKey())
     }
 
     func testInMemoryStoreSupportsTheSameLifecycle() throws {
         let store: any SecureStore = InMemorySecureStore()
 
+        XCTAssertFalse(try store.containsOpenAIKey())
         try store.saveOpenAIKey("temporary-test-value")
+        XCTAssertTrue(try store.containsOpenAIKey())
         XCTAssertEqual(try store.readOpenAIKey(), "temporary-test-value")
 
         try store.deleteOpenAIKey()
+        XCTAssertFalse(try store.containsOpenAIKey())
         XCTAssertNil(try store.readOpenAIKey())
+    }
+
+    func testKeychainAutomaticQueriesDisableAuthenticationUI() {
+        let store = KeychainSecureStore(service: "dev.yury.whisper.tests.query")
+
+        let presenceQuery = store.presenceQuery
+        XCTAssertEqual(presenceQuery[kSecReturnAttributes] as? Bool, true)
+        XCTAssertNil(presenceQuery[kSecReturnData])
+        XCTAssertEqual(
+            (presenceQuery[kSecUseAuthenticationContext] as? LAContext)?.interactionNotAllowed,
+            true
+        )
+
+        let readQuery = store.readQuery
+        XCTAssertEqual(readQuery[kSecReturnData] as? Bool, true)
+        XCTAssertNil(readQuery[kSecReturnAttributes])
+        XCTAssertEqual(
+            (readQuery[kSecUseAuthenticationContext] as? LAContext)?.interactionNotAllowed,
+            true
+        )
+    }
+
+    func testAutomaticOperationTemporarilyDisablesLegacyKeychainInteraction() {
+        var interactionWasAllowed = DarwinBoolean(false)
+        XCTAssertEqual(
+            SecKeychainGetUserInteractionAllowed(&interactionWasAllowed),
+            errSecSuccess
+        )
+
+        for operationStatus in [errSecSuccess, errSecAuthFailed] {
+            let status = KeychainSecureStore.performWithoutUserInteraction {
+                var interactionIsAllowed = DarwinBoolean(true)
+                guard SecKeychainGetUserInteractionAllowed(&interactionIsAllowed) == errSecSuccess else {
+                    return errSecInternalError
+                }
+                return interactionIsAllowed.boolValue
+                    ? errSecInteractionNotAllowed
+                    : operationStatus
+            }
+
+            XCTAssertEqual(status, operationStatus)
+            var interactionIsAllowedAfterward = DarwinBoolean(false)
+            XCTAssertEqual(
+                SecKeychainGetUserInteractionAllowed(&interactionIsAllowedAfterward),
+                errSecSuccess
+            )
+            XCTAssertEqual(interactionIsAllowedAfterward.boolValue, interactionWasAllowed.boolValue)
+        }
     }
 
     func testCachingStoreReadsAStoredKeyFromItsBackingStoreOnlyOnce() throws {
@@ -37,6 +93,30 @@ final class KeychainSecureStoreTests: XCTestCase {
         XCTAssertEqual(try store.readOpenAIKey(), "session-test-value")
         XCTAssertEqual(try store.readOpenAIKey(), "session-test-value")
         XCTAssertEqual(backingStore.readCount, 1)
+    }
+
+    func testCachingStoreChecksBackingPresenceWithoutReadingOrCachingSecret() throws {
+        let backingStore = CountingSecureStore(value: "session-test-value")
+        let store = CachingSecureStore(backingStore: backingStore)
+
+        XCTAssertTrue(try store.containsOpenAIKey())
+        XCTAssertTrue(try store.containsOpenAIKey())
+        XCTAssertEqual(backingStore.presenceCount, 2)
+        XCTAssertEqual(backingStore.readCount, 0)
+
+        XCTAssertEqual(try store.readOpenAIKey(), "session-test-value")
+        XCTAssertEqual(backingStore.readCount, 1)
+    }
+
+    func testCachingStoreUsesCachedNonemptyKeyForPresence() throws {
+        let backingStore = CountingSecureStore(value: "session-test-value")
+        let store = CachingSecureStore(backingStore: backingStore)
+
+        XCTAssertEqual(try store.readOpenAIKey(), "session-test-value")
+        XCTAssertTrue(try store.containsOpenAIKey())
+
+        XCTAssertEqual(backingStore.readCount, 1)
+        XCTAssertEqual(backingStore.presenceCount, 0)
     }
 
     func testCachingStoreDoesNotCacheAMissingKeyOrReadFailure() throws {
@@ -114,6 +194,7 @@ private final class CountingSecureStore: SecureStore, @unchecked Sendable {
     private var value: String?
     private var readError: Error?
     private var storedReadCount = 0
+    private var storedPresenceCount = 0
 
     init(value: String?, readDelay: TimeInterval = 0) {
         self.value = value
@@ -122,6 +203,10 @@ private final class CountingSecureStore: SecureStore, @unchecked Sendable {
 
     var readCount: Int {
         lock.withLock { storedReadCount }
+    }
+
+    var presenceCount: Int {
+        lock.withLock { storedPresenceCount }
     }
 
     func setValue(_ value: String?) {
@@ -146,6 +231,13 @@ private final class CountingSecureStore: SecureStore, @unchecked Sendable {
                 throw readError
             }
             return value
+        }
+    }
+
+    func containsOpenAIKey() -> Bool {
+        lock.withLock {
+            storedPresenceCount += 1
+            return value?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false
         }
     }
 

@@ -135,7 +135,7 @@
 
 - **Title:** Move metadata to a stable app-owned store
 - **Type:** bug
-- **Status:** ready
+- **Status:** review
 - **Priority:** P0
 - **Scope:** Give SwiftData an explicit store under `Application Support/Whisper/Metadata`, safely adopt a compatible legacy `default.store` before opening the canonical container, and make migration failure visible instead of silently creating empty metadata.
 - **Out of scope:** Cloud sync, backup UI, Time Machine integration, deleting the legacy store, or reconstructing records no longer present on disk.
@@ -145,6 +145,8 @@
 - **Expected files:** `Sources/Persistence/AppPaths.swift`, `Sources/Persistence/PersistenceController.swift`, a focused store-location/migration service, `Sources/WhisperApp/AppRuntime.swift`, persistence tests, ADR/README updates, release acceptance evidence and task records.
 - **Source:** `docs/superpowers/specs/2026-09-18-release-stabilization-design.md` and `docs/superpowers/plans/2026-09-18-persistent-metadata-store.md`; follow-up to WH-M6-003 data-loss finding.
 - **Blockers:** The already-overwritten production legacy store currently contains no recoverable history. This does not block prevention or migration of any compatible legacy data that still exists on another installation.
+- **Implementation (2026-09-18):** Added the private `Metadata` directory and explicit `Whisper.store` URL, made disk-backed `PersistenceController` construction require an explicit URL, and wired startup through a pre-container relocator. Compatible legacy SQLite families are copied into private staging, validated against every Whisper entity, and atomically promoted without deleting the source; canonical data wins and copy or validation failure stops startup.
+- **Verification:** TDD covered the path contract and six synthetic persistence cases. The focused persistence suite passes 21 tests, including all five entity types, canonical-wins, idempotence, unrelated legacy data, injected copy failure, directory permissions, and explicit reopen durability. The related persistence, history, retention, and recordings selection passes 50 tests. Full noninteractive verification and the owner-batched packaged relaunch smoke remain pending.
 
 ## WH-M6-010
 

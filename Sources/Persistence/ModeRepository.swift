@@ -9,6 +9,21 @@ enum PersistenceError: Error, Sendable, Equatable {
     case disabledMode
     case unsafePath
     case applicationSupportUnavailable
+    case explicitStoreURLRequired
+    case metadataMigrationFailed
+}
+
+extension PersistenceError: LocalizedError {
+    var errorDescription: String? {
+        switch self {
+        case .metadataMigrationFailed:
+            "Whisper could not safely migrate its local data. The original data was left unchanged."
+        case .explicitStoreURLRequired:
+            "Whisper could not determine where to store its local data."
+        default:
+            "Whisper could not access its local data."
+        }
+    }
 }
 
 @MainActor

@@ -10,7 +10,9 @@ Whisper stores queryable modes, dictation history, meeting jobs, and transcript 
 
 ## Decision
 
-Use SwiftData for structured metadata and relationships. Store recording audio and retry chunks as files below `Library/Application Support/Whisper`, referenced from SwiftData by validated relative paths. Write active meeting tracks continuously to their meeting directory rather than retaining complete recordings in memory.
+Use SwiftData for structured metadata and relationships at `Library/Application Support/Whisper/Metadata/Whisper.store`. Store recording audio and retry chunks separately below `Library/Application Support/Whisper/Recordings`, referenced from SwiftData by validated relative paths. Write active meeting tracks continuously to their meeting directory rather than retaining complete recordings in memory.
+
+Before opening the canonical metadata store for the first time, inspect only the persistent-store metadata of the legacy `Library/Application Support/default.store`. A compatible complete Whisper store is copied as a SQLite family into a private staging directory, validated with the current model, and atomically promoted. The canonical store always wins, migration failure stops startup instead of creating an empty replacement, and legacy files are never deleted automatically. Both metadata and recording storage remain local; this decision does not provide cloud backup.
 
 Use UserDefaults only for lightweight preferences and macOS Keychain only for the OpenAI API key. Chunk files are disposable after their transcript is persisted; source tracks remain until retention or confirmed deletion removes them.
 
@@ -22,8 +24,10 @@ Confirmed meeting deletion creates a SwiftData cleanup tombstone containing the 
 - Source audio survives relaunch and transient processing failures.
 - Database and file changes require coordinated cleanup and recovery rules.
 - Deletion tombstones add a small persistence type but make cross-store cleanup retryable.
+- Rebuilds, App Translocation, and installation-path changes resolve the same canonical metadata URL.
+- A compatible legacy store is retained after one-time adoption for manual rollback.
 - Relative paths must never escape the Whisper Application Support root.
-- Backups and manual removal need to account for both the metadata store and Application Support files.
+- Backups and manual removal need to account for both the metadata store and recording files.
 
 ## Rejected alternatives
 

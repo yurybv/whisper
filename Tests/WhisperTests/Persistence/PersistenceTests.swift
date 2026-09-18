@@ -71,13 +71,29 @@ final class PersistenceTests: XCTestCase {
         XCTAssertEqual(paths.recordingsURL, root.appendingPathComponent("Recordings", isDirectory: true))
         XCTAssertEqual(paths.temporaryURL, root.appendingPathComponent("Temporary", isDirectory: true))
         XCTAssertEqual(
+            paths.metadataDirectoryURL,
+            root.appendingPathComponent("Metadata", isDirectory: true)
+        )
+        XCTAssertEqual(
+            paths.metadataStoreURL,
+            root.appendingPathComponent("Metadata", isDirectory: true)
+                .appendingPathComponent("Whisper.store")
+        )
+        XCTAssertEqual(
             meetingDirectory,
             paths.recordingsURL.appendingPathComponent("meeting-\(meetingID.uuidString)", isDirectory: true)
         )
         XCTAssertTrue(FileManager.default.fileExists(atPath: meetingDirectory.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: paths.temporaryURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: paths.metadataDirectoryURL.path))
 
-        for directory in [paths.rootURL, paths.recordingsURL, paths.temporaryURL, meetingDirectory] {
+        for directory in [
+            paths.rootURL,
+            paths.recordingsURL,
+            paths.temporaryURL,
+            paths.metadataDirectoryURL,
+            meetingDirectory
+        ] {
             let attributes = try FileManager.default.attributesOfItem(atPath: directory.path)
             let permissions = try XCTUnwrap(attributes[.posixPermissions] as? NSNumber)
             XCTAssertEqual(permissions.intValue & 0o777, 0o700)
@@ -420,4 +436,212 @@ final class PersistenceTests: XCTestCase {
         XCTAssertEqual(meeting.segments.first?.text, "Replacement")
         XCTAssertEqual(meeting.segments.first?.meeting.id, meetingID)
     }
+
+    @MainActor
+    func testRelocatorCopiesCompatibleLegacyStoreAndPreservesEveryEntity() throws {
+        let fixture = StoreFixture()
+        let sandbox = try makeStoreSandbox()
+        defer { try? FileManager.default.removeItem(at: sandbox.applicationSupport) }
+        try seedStore(at: sandbox.legacyStoreURL, fixture: fixture)
+
+        let canonicalURL = try PersistentStoreRelocator().prepareCanonicalStore(
+            paths: sandbox.paths,
+            legacyStoreURL: sandbox.legacyStoreURL
+        )
+
+        XCTAssertEqual(canonicalURL, sandbox.paths.metadataStoreURL)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: sandbox.legacyStoreURL.path))
+        let controller = try PersistenceController(storeURL: canonicalURL)
+        let context = controller.container.mainContext
+        XCTAssertEqual(try context.fetch(FetchDescriptor<ModeEntity>()).map(\.id), [fixture.modeID])
+        XCTAssertEqual(try context.fetch(FetchDescriptor<DictationEntity>()).map(\.id), [fixture.dictationID])
+        XCTAssertEqual(try context.fetch(FetchDescriptor<MeetingEntity>()).map(\.id), [fixture.meetingID])
+        XCTAssertEqual(try context.fetch(FetchDescriptor<TranscriptSegmentEntity>()).map(\.id), [fixture.segmentID])
+        XCTAssertEqual(
+            try context.fetch(FetchDescriptor<RecordingCleanupEntity>()).map(\.meetingID),
+            [fixture.cleanupMeetingID]
+        )
+    }
+
+    @MainActor
+    func testRelocatorUsesExistingCanonicalStoreWithoutTouchingLegacy() throws {
+        let canonicalFixture = StoreFixture()
+        let legacyFixture = StoreFixture()
+        let sandbox = try makeStoreSandbox()
+        defer { try? FileManager.default.removeItem(at: sandbox.applicationSupport) }
+        try seedStore(at: sandbox.paths.metadataStoreURL, fixture: canonicalFixture)
+        try seedStore(at: sandbox.legacyStoreURL, fixture: legacyFixture)
+
+        let canonicalURL = try PersistentStoreRelocator().prepareCanonicalStore(
+            paths: sandbox.paths,
+            legacyStoreURL: sandbox.legacyStoreURL
+        )
+
+        let controller = try PersistenceController(storeURL: canonicalURL)
+        XCTAssertEqual(
+            try controller.container.mainContext.fetch(FetchDescriptor<ModeEntity>()).map(\.id),
+            [canonicalFixture.modeID]
+        )
+        XCTAssertTrue(FileManager.default.fileExists(atPath: sandbox.legacyStoreURL.path))
+    }
+
+    @MainActor
+    func testRelocatorIsIdempotentAfterSuccessfulPromotion() throws {
+        let fixture = StoreFixture()
+        let sandbox = try makeStoreSandbox()
+        defer { try? FileManager.default.removeItem(at: sandbox.applicationSupport) }
+        try seedStore(at: sandbox.legacyStoreURL, fixture: fixture)
+        let relocator = PersistentStoreRelocator()
+
+        let firstURL = try relocator.prepareCanonicalStore(
+            paths: sandbox.paths,
+            legacyStoreURL: sandbox.legacyStoreURL
+        )
+        let secondURL = try relocator.prepareCanonicalStore(
+            paths: sandbox.paths,
+            legacyStoreURL: sandbox.legacyStoreURL
+        )
+
+        XCTAssertEqual(firstURL, secondURL)
+        let controller = try PersistenceController(storeURL: secondURL)
+        XCTAssertEqual(
+            try controller.container.mainContext.fetch(FetchDescriptor<ModeEntity>()).map(\.id),
+            [fixture.modeID]
+        )
+        XCTAssertTrue(FileManager.default.fileExists(atPath: sandbox.legacyStoreURL.path))
+    }
+
+    @MainActor
+    func testRelocatorIgnoresUnrelatedLegacyStore() throws {
+        let sandbox = try makeStoreSandbox()
+        defer { try? FileManager.default.removeItem(at: sandbox.applicationSupport) }
+        try Data("unrelated local database".utf8).write(to: sandbox.legacyStoreURL)
+
+        let canonicalURL = try PersistentStoreRelocator().prepareCanonicalStore(
+            paths: sandbox.paths,
+            legacyStoreURL: sandbox.legacyStoreURL
+        )
+
+        XCTAssertEqual(canonicalURL, sandbox.paths.metadataStoreURL)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: canonicalURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: sandbox.legacyStoreURL.path))
+    }
+
+    @MainActor
+    func testRelocatorLeavesLegacyUntouchedAndNoCanonicalStoreWhenCopyFails() throws {
+        let fixture = StoreFixture()
+        let sandbox = try makeStoreSandbox()
+        defer { try? FileManager.default.removeItem(at: sandbox.applicationSupport) }
+        try seedStore(at: sandbox.legacyStoreURL, fixture: fixture)
+        let relocator = PersistentStoreRelocator(copyItem: { _, _ in
+            throw CocoaError(.fileWriteNoPermission)
+        })
+
+        XCTAssertThrowsError(
+            try relocator.prepareCanonicalStore(
+                paths: sandbox.paths,
+                legacyStoreURL: sandbox.legacyStoreURL
+            )
+        ) {
+            XCTAssertEqual($0 as? PersistenceError, .metadataMigrationFailed)
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: sandbox.legacyStoreURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: sandbox.paths.metadataStoreURL.path))
+    }
+
+    @MainActor
+    func testExplicitMetadataStoreSurvivesReopen() throws {
+        let fixture = StoreFixture()
+        let sandbox = try makeStoreSandbox()
+        defer { try? FileManager.default.removeItem(at: sandbox.applicationSupport) }
+        try seedStore(at: sandbox.paths.metadataStoreURL, fixture: fixture)
+
+        let controller = try PersistenceController(storeURL: sandbox.paths.metadataStoreURL)
+
+        XCTAssertEqual(
+            try controller.container.mainContext.fetch(FetchDescriptor<DictationEntity>()).map(\.id),
+            [fixture.dictationID]
+        )
+    }
+
+    @MainActor
+    private func seedStore(at storeURL: URL, fixture: StoreFixture) throws {
+        let controller = try PersistenceController(storeURL: storeURL)
+        let context = controller.container.mainContext
+        context.insert(
+            ModeEntity(
+                ModeDefinition(
+                    id: fixture.modeID,
+                    name: "Synthetic Mode",
+                    instructions: "Synthetic instructions.",
+                    languageHint: "en",
+                    isDefault: false,
+                    isEnabled: true
+                ),
+                normalizedName: "synthetic mode"
+            )
+        )
+        let history = HistoryRepository(context: context)
+        _ = try history.createDictation(
+            DictationDraft(
+                id: fixture.dictationID,
+                modeID: fixture.modeID,
+                modeNameSnapshot: "Synthetic Mode",
+                modeInstructionsSnapshot: "Synthetic instructions.",
+                originalText: "Synthetic input",
+                outputText: "Synthetic output",
+                status: .ready
+            )
+        )
+        _ = try history.createMeeting(
+            MeetingDraft(
+                id: fixture.meetingID,
+                title: "Synthetic meeting",
+                status: .ready,
+                instructionsSnapshot: "Synthetic meeting instructions."
+            )
+        )
+        try history.replaceSegments(
+            meetingID: fixture.meetingID,
+            segments: [
+                TranscriptSegment(
+                    id: fixture.segmentID,
+                    meetingID: fixture.meetingID,
+                    source: .you,
+                    startTime: 0,
+                    endTime: 1,
+                    text: "Synthetic segment"
+                )
+            ]
+        )
+        context.insert(RecordingCleanupEntity(meetingID: fixture.cleanupMeetingID))
+        try context.save()
+    }
+
+    private func makeStoreSandbox() throws -> StoreSandbox {
+        let applicationSupport = FileManager.default.temporaryDirectory
+            .appendingPathComponent("WhisperStoreMigration-\(UUID().uuidString)", isDirectory: true)
+        let paths = try AppPaths(
+            rootURL: applicationSupport.appendingPathComponent("Whisper", isDirectory: true)
+        )
+        return StoreSandbox(
+            applicationSupport: applicationSupport,
+            paths: paths,
+            legacyStoreURL: applicationSupport.appendingPathComponent("default.store")
+        )
+    }
+}
+
+private struct StoreFixture {
+    let modeID = UUID()
+    let dictationID = UUID()
+    let meetingID = UUID()
+    let segmentID = UUID()
+    let cleanupMeetingID = UUID()
+}
+
+private struct StoreSandbox {
+    let applicationSupport: URL
+    let paths: AppPaths
+    let legacyStoreURL: URL
 }

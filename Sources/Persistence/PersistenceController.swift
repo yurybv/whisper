@@ -14,13 +14,15 @@ final class PersistenceController {
             RecordingCleanupEntity.self
         ])
         let configuration: ModelConfiguration
-        if let storeURL {
-            configuration = ModelConfiguration(schema: schema, url: storeURL)
-        } else {
+        if inMemory {
             configuration = ModelConfiguration(
                 schema: schema,
-                isStoredInMemoryOnly: inMemory
+                isStoredInMemoryOnly: true
             )
+        } else if let storeURL {
+            configuration = ModelConfiguration(schema: schema, url: storeURL)
+        } else {
+            throw PersistenceError.explicitStoreURLRequired
         }
         container = try ModelContainer(for: schema, configurations: [configuration])
     }

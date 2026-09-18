@@ -137,7 +137,14 @@ final class AppRuntime {
                                      testConnection: { try await openAI.testConnection() })
         settingsStore = AppSettingsStore()
         let paths = try AppPaths()
-        persistence = try PersistenceController()
+        let legacyStoreURL = paths.rootURL
+            .deletingLastPathComponent()
+            .appendingPathComponent("default.store")
+        let metadataStoreURL = try PersistentStoreRelocator().prepareCanonicalStore(
+            paths: paths,
+            legacyStoreURL: legacyStoreURL
+        )
+        persistence = try PersistenceController(storeURL: metadataStoreURL)
         modeRepository = ModeRepository(context: persistence.container.mainContext)
         try modeRepository.seedDefaultMode()
         let history = HistoryRepository(

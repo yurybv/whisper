@@ -10,6 +10,8 @@ struct AppPaths: @unchecked Sendable {
     let rootURL: URL
     let recordingsURL: URL
     let temporaryURL: URL
+    let metadataDirectoryURL: URL
+    let metadataStoreURL: URL
 
     private let fileManager: FileManager
 
@@ -32,10 +34,13 @@ struct AppPaths: @unchecked Sendable {
 
         recordingsURL = self.rootURL.appendingPathComponent("Recordings", isDirectory: true)
         temporaryURL = self.rootURL.appendingPathComponent("Temporary", isDirectory: true)
+        metadataDirectoryURL = self.rootURL.appendingPathComponent("Metadata", isDirectory: true)
+        metadataStoreURL = metadataDirectoryURL.appendingPathComponent("Whisper.store")
 
         try createPrivateDirectory(at: self.rootURL, withIntermediateDirectories: true)
         try createPrivateDirectory(at: recordingsURL, withIntermediateDirectories: false)
         try createPrivateDirectory(at: temporaryURL, withIntermediateDirectories: false)
+        try createPrivateDirectory(at: metadataDirectoryURL, withIntermediateDirectories: false)
     }
 
     func recordingDirectory(for meetingID: UUID, create: Bool = true) throws -> URL {

@@ -1,12 +1,12 @@
 # Whisper MVP release acceptance
 
-Overall result: **BLOCKED — required macOS dialogs are routed to the unavailable external display**
+Overall result: **BLOCKED — foreground acceptance found scoped release defects WH-M6-008 through WH-M6-011; remaining macOS-dialog checks are also pending**
 
-Date: 2026-09-16
+Date: 2026-09-18
 
 Environment: Apple Silicon MacBook Pro; macOS 26.4.1; Xcode 26.6 (17F113); Swift 6.3.3; macOS SDK 26.5; XcodeGen 2.46.0.
 
-Build under test: commit `bccbe65`; ad-hoc `build/Whisper.app`; bundle identifier `dev.yury.whisper`; arm64.
+Build under test: runtime commit `bccbe65` with docs-only source follow-up `e9ea1ca`; ad-hoc `build/Whisper.app`; bundle identifier `dev.yury.whisper`; arm64.
 
 Evidence policy: generated phrases only; no real API key, private dictation, transcript, custom instruction, Authorization value, or user document is recorded. `PASS` means the exact row has current or named prior evidence. `AUTOMATED PASS / LIVE NOT RUN` records useful coverage but does not satisfy the manual release gate. `NOT RUN` is an explicit release blocker, never an inferred pass.
 
@@ -27,6 +27,7 @@ Evidence policy: generated phrases only; no real API key, private dictation, tra
 | D-11 | Revoked Microphone permission | AUTOMATED PASS / LIVE NOT RUN | Permission and Home/Recordings model fixtures pass; current macOS permission revocation/recovery is pending. |
 | D-12 | Revoked Accessibility and clipboard fallback | AUTOMATED PASS / LIVE NOT RUN | `TextInsertionServiceTests` cover manual-paste fallback and clipboard preservation; current macOS revocation/recovery is pending. |
 | D-13 | Active meeting rejects push-to-talk with a clear message | AUTOMATED PASS / LIVE NOT RUN | Hotkey routing, coordinator, menu-bar, and Recordings tests pass; confirm with physical push-to-talk during a real capture. |
+| D-14 | Warp insertion after translated dictation | FAIL | The generated dictation was recorded and transformed, and History identified target bundle `dev.warp.Warp-Stable`, but the focused Warp input remained unchanged while the HUD reported `Inserted`. Warp accepts the selected-text Accessibility write without applying it; `WH-M6-008` routes this bundle through verified paste fallback. No dictated content is retained in evidence. |
 
 ## Meeting matrix
 
@@ -61,6 +62,8 @@ Evidence policy: generated phrases only; no real API key, private dictation, tra
 | U-04 | Long Russian and English content | AUTOMATED PASS / LIVE NOT RUN | Long-content UI fixtures passed; inspect current packaged History and Modes. |
 | U-05 | Missing permissions leave unaffected screens usable | AUTOMATED PASS / LIVE NOT RUN | Onboarding, Home, Settings, and Recordings fixtures pass; revoke permissions for the current package and navigate unaffected screens. |
 | U-06 | Dictation and recording HUDs do not steal target focus | PASS (prior live) / CURRENT NOT RUN | Prior mode-switcher/focus and overlay evidence passed; repeat with current package in each target app. |
+| U-07 | Modes-list circle activates directly and menu stays task-focused | FAIL / DESIGN APPROVED | The leading circle currently selects the row while activation is hidden in the ellipsis menu. `WH-M6-011` makes the circle a labeled activation control, removes menu Activate, and keeps the detail-panel action. |
+| U-08 | Repeated Change Mode shortcut advances selection | FAIL / DESIGN APPROVED | Control-Command-M currently opens/rebuilds the switcher but does not cycle its selection. `WH-M6-011` adds repeat-to-next with wrap while retaining arrows, Return, Escape, filtering, and focus restoration. |
 
 ## Distribution matrix
 
@@ -73,15 +76,16 @@ Evidence policy: generated phrases only; no real API key, private dictation, tra
 | X-05 | First launch through right-click Open | PASS (prior package) / CURRENT NOT RUN | Finder's contextual Open launched the 2026-09-15 quarantined bundle through App Translocation. Gatekeeper windows were routed by macOS to the external display and dismissed without interaction. Repeat with the 2026-09-16 package. |
 | X-06 | Onboarding links open exact permission panes | PASS (prior live) / CURRENT NOT RUN | WH-M3-001 verified the routes and recovery states; repeat from the packaged build. |
 | X-07 | API key survives relaunch in Keychain and never appears in logs | AUTOMATED PASS / LIVE BLOCKED | Twelve Keychain lifecycle, cache, query, and legacy-interaction tests pass; Settings startup/refresh now checks item presence without retrieving the secret. A no-cursor launch of the current ad-hoc package against the mismatched older item remained alive in its event loop, showed zero SecurityAgent windows, and had no `SecItemCopyMatching` frame in the sanitized process sample. The key was not read, printed, changed, or logged. A live authorized read after relaunch remains required to prove the full row. |
+| X-08 | History and modes survive rebuilt and relocated launches | FAIL | Reopening the rebuilt app showed no prior history and only Default. The current generic `Application Support/default.store` has the Whisper schema but contains one mode and zero dictations, meetings, or transcript segments; no second compatible store was found. `WH-M6-009` introduces a stable app-owned store and safe legacy adoption; `WH-M6-010` adds the two protected presets. Previously missing records are not recoverable from the accessible store. |
 
 ## Blocking release session
 
-Failed criterion: `WH-M6-003` requires every manual row to pass or fail on the current packaged version. The rows marked `NOT RUN`, `LIVE NOT RUN`, or `LIVE BLOCKED` cannot be promoted using automated evidence alone.
+Failed criterion: `WH-M6-003` requires every manual row to pass on the current packaged version or produce a resolved, verified follow-up. Rows `D-14`, `U-07`, `U-08`, and `X-08` now map to `WH-M6-008` through `WH-M6-011`. Rows marked `NOT RUN`, `LIVE NOT RUN`, or `LIVE BLOCKED` still cannot be promoted using automated evidence alone.
 
-Reason: the owner authorized foreground QA and use of the saved API key, but required all interaction to remain on the built-in display. WH-M6-007 removed the automatic Keychain authorization and startup hang, so the current package now completes initialization without a SecurityAgent window. The remaining manual target-app, audio, permission, recovery, Gatekeeper, and authorized Keychain-relaunch checks still require macOS dialogs that may be routed to the unavailable external display and therefore cannot proceed safely under the display constraint.
+Reason: foreground QA found a false-positive Warp insertion path, unstable implicit SwiftData storage, missing built-in presets, and non-obvious mode activation/cycling behavior. The approved fixes are sequenced as `WH-M6-008`, `WH-M6-009`, `WH-M6-010`, and `WH-M6-011`; acceptance resumes after they pass. Separately, the remaining audio, permission, recovery, Gatekeeper, and authorized Keychain-relaunch checks may open macOS dialogs on the unavailable external display and cannot proceed safely under the current display constraint.
 
-Affected tasks: `WH-M6-003`, `WH-M6-005`, and `WH-M6-006`.
+Affected tasks: `WH-M6-003`, `WH-M6-005`, `WH-M6-006`, and release follow-ups `WH-M6-008` through `WH-M6-011`.
 
-Recommended default: reserve one foreground acceptance session when macOS authorization dialogs may be handled on whichever display receives them. Use only generated text/audio, repair access through the explicit Replace/Save action in Settings if the older Keychain item requires authorization, run D-01 through X-07, and record only outcomes and sanitized notes here.
+Recommended default: implement and verify `WH-M6-008` through `WH-M6-011` in dependency order, then reserve one foreground acceptance session when macOS authorization dialogs may be handled on whichever display receives them. Use only generated text/audio, repair access through the explicit Replace/Save action in Settings if the older Keychain item requires authorization, run D-01 through X-08, and record only outcomes and sanitized notes here.
 
 Required external change: the external display becomes available briefly for Gatekeeper, Keychain, and macOS permission confirmations, or it is physically disconnected before the session so macOS must place those dialogs on the built-in display. No credential needs to be disclosed or recorded.

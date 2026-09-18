@@ -44,10 +44,10 @@
 - **Out of scope:** Unsupported platforms and post-MVP features.
 - **Acceptance criteria:** Every matrix row has pass/fail evidence and version/environment details; failures become scoped follow-up tasks or block release; no private content appears in evidence.
 - **Required checks:** All manual cases in `docs/testing/test-strategy.md`.
-- **Dependencies:** WH-M6-002.
+- **Dependencies:** WH-M6-002, WH-M6-008, WH-M6-009, WH-M6-010, and WH-M6-011.
 - **Expected files:** `docs/testing/release-acceptance.md`, sanitized evidence directories.
 - **Source:** spec testing strategy and distribution sections.
-- **Blockers:** The owner made a foreground session available but limited all interaction to the built-in display. WH-M6-007 resolved the automatic Keychain authorization and startup hang without changing the saved item. The remaining live API, permission, capture, target-app, Gatekeeper, and authorized relaunch rows still require a session in which macOS system dialogs may be handled on whichever display receives them.
+- **Blockers:** Foreground acceptance resumed on 2026-09-18 and exposed four scoped release follow-ups: Warp reports false-positive direct insertion (`WH-M6-008`), the generic SwiftData store lost history and custom modes across rebuilt launches (`WH-M6-009`), two owner-approved built-in presets must seed after storage is stable (`WH-M6-010`), and mode activation/switcher interactions require the approved keyboard and selector behavior (`WH-M6-011`). Resume the current-package matrix only after those tasks are done. UI interaction remains limited to the built-in display; any macOS dialog routed elsewhere is a row-level blocker.
 - **Acceptance audit (2026-09-15):** Recorded every required dictation, meeting, accessibility, and distribution row against commit `b4f7df0` plus the current acceptance-test hardening diff. Existing production TextEdit and permission/focus evidence is distinguished from current automated coverage; no automated result is represented as a current manual pass. The current package passes the complete verification command, bundle/signature checks, installation to `/Applications`, and the expected ad-hoc Gatekeeper assessment (`spctl` exit 3). Right-click Open launched the quarantined bundle through App Translocation. No API key, private content, or external-display screenshot was collected; the saved Keychain item was not changed.
 
 ## WH-M6-004
@@ -113,3 +113,63 @@
 - **Blockers:** None.
 - **Implementation (2026-09-16):** Added secret-free API-key presence checks across the secure-store boundary and changed Settings initialization/refresh plus meeting-recovery availability to use them without loading the secret. Meeting recovery no longer checks processing availability when no durable processing job needs it. Automatic Keychain presence and read operations combine a fresh noninteractive `LAContext` with serialized legacy-Keychain interaction suppression, restoring the process setting immediately afterward; explicit save, replace, and remove operations retain their user-initiated behavior. The in-process cache still loads only from an actual OpenAI request and never caches missing, blank, or failed reads.
 - **Verification:** TDD covered store presence, cache behavior, Settings no-read initialization/refresh, query construction, temporary legacy-interaction suppression, and the empty meeting-recovery startup path. After review closed the remaining automatic secret-read path, 58 focused Keychain/Settings/OpenAI/meeting tests passed. Full `./scripts/verify.sh` then passed all twelve stages with 301 unit/service tests and 15 UI tests, rebuilt the Release package, and verified its signature. A final no-cursor package launch against the mismatched older item remained alive in the application event loop with zero SecurityAgent windows and no Keychain frame in the sanitized process sample. `git diff --check` passed, no secret or private content entered evidence, and verified implementation commit `bccbe65` is present on `origin/master`.
+
+## WH-M6-008
+
+- **Title:** Fix false-positive text insertion in Warp
+- **Type:** bug
+- **Status:** ready
+- **Priority:** P0
+- **Scope:** Route the known Warp bundle through the existing captured-process clipboard paste strategy so a false-success Accessibility write cannot produce a misleading `Inserted` result.
+- **Out of scope:** Changing the captured-target product behavior, replacing Accessibility insertion for working applications, or adding application-specific automatic modes.
+- **Acceptance criteria:** A target with bundle identifier `dev.warp.Warp-Stable` skips direct selected-text replacement, activates the captured PID, posts Command-V, restores the prior pasteboard after success, and reports manual paste if activation or event posting fails; direct insertion remains preferred for normal editors; generated live dictation inserts into Warp.
+- **Required checks:** TDD in `TextInsertionServiceTests`; focused test target; `./scripts/verify.sh`; `git diff --check`; generated-text manual smoke in Warp and TextEdit.
+- **Dependencies:** WH-M6-002.
+- **Expected files:** `Sources/Accessibility/AXTextInsertionService.swift`, `Tests/WhisperTests/Accessibility/TextInsertionServiceTests.swift`, release acceptance evidence and task records.
+- **Source:** `docs/superpowers/specs/2026-09-18-release-stabilization-design.md` and `docs/superpowers/plans/2026-09-18-warp-text-insertion.md`; follow-up to WH-M6-003 foreground acceptance.
+- **Blockers:** None.
+
+## WH-M6-009
+
+- **Title:** Move metadata to a stable app-owned store
+- **Type:** bug
+- **Status:** ready
+- **Priority:** P0
+- **Scope:** Give SwiftData an explicit store under `Application Support/Whisper/Metadata`, safely adopt a compatible legacy `default.store` before opening the canonical container, and make migration failure visible instead of silently creating empty metadata.
+- **Out of scope:** Cloud sync, backup UI, Time Machine integration, deleting the legacy store, or reconstructing records no longer present on disk.
+- **Acceptance criteria:** Store location is stable across build paths and relaunches; a compatible synthetic legacy store migrates modes, dictations, meetings, transcript segments, and cleanup tombstones; an existing canonical store always wins; migration is idempotent and non-destructive; failed migration does not open an empty replacement; app-owned metadata directories are `0700`.
+- **Required checks:** TDD in `PersistenceTests`; focused persistence, history, recovery, and retention tests; `./scripts/verify.sh`; `git diff --check`; packaged rebuild/relaunch smoke with synthetic records.
+- **Dependencies:** WH-M6-002.
+- **Expected files:** `Sources/Persistence/AppPaths.swift`, `Sources/Persistence/PersistenceController.swift`, a focused store-location/migration service, `Sources/WhisperApp/AppRuntime.swift`, persistence tests, ADR/README updates, release acceptance evidence and task records.
+- **Source:** `docs/superpowers/specs/2026-09-18-release-stabilization-design.md` and `docs/superpowers/plans/2026-09-18-persistent-metadata-store.md`; follow-up to WH-M6-003 data-loss finding.
+- **Blockers:** The already-overwritten production legacy store currently contains no recoverable history. This does not block prevention or migration of any compatible legacy data that still exists on another installation.
+
+## WH-M6-010
+
+- **Title:** Seed protected Russian-to-English built-in modes
+- **Type:** feature
+- **Status:** blocked
+- **Priority:** P0
+- **Scope:** Add the owner-provided Work / Technical and Slack / Friendly presets as stable protected built-ins, seed them idempotently beside Default, and preserve existing user modes and active selection.
+- **Out of scope:** A downloadable mode library, editing built-in instructions, app-specific activation, or changing meeting-recording instructions.
+- **Acceptance criteria:** Fresh and upgraded stores expose exactly three canonical built-ins in deterministic order; repeated launch creates no duplicates; built-ins cannot be edited, renamed, or deleted but can be duplicated; exact owner instructions and Russian language hints are used; collisions preserve the custom mode under a deterministic custom suffix; existing active modes remain active.
+- **Required checks:** TDD in mode-rule, persistence, model, and UI tests; focused test targets; `./scripts/verify.sh`; `git diff --check`; packaged fresh/relaunch smoke.
+- **Dependencies:** WH-M6-009.
+- **Expected files:** `Sources/Core/ModeDefinition.swift`, `Sources/Persistence/ModeRepository.swift`, Modes models/views, UI-test fixtures, focused tests, README and task records.
+- **Source:** `docs/superpowers/specs/2026-09-18-release-stabilization-design.md` and `docs/superpowers/plans/2026-09-18-built-in-modes-and-switching.md`.
+- **Blockers:** WH-M6-009 must establish the canonical store before upgraded-store seeding is accepted.
+
+## WH-M6-011
+
+- **Title:** Improve mode activation and shortcut cycling
+- **Type:** feature
+- **Status:** blocked
+- **Priority:** P0
+- **Scope:** Make the Modes-list circle activate its mode, remove Activate from the ellipsis menu while retaining the detail action, and let repeated Control-Command-M presses advance the open switcher selection with explicit footer guidance.
+- **Out of scope:** Automatically activating on selection movement, changing configurable shortcut recording, removing arrow navigation, or adding app-specific mode activation.
+- **Acceptance criteria:** The circle is a labeled 44-point activation control; row selection still opens details; ellipsis contains no Activate action; the right detail action remains; first Control-Command-M opens with active selection and repeated presses advance/wrap; arrows, Return, Escape, focus restoration, filtering, and menu/Home opening retain their existing behavior; footer documents all controls.
+- **Required checks:** TDD in `ModesModelTests`, `ModeSwitcherModelTests`, controller/lifecycle tests, and UI tests; `./scripts/verify.sh`; `git diff --check`; keyboard-only and VoiceOver packaged smoke.
+- **Dependencies:** WH-M6-010.
+- **Expected files:** `Sources/UI/Modes/ModesListView.swift`, `Sources/UI/ModeSwitcher/*`, `Sources/WhisperApp/AppRuntime.swift`, focused unit/UI tests, release acceptance evidence and task records.
+- **Source:** `docs/superpowers/specs/2026-09-18-release-stabilization-design.md` and `docs/superpowers/plans/2026-09-18-built-in-modes-and-switching.md`.
+- **Blockers:** WH-M6-010 supplies the three-mode fixture used to verify cycling and built-in selector semantics.

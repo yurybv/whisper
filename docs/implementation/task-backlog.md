@@ -79,11 +79,15 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 |---|---|---|---|
 | WH-M6-001 | Add deterministic ad-hoc packaging | done | WH-M5-004 |
 | WH-M6-002 | Add full automated verification command | done | WH-M6-001 |
-| WH-M6-003 | Run target-app and failure-state acceptance matrix | blocked | WH-M6-002 |
+| WH-M6-003 | Run target-app and failure-state acceptance matrix | blocked | WH-M6-002, WH-M6-008..011 |
 | WH-M6-004 | Complete privacy, security, and logging review | done | WH-M6-002 |
 | WH-M6-005 | Write installation and operating runbook | blocked | WH-M6-001..004 |
 | WH-M6-006 | Review MVP release readiness | blocked | WH-M6-001..005 |
 | WH-M6-007 | Prevent Keychain authorization from blocking startup | done | WH-M6-004 |
+| WH-M6-008 | Fix false-positive text insertion in Warp | ready | WH-M6-002 |
+| WH-M6-009 | Move metadata to a stable app-owned store | ready | WH-M6-002 |
+| WH-M6-010 | Seed protected Russian-to-English built-in modes | blocked | WH-M6-009 |
+| WH-M6-011 | Improve mode activation and shortcut cycling | blocked | WH-M6-010 |
 
 ## Selection rule
 

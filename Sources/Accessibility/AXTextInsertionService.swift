@@ -26,6 +26,21 @@ protocol PasteEventPosting: Sendable {
     func postPaste() -> Bool
 }
 
+struct DirectInsertionPolicy: Sendable {
+    private let pastePreferredBundleIdentifiers: Set<String>
+
+    init(
+        pastePreferredBundleIdentifiers: Set<String> = ["dev.warp.Warp-Stable"]
+    ) {
+        self.pastePreferredBundleIdentifiers = pastePreferredBundleIdentifiers
+    }
+
+    func shouldAttemptDirectInsertion(for target: FocusedTarget) -> Bool {
+        guard let bundleIdentifier = target.bundleIdentifier else { return true }
+        return !pastePreferredBundleIdentifiers.contains(bundleIdentifier)
+    }
+}
+
 @MainActor
 final class AXTextInsertionService: TextInsertionService {
     typealias Sleep = @Sendable (Duration) async -> Void
@@ -34,6 +49,7 @@ final class AXTextInsertionService: TextInsertionService {
     private let accessibility: any AccessibilityClient
     private let pasteboard: any PasteboardRestoring
     private let eventPoster: any PasteEventPosting
+    private let directInsertionPolicy: DirectInsertionPolicy
     private let sleep: Sleep
 
     init(
@@ -41,6 +57,7 @@ final class AXTextInsertionService: TextInsertionService {
         accessibility: any AccessibilityClient = SystemAccessibilityClient(),
         pasteboard: any PasteboardRestoring = PasteboardRestorer(),
         eventPoster: any PasteEventPosting = CGPasteEventPoster(),
+        directInsertionPolicy: DirectInsertionPolicy = DirectInsertionPolicy(),
         sleep: @escaping Sleep = { duration in
             try? await Task.sleep(for: duration)
         }
@@ -49,6 +66,7 @@ final class AXTextInsertionService: TextInsertionService {
         self.accessibility = accessibility
         self.pasteboard = pasteboard
         self.eventPoster = eventPoster
+        self.directInsertionPolicy = directInsertionPolicy
         self.sleep = sleep
     }
 
@@ -64,7 +82,8 @@ final class AXTextInsertionService: TextInsertionService {
     }
 
     func insert(_ text: String, into target: FocusedTarget) async throws -> InsertionResult {
-        if accessibility.isTrusted,
+        if directInsertionPolicy.shouldAttemptDirectInsertion(for: target),
+           accessibility.isTrusted,
            let element = target.element,
            accessibility.setSelectedText(text, in: element) == .success {
             return .insertedDirectly

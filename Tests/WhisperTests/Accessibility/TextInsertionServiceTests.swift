@@ -68,6 +68,52 @@ final class TextInsertionServiceTests: XCTestCase {
         XCTAssertEqual(eventPoster.postCount, 0)
     }
 
+    func testWarpSkipsFalsePositiveDirectInsertionAndUsesPasteFallback() async throws {
+        let events = EventLog()
+        let element = AXUIElementCreateApplication(42)
+        let workspace = FakeWorkspaceClient(activationResult: true, events: events)
+        let accessibility = FakeAccessibilityClient(
+            isTrusted: true,
+            setSelectedTextResult: .success,
+            events: events
+        )
+        let pasteboard = FakePasteboardRestorer(
+            originalText: "Original clipboard",
+            events: events
+        )
+        let eventPoster = FakePasteEventPoster(postResult: true, events: events)
+        let service = makeService(
+            workspace: workspace,
+            accessibility: accessibility,
+            pasteboard: pasteboard,
+            eventPoster: eventPoster,
+            events: events
+        )
+
+        let result = try await service.insert(
+            "Generated fixture",
+            into: FocusedTarget(
+                processIdentifier: 42,
+                bundleIdentifier: "dev.warp.Warp-Stable",
+                element: element
+            )
+        )
+
+        XCTAssertEqual(result, .pasted)
+        XCTAssertNil(accessibility.insertedText)
+        XCTAssertEqual(pasteboard.currentText, "Original clipboard")
+        XCTAssertEqual(
+            events.values,
+            [
+                "workspace.activate:42",
+                "pasteboard.place",
+                "events.postPaste",
+                "sleep",
+                "pasteboard.restore"
+            ]
+        )
+    }
+
     func testUnsupportedAXInsertionFallsBackToPasteAndRestoresClipboardAfterDelay() async throws {
         let events = EventLog()
         let element = AXUIElementCreateApplication(42)

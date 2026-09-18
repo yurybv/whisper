@@ -118,7 +118,7 @@
 
 - **Title:** Fix false-positive text insertion in Warp
 - **Type:** bug
-- **Status:** ready
+- **Status:** review
 - **Priority:** P0
 - **Scope:** Route the known Warp bundle through the existing captured-process clipboard paste strategy so a false-success Accessibility write cannot produce a misleading `Inserted` result.
 - **Out of scope:** Changing the captured-target product behavior, replacing Accessibility insertion for working applications, or adding application-specific automatic modes.
@@ -127,7 +127,9 @@
 - **Dependencies:** WH-M6-002.
 - **Expected files:** `Sources/Accessibility/AXTextInsertionService.swift`, `Tests/WhisperTests/Accessibility/TextInsertionServiceTests.swift`, release acceptance evidence and task records.
 - **Source:** `docs/superpowers/specs/2026-09-18-release-stabilization-design.md` and `docs/superpowers/plans/2026-09-18-warp-text-insertion.md`; follow-up to WH-M6-003 foreground acceptance.
-- **Blockers:** None.
+- **Blockers:** Live generated-dictation smoke remains pending. The available computer-use environment refuses direct control of `dev.warp.Warp-Stable`, so the owner must confirm the packaged build inserts into Warp and TextEdit before this task can move from review to done.
+- **Implementation (2026-09-18):** Added a bundle-specific direct-insertion policy to `AXTextInsertionService`. Captured Warp targets now skip the false-positive selected-text Accessibility write and continue through the existing captured-PID activation, Command-V posting, delayed pasteboard restoration, and manual-paste fallback path. Other targets retain direct Accessibility insertion as the preferred path.
+- **Verification:** TDD reproduced Warp returning Accessibility success without receiving text, then passed with a regression test that requires paste fallback, exact event ordering, and restoration of the prior clipboard. The focused insertion suite passed 9 tests. Full `./scripts/verify.sh` passed all twelve stages with 302 unit/service tests and 15 UI tests, rebuilt `build/Whisper.app`, and verified its signature. `git diff --check` passed. Live Warp/TextEdit smoke is the only remaining required check; no dictated or private content is retained in evidence.
 
 ## WH-M6-009
 

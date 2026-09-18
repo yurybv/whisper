@@ -20,13 +20,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--ui-testing") {
             if ProcessInfo.processInfo.arguments.contains("--ui-smoke-mode-switcher") {
-                let mode = ModeDefinition.defaultMode
+                let modes = ModeDefinition.builtInModes
                 let panel = ModeSwitcherPanel()
                 // XCTest activates its runner after launch; keep the test panel discoverable.
                 panel.hidesOnDeactivate = false
                 let switcher = ModeSwitcherController(
                     panel: panel,
-                    modesProvider: { ([mode], mode.id) },
+                    modesProvider: { (modes, ModeDefinition.defaultMode.id) },
                     activateMode: { _ in },
                     onModeActivated: { _ in },
                     onClosed: {}

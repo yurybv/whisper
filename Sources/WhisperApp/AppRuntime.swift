@@ -317,7 +317,7 @@ final class AppRuntime {
                 guard let self else { return }
                 await self.finishDictation()
             },
-            onChangeMode: { [weak self] in self?.showModeSwitcher() },
+            onChangeMode: { [weak self] in self?.handleModeSwitcherShortcut() },
             onRecordMeeting: { [weak self] in self?.scheduleMeetingToggle() },
             onCancel: { [weak self] in
                 guard let self else { return false }
@@ -596,6 +596,16 @@ final class AppRuntime {
         menuBarController.closePopover()
         do {
             try modeSwitcherController.show()
+            Task { await hotkeys.setFeatureActive(true) }
+        } catch {
+            menuBarController.render(state: .error, message: error.localizedDescription)
+        }
+    }
+
+    private func handleModeSwitcherShortcut() {
+        menuBarController.closePopover()
+        do {
+            try modeSwitcherController.handleChangeModeShortcut()
             Task { await hotkeys.setFeatureActive(true) }
         } catch {
             menuBarController.render(state: .error, message: error.localizedDescription)

@@ -10,6 +10,12 @@ final class ModeSwitcherUITests: XCTestCase {
         let search = app.textFields["Search modes"]
         XCTAssertTrue(search.waitForExistence(timeout: 3))
         XCTAssertTrue(app.buttons["Default"].waitForExistence(timeout: 3))
+        XCTAssertTrue(app.buttons["Russian → English — Work / Technical"].exists)
+        XCTAssertTrue(app.buttons["Russian → English — Slack / Friendly"].exists)
+        XCTAssertTrue(app.staticTexts["Next"].exists)
+        XCTAssertTrue(app.staticTexts["Navigate"].exists)
+        XCTAssertTrue(app.staticTexts["Activate"].exists)
+        XCTAssertTrue(app.staticTexts["Close"].exists)
 
         search.typeKey(.downArrow, modifierFlags: [])
         search.typeKey(.return, modifierFlags: [])

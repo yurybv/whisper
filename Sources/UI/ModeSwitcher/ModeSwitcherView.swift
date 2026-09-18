@@ -45,6 +45,7 @@ struct ModeSwitcherView: View {
             Divider().overlay(DesignTokens.border)
 
             HStack(spacing: DesignTokens.space16) {
+                shortcutHint("⌃⌘M", "Next")
                 shortcutHint("↑↓", "Navigate")
                 shortcutHint("↩", "Activate")
                 shortcutHint("esc", "Close")

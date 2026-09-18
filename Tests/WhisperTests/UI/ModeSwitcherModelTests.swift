@@ -21,6 +21,26 @@ final class ModeSwitcherModelTests: XCTestCase {
         XCTAssertEqual(model.selectedMode?.name, "Default")
     }
 
+    func testRepeatedDownNavigationAdvancesAndWraps() {
+        var model = ModeSwitcherModel(modes: makeModes(), activeModeID: defaultID)
+
+        model.moveSelection(.down)
+        XCTAssertEqual(model.selectedMode?.name, "English Translation")
+        model.moveSelection(.down)
+        XCTAssertEqual(model.selectedMode?.name, "Concise Reply")
+        model.moveSelection(.down)
+        XCTAssertEqual(model.selectedMode?.name, "Default")
+    }
+
+    func testQueryNormalizesSelectionBeforeRepeatedNavigation() {
+        var model = ModeSwitcherModel(modes: makeModes(), activeModeID: defaultID)
+
+        model.query = "reply"
+        XCTAssertEqual(model.selectedMode?.name, "Concise Reply")
+        model.moveSelection(.down)
+        XCTAssertEqual(model.selectedMode?.name, "Concise Reply")
+    }
+
     func testReturnActivatesSelectedMode() {
         var model = ModeSwitcherModel(modes: makeModes(), activeModeID: defaultID)
         model.moveSelection(.down)

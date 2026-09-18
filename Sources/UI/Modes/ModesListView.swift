@@ -66,12 +66,22 @@ struct ModesListView: View {
     }
 
     private func modeRow(_ mode: ModeDefinition) -> some View {
-        HStack(spacing: DesignTokens.space12) {
+        HStack(spacing: DesignTokens.space4) {
+            Button { model.activateForPresentation(mode.id) } label: {
+                Image(systemName: mode.id == model.activeModeID ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(mode.id == model.activeModeID ? DesignTokens.success : DesignTokens.mutedText)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .frame(width: 44, height: 44)
+            .disabled(!mode.isEnabled || mode.id == model.activeModeID)
+            .accessibilityIdentifier("Activate \(mode.name)")
+            .accessibilityLabel("Activate \(mode.name)")
+            .accessibilityValue(mode.id == model.activeModeID ? "Active" : "Inactive")
+
             Button { model.select(mode.id) } label: {
                 HStack(spacing: DesignTokens.space12) {
-                    Image(systemName: mode.id == model.activeModeID ? "checkmark.circle.fill" : "circle")
-                        .foregroundStyle(mode.id == model.activeModeID ? DesignTokens.success : DesignTokens.mutedText)
-                        .accessibilityHidden(true)
                     VStack(alignment: .leading, spacing: 4) {
                         HStack(spacing: DesignTokens.space8) {
                             Text(mode.name)
@@ -102,8 +112,6 @@ struct ModesListView: View {
             .accessibilityAddTraits(model.selectedModeID == mode.id ? .isSelected : [])
 
             Menu {
-                Button("Activate") { model.activateForPresentation(mode.id) }
-                    .disabled(!mode.isEnabled || mode.id == model.activeModeID)
                 Button("Duplicate") { model.duplicateForPresentation(mode.id) }
                 if model.canRename(mode) {
                     Button("Rename") { model.beginRename(mode.id) }

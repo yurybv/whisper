@@ -30,6 +30,32 @@ final class ModesUITests: XCTestCase {
         XCTAssertFalse(app.buttons["Delete Mode"].exists)
     }
 
+    func testActivationCircleAndRowSelectionHaveSeparateActions() {
+        let app = launchCompletedApp()
+        app.buttons["Modes"].click()
+        let workName = "Russian → English — Work / Technical"
+        let slackName = "Russian → English — Slack / Friendly"
+
+        let workActivation = app.buttons["Activate \(workName)"]
+        let detailName = app.textFields["Mode name"]
+        XCTAssertTrue(detailName.waitForExistence(timeout: 2))
+        XCTAssertEqual(detailName.value as? String, "Default")
+        XCTAssertEqual(workActivation.value as? String, "Inactive")
+        workActivation.click()
+        XCTAssertEqual(workActivation.value as? String, "Active")
+        XCTAssertEqual(detailName.value as? String, "Default")
+
+        app.buttons["Mode row \(slackName)"].click()
+        XCTAssertTrue(app.buttons["Duplicate Mode"].waitForExistence(timeout: 2))
+        XCTAssertEqual(detailName.value as? String, slackName)
+        XCTAssertEqual(app.buttons["Activate \(slackName)"].value as? String, "Inactive")
+        XCTAssertTrue(app.buttons["Activate Mode"].exists)
+
+        app.buttons["Actions for \(slackName)"].click()
+        XCTAssertTrue(app.menuItems["Duplicate"].exists)
+        XCTAssertFalse(app.menuItems["Activate"].exists)
+    }
+
     func testCreatesActivatesDuplicatesRenamesAndDeletesCustomMode() {
         let app = launchCompletedApp()
         app.buttons["Modes"].click()

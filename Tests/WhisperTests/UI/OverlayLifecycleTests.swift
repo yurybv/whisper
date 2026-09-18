@@ -156,6 +156,50 @@ final class OverlayLifecycleTests: XCTestCase {
         XCTAssertEqual(secondApplication.restoreCount, 0)
         XCTAssertEqual(applications.count, 1)
     }
+
+    func testFirstShortcutShowsAndRepeatedShortcutsAdvanceWithoutRebuildingPanel() throws {
+        let panel = FakeModeSwitcherPanel()
+        let application = FakeRestorableApplication()
+        var providerCount = 0
+        var activatedID: UUID?
+        var closedCount = 0
+        let modes = ModeDefinition.builtInModes
+        let controller = ModeSwitcherController(
+            panel: panel,
+            frontmostApplication: { application },
+            modesProvider: {
+                providerCount += 1
+                return (modes, ModeDefinition.defaultMode.id)
+            },
+            activateMode: { activatedID = $0 },
+            onModeActivated: { _ in },
+            onClosed: { closedCount += 1 }
+        )
+
+        try controller.handleChangeModeShortcut()
+        XCTAssertEqual(controller.viewModel?.selectedModeID, ModeDefinition.defaultMode.id)
+        try controller.handleChangeModeShortcut()
+        XCTAssertEqual(
+            controller.viewModel?.selectedModeID,
+            ModeDefinition.russianEnglishWorkTechnicalMode.id
+        )
+        try controller.handleChangeModeShortcut()
+        XCTAssertEqual(
+            controller.viewModel?.selectedModeID,
+            ModeDefinition.russianEnglishSlackFriendlyMode.id
+        )
+        try controller.handleChangeModeShortcut()
+        XCTAssertEqual(controller.viewModel?.selectedModeID, ModeDefinition.defaultMode.id)
+
+        controller.viewModel?.activateSelection()
+
+        XCTAssertEqual(providerCount, 1)
+        XCTAssertEqual(panel.presentCount, 1)
+        XCTAssertEqual(panel.dismissCount, 1)
+        XCTAssertEqual(activatedID, ModeDefinition.defaultMode.id)
+        XCTAssertEqual(application.restoreCount, 1)
+        XCTAssertEqual(closedCount, 1)
+    }
 }
 
 @MainActor
@@ -163,6 +207,8 @@ private final class FakeModeSwitcherPanel: ModeSwitcherPanelPresenting {
     var isVisible = false
     private(set) var presentCount = 0
     private(set) var dismissCount = 0
+
+    func install(viewModel: ModeSwitcherViewModel) {}
 
     func present() {
         isVisible = true

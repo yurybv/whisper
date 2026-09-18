@@ -169,7 +169,7 @@
 
 - **Title:** Improve mode activation and shortcut cycling
 - **Type:** feature
-- **Status:** blocked
+- **Status:** review
 - **Priority:** P0
 - **Scope:** Make the Modes-list circle activate its mode, remove Activate from the ellipsis menu while retaining the detail action, and let repeated Control-Command-M presses advance the open switcher selection with explicit footer guidance.
 - **Out of scope:** Automatically activating on selection movement, changing configurable shortcut recording, removing arrow navigation, or adding app-specific mode activation.
@@ -179,6 +179,8 @@
 - **Expected files:** `Sources/UI/Modes/ModesListView.swift`, `Sources/UI/ModeSwitcher/*`, `Sources/WhisperApp/AppRuntime.swift`, focused unit/UI tests, release acceptance evidence and task records.
 - **Source:** `docs/superpowers/specs/2026-09-18-release-stabilization-design.md` and `docs/superpowers/plans/2026-09-18-built-in-modes-and-switching.md`.
 - **Blockers:** WH-M6-010 supplies the three-mode fixture used to verify cycling and built-in selector semantics.
+- **Implementation (2026-09-19):** Split the Modes row into a dedicated labeled 44-point activation circle, an inspection row, and a task-focused ellipsis menu without Activate. The global shortcut now opens once and advances the existing switcher selection on repeats, while Home/menu presentation still opens on the active mode. Added the `⌃⌘M Next` footer hint and retained arrows, Return, Escape, filtering, and focus restoration.
+- **Verification:** TDD added repeat/wrap/filter model coverage and a controller lifecycle regression proving one presentation, no rebuild on repeats, activation, close, and focus restoration. The focused switcher, overlay, Modes-model, and hotkey selection passes 27 tests; updated UI coverage compiles but UI execution, keyboard-only smoke, and VoiceOver confirmation are deferred to the final owner-batched acceptance pass.
 
 ## WH-M6-012
 

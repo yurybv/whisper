@@ -6,6 +6,7 @@ import SwiftUI
 @MainActor
 protocol ModeSwitcherPanelPresenting: AnyObject {
     var isVisible: Bool { get }
+    func install(viewModel: ModeSwitcherViewModel)
     func present()
     func dismiss()
 }
@@ -59,6 +60,12 @@ final class ModeSwitcherPanel: NSPanel, ModeSwitcherPanelPresenting {
 
     override var canBecomeKey: Bool { true }
     override var canBecomeMain: Bool { false }
+
+    func install(viewModel: ModeSwitcherViewModel) {
+        contentViewController = NSHostingController(
+            rootView: ModeSwitcherView(viewModel: viewModel)
+        )
+    }
 
     func present() {
         contentView?.layoutSubtreeIfNeeded()
@@ -194,16 +201,25 @@ final class ModeSwitcherController {
     typealias ModesProvider = () throws -> (modes: [ModeDefinition], activeModeID: UUID)
     typealias ModeActivator = (UUID) throws -> Void
 
-    private let panel: ModeSwitcherPanel
+    private let panel: any ModeSwitcherPanelPresenting
     private let lifecycle: ModeSwitcherPanelLifecycle
     private let modesProvider: ModesProvider
     private let activateMode: ModeActivator
     private let onModeActivated: (ModeDefinition) -> Void
     private let onClosed: () -> Void
-    private var viewModel: ModeSwitcherViewModel?
+    private(set) var viewModel: ModeSwitcherViewModel?
 
     init(
-        panel: ModeSwitcherPanel,
+        panel: any ModeSwitcherPanelPresenting,
+        frontmostApplication: @escaping ModeSwitcherPanelLifecycle.FrontmostApplication = {
+            guard
+                let application = NSWorkspace.shared.frontmostApplication,
+                application.processIdentifier != NSRunningApplication.current.processIdentifier
+            else {
+                return nil
+            }
+            return application
+        },
         modesProvider: @escaping ModesProvider,
         activateMode: @escaping ModeActivator,
         onModeActivated: @escaping (ModeDefinition) -> Void,
@@ -212,15 +228,7 @@ final class ModeSwitcherController {
         self.panel = panel
         lifecycle = ModeSwitcherPanelLifecycle(
             panel: panel,
-            frontmostApplication: {
-                guard
-                    let application = NSWorkspace.shared.frontmostApplication,
-                    application.processIdentifier != NSRunningApplication.current.processIdentifier
-                else {
-                    return nil
-                }
-                return application
-            }
+            frontmostApplication: frontmostApplication
         )
         self.modesProvider = modesProvider
         self.activateMode = activateMode
@@ -253,10 +261,16 @@ final class ModeSwitcherController {
             onClose: { [weak self] in self?.close() }
         )
         self.viewModel = viewModel
-        panel.contentViewController = NSHostingController(
-            rootView: ModeSwitcherView(viewModel: viewModel)
-        )
+        panel.install(viewModel: viewModel)
         lifecycle.show()
+    }
+
+    func handleChangeModeShortcut() throws {
+        if lifecycle.isVisible, let viewModel {
+            viewModel.move(.down)
+            return
+        }
+        try show()
     }
 
     func close() {

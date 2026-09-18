@@ -118,16 +118,16 @@
 
 - **Title:** Fix false-positive text insertion in Warp
 - **Type:** bug
-- **Status:** review
+- **Status:** blocked
 - **Priority:** P0
 - **Scope:** Route the known Warp bundle through the existing captured-process clipboard paste strategy so a false-success Accessibility write cannot produce a misleading `Inserted` result.
 - **Out of scope:** Changing the captured-target product behavior, replacing Accessibility insertion for working applications, or adding application-specific automatic modes.
 - **Acceptance criteria:** A target with bundle identifier `dev.warp.Warp-Stable` skips direct selected-text replacement, activates the captured PID, posts Command-V, restores the prior pasteboard after success, and reports manual paste if activation or event posting fails; direct insertion remains preferred for normal editors; generated live dictation inserts into Warp.
 - **Required checks:** TDD in `TextInsertionServiceTests`; focused test target; `./scripts/verify.sh`; `git diff --check`; generated-text manual smoke in Warp and TextEdit.
-- **Dependencies:** WH-M6-002.
+- **Dependencies:** WH-M6-002, WH-M6-012.
 - **Expected files:** `Sources/Accessibility/AXTextInsertionService.swift`, `Tests/WhisperTests/Accessibility/TextInsertionServiceTests.swift`, release acceptance evidence and task records.
 - **Source:** `docs/superpowers/specs/2026-09-18-release-stabilization-design.md` and `docs/superpowers/plans/2026-09-18-warp-text-insertion.md`; follow-up to WH-M6-003 foreground acceptance.
-- **Blockers:** Live generated-dictation smoke remains pending. The available computer-use environment refuses direct control of `dev.warp.Warp-Stable`, so the owner must confirm the packaged build inserts into Warp and TextEdit before this task can move from review to done.
+- **Blockers:** Live generated-dictation smoke remains pending, and WH-M6-012 must stop a prior Keychain failure HUD from covering the target applications indefinitely. The available computer-use environment refuses direct control of `dev.warp.Warp-Stable`, so the owner must confirm the packaged build inserts into Warp and TextEdit before this task can move from review to done.
 - **Implementation (2026-09-18):** Added a bundle-specific direct-insertion policy to `AXTextInsertionService`. Captured Warp targets now skip the false-positive selected-text Accessibility write and continue through the existing captured-PID activation, Command-V posting, delayed pasteboard restoration, and manual-paste fallback path. Other targets retain direct Accessibility insertion as the preferred path.
 - **Verification:** TDD reproduced Warp returning Accessibility success without receiving text, then passed with a regression test that requires paste fallback, exact event ordering, and restoration of the prior clipboard. The focused insertion suite passed 9 tests. Full `./scripts/verify.sh` passed all twelve stages with 302 unit/service tests and 15 UI tests, rebuilt `build/Whisper.app`, and verified its signature. `git diff --check` passed. Live Warp/TextEdit smoke is the only remaining required check; no dictated or private content is retained in evidence.
 
@@ -175,3 +175,20 @@
 - **Expected files:** `Sources/UI/Modes/ModesListView.swift`, `Sources/UI/ModeSwitcher/*`, `Sources/WhisperApp/AppRuntime.swift`, focused unit/UI tests, release acceptance evidence and task records.
 - **Source:** `docs/superpowers/specs/2026-09-18-release-stabilization-design.md` and `docs/superpowers/plans/2026-09-18-built-in-modes-and-switching.md`.
 - **Blockers:** WH-M6-010 supplies the three-mode fixture used to verify cycling and built-in selector semantics.
+
+## WH-M6-012
+
+- **Title:** Auto-dismiss terminal dictation HUD errors
+- **Type:** bug
+- **Status:** review
+- **Priority:** P0
+- **Scope:** Give terminal dictation failures a readable bounded HUD lifetime so a Keychain or provider error cannot cover target applications indefinitely while preserving the failed session and its menu-bar Retry/Discard actions.
+- **Out of scope:** Automatically retrying or discarding captured audio, changing Keychain access policy, changing failure copy, or altering active recording/processing HUD lifetime.
+- **Acceptance criteria:** Failed dictation HUDs dismiss automatically after a readable delay; completed and cancelled timing remains unchanged; active recording, transcribing, transforming, and inserting HUDs remain visible; recoverable audio and menu-bar Retry/Discard state remain intact; saving or replacing the API key updates the existing in-process cache and Retry can use it without relaunching.
+- **Required checks:** TDD in `OverlayLifecycleTests`; focused overlay, secure-store, recovery-router, and dictation tests; `./scripts/verify.sh`; `git diff --check`; packaged missing-key → save-key → Retry smoke without retaining dictated or secret content.
+- **Dependencies:** WH-M6-007.
+- **Expected files:** `Sources/UI/HUD/DictationHUDController.swift`, `Tests/WhisperTests/UI/OverlayLifecycleTests.swift`, release acceptance evidence and task records.
+- **Source:** approved MVP state-machine, error-handling, and nonactivating-HUD sections in `docs/superpowers/specs/2026-08-19-whisper-macos-mvp-design.md`; follow-up to WH-M6-008 live verification.
+- **Blockers:** Packaged missing-key → save-key → Retry smoke remains pending because it requires the owner's saved credential and generated live audio.
+- **Implementation (2026-09-18):** Terminal dictation failures now keep the nonactivating HUD visible for four seconds and then hide it. Dismissal only affects the panel; the coordinator retains recoverable audio and the menu bar continues to expose Retry/Discard. Saving or replacing the key continues to update the shared `CachingSecureStore`, so Retry uses the new value without relaunching.
+- **Verification:** TDD first reproduced the failure with the error panel still visible after 4.25 seconds, then passed after adding the bounded error lifetime. The focused overlay, Keychain/cache, recovery-router, and dictation suites passed 43 tests. The full unit/service run passed 303 tests; the UI portion was interrupted by unrelated foreground windows and is intentionally deferred to the final batched acceptance pass requested by the owner. Packaged live smoke is pending.

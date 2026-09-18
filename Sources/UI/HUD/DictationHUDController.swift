@@ -173,6 +173,8 @@ final class DictationHUDController {
         let dismissAfter: Duration?
         if case .completed = state {
             dismissAfter = .seconds(1.2)
+        } else if case .failed = state {
+            dismissAfter = .seconds(4)
         } else {
             dismissAfter = nil
         }

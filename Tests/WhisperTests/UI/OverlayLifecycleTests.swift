@@ -45,6 +45,23 @@ final class OverlayLifecycleTests: XCTestCase {
         XCTAssertEqual(presentation.accent, .warning)
     }
 
+    func testFailedDictationHUDDismissesAfterReadableDelay() async {
+        let panel = DictationHUDPanel()
+        let controller = DictationHUDController(panel: panel)
+
+        controller.render(
+            state: .failed(
+                message: "Synthetic key access failure",
+                textOnClipboard: false,
+                recovery: .retryOrDiscard
+            )
+        )
+
+        XCTAssertTrue(panel.isVisible)
+        try? await Task.sleep(for: .seconds(4.25))
+        XCTAssertFalse(panel.isVisible)
+    }
+
     func testHUDFrameIsBottomCenteredInsideVisibleScreen() {
         let frame = DictationHUDController.frame(
             panelSize: NSSize(width: 360, height: 92),

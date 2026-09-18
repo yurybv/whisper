@@ -44,7 +44,7 @@ final class AppUITestEnvironment {
             context: persistence.container.mainContext,
             userDefaults: defaults
         )
-        try modeRepository.seedDefaultMode()
+        try modeRepository.seedBuiltInModes()
         if arguments.contains("--long-content") {
             _ = try modeRepository.create(
                 ModeDraft(

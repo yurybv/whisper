@@ -37,7 +37,7 @@ enum ModeInputLanguage: String, CaseIterable, Identifiable, Sendable {
 @Observable
 final class ModeEditorModel {
     let modeID: UUID?
-    let isDefault: Bool
+    let isBuiltIn: Bool
     var name: String
     var instructions: String
     var inputLanguage: ModeInputLanguage
@@ -50,7 +50,7 @@ final class ModeEditorModel {
     init(mode: ModeDefinition?, existingModes: [ModeDefinition], sortIndex: Int) {
         original = mode
         modeID = mode?.id
-        isDefault = mode?.isDefault == true
+        isBuiltIn = mode?.isBuiltIn == true
         name = mode?.name ?? ""
         instructions = mode?.instructions ?? ""
         inputLanguage = ModeInputLanguage(languageHint: mode?.languageHint)
@@ -70,7 +70,7 @@ final class ModeEditorModel {
     }
 
     var validationMessage: String? {
-        guard !isDefault else { return nil }
+        guard !isBuiltIn else { return nil }
         do {
             _ = try validatedDraft()
             return nil
@@ -81,12 +81,12 @@ final class ModeEditorModel {
         } catch ModeValidationError.blankInstructions {
             return "Enter instructions for this mode."
         } catch {
-            return "The Default mode cannot be changed."
+            return "Built-in modes cannot be changed."
         }
     }
 
     var canSave: Bool {
-        !isDefault && hasChanges && validationMessage == nil
+        !isBuiltIn && hasChanges && validationMessage == nil
     }
 
     func validatedDraft() throws -> ModeDraft {
@@ -138,8 +138,8 @@ final class ModesModel {
         activeModeChanged = callback
     }
 
-    func canRename(_ mode: ModeDefinition) -> Bool { !mode.isDefault }
-    func canDelete(_ mode: ModeDefinition) -> Bool { !mode.isDefault }
+    func canRename(_ mode: ModeDefinition) -> Bool { !mode.isBuiltIn }
+    func canDelete(_ mode: ModeDefinition) -> Bool { !mode.isBuiltIn }
 
     func reload() throws {
         modes = try repository.fetchAll()

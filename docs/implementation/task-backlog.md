@@ -86,7 +86,7 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 | WH-M6-007 | Prevent Keychain authorization from blocking startup | done | WH-M6-004 |
 | WH-M6-008 | Fix false-positive text insertion in Warp | blocked | WH-M6-002, WH-M6-012 |
 | WH-M6-009 | Move metadata to a stable app-owned store | review | WH-M6-002 |
-| WH-M6-010 | Seed protected Russian-to-English built-in modes | blocked | WH-M6-009 |
+| WH-M6-010 | Seed protected Russian-to-English built-in modes | review | WH-M6-009 |
 | WH-M6-011 | Improve mode activation and shortcut cycling | blocked | WH-M6-010 |
 | WH-M6-012 | Auto-dismiss terminal dictation HUD errors | review | WH-M6-007 |
 

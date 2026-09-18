@@ -9,7 +9,10 @@ enum ModeValidationError: Error, Sendable, Equatable {
 
 enum ModeRules {
     static func validate(_ draft: ModeDraft, existing: [ModeDefinition], now: Date = Date()) throws -> ModeDefinition {
-        if draft.id == ModeDefinition.defaultMode.id || existing.contains(where: { $0.id == draft.id && $0.isDefault }) {
+        if
+            draft.id.map(ModeDefinition.builtInIDs.contains) == true
+            || existing.contains(where: { $0.id == draft.id && $0.isBuiltIn })
+        {
             throw ModeValidationError.defaultMutation
         }
 
@@ -44,7 +47,7 @@ enum ModeRules {
     }
 
     static func validateDeletion(of mode: ModeDefinition) throws {
-        if mode.isDefault || mode.id == ModeDefinition.defaultMode.id {
+        if mode.isBuiltIn {
             throw ModeValidationError.defaultMutation
         }
     }

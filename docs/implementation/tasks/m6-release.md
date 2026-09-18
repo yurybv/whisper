@@ -152,7 +152,7 @@
 
 - **Title:** Seed protected Russian-to-English built-in modes
 - **Type:** feature
-- **Status:** blocked
+- **Status:** review
 - **Priority:** P0
 - **Scope:** Add the owner-provided Work / Technical and Slack / Friendly presets as stable protected built-ins, seed them idempotently beside Default, and preserve existing user modes and active selection.
 - **Out of scope:** A downloadable mode library, editing built-in instructions, app-specific activation, or changing meeting-recording instructions.
@@ -162,6 +162,8 @@
 - **Expected files:** `Sources/Core/ModeDefinition.swift`, `Sources/Persistence/ModeRepository.swift`, Modes models/views, UI-test fixtures, focused tests, README and task records.
 - **Source:** `docs/superpowers/specs/2026-09-18-release-stabilization-design.md` and `docs/superpowers/plans/2026-09-18-built-in-modes-and-switching.md`.
 - **Blockers:** WH-M6-009 must establish the canonical store before upgraded-store seeding is accepted.
+- **Implementation (2026-09-18):** Added the two owner-supplied Russian-to-English presets with stable IDs, exact instructions, Russian input hints, deterministic ordering, and built-in identity protection. Startup now reconciles all three canonical modes, repairs stale canonical rows, preserves custom content and active selection, and deterministically renames exact-name custom collisions before inserting a preset. Modes UI treats every built-in as protected while keeping duplication available.
+- **Verification:** TDD first exposed missing built-in constants, default-only reconciliation, and editable non-default presets. The focused mode-rule, persistence, and Modes-model selection passes 38 tests. A deterministic UI test now covers all three names, protected instructions, and duplication; UI execution and packaged fresh/upgraded relaunch smoke are deferred to the final owner-batched acceptance pass.
 
 ## WH-M6-011
 

@@ -42,25 +42,42 @@ final class ModeRepository {
         self.activeModeKey = activeModeKey
     }
 
-    func seedDefaultMode() throws {
-        let entities = try context.fetch(FetchDescriptor<ModeEntity>())
-        let canonicalID = ModeDefinition.defaultMode.id
-        let candidates = entities.filter { $0.isDefault || $0.id == canonicalID }
+    func seedBuiltInModes(now: Date = Date()) throws {
+        var entities = try context.fetch(FetchDescriptor<ModeEntity>())
 
-        if let keeper = candidates.first(where: { $0.id == canonicalID }) ?? candidates.first {
-            keeper.apply(ModeDefinition.defaultMode, normalizedName: normalizedName(ModeDefinition.defaultMode.name))
-            for duplicate in candidates where duplicate !== keeper {
-                context.delete(duplicate)
-            }
-        } else {
-            context.insert(
-                ModeEntity(
-                    ModeDefinition.defaultMode,
-                    normalizedName: normalizedName(ModeDefinition.defaultMode.name)
-                )
-            )
+        for entity in entities where ModeDefinition.builtInIDs.contains(entity.id) {
+            entity.normalizedName = "__whisper_builtin__\(entity.id.uuidString.lowercased())"
         }
 
+        for builtIn in ModeDefinition.builtInModes {
+            let canonicalName = normalizedName(builtIn.name)
+            let collisions = entities.filter {
+                !ModeDefinition.builtInIDs.contains($0.id)
+                    && normalizedName($0.name) == canonicalName
+            }
+            for collision in collisions {
+                let customName = uniqueCustomName(
+                    for: builtIn.name,
+                    excluding: collision.id,
+                    entities: entities
+                )
+                collision.name = customName
+                collision.normalizedName = normalizedName(customName)
+                collision.updatedAt = now
+            }
+
+            if let entity = entities.first(where: { $0.id == builtIn.id }) {
+                entity.apply(builtIn, normalizedName: canonicalName)
+            } else {
+                let entity = ModeEntity(builtIn, normalizedName: canonicalName)
+                context.insert(entity)
+                entities.append(entity)
+            }
+        }
+
+        for entity in entities where entity.id != ModeDefinition.defaultMode.id {
+            entity.isDefault = false
+        }
         try context.save()
     }
 
@@ -99,7 +116,7 @@ final class ModeRepository {
     }
 
     func activeMode() throws -> ModeDefinition {
-        try seedDefaultMode()
+        try seedBuiltInModes()
 
         if
             let value = userDefaults.string(forKey: activeModeKey),
@@ -135,5 +152,28 @@ final class ModeRepository {
         value
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .folding(options: [.caseInsensitive], locale: Locale(identifier: "en_US_POSIX"))
+    }
+
+    private func uniqueCustomName(
+        for builtInName: String,
+        excluding excludedID: UUID,
+        entities: [ModeEntity]
+    ) -> String {
+        var usedNames = Set(
+            entities
+                .filter { $0.id != excludedID }
+                .map { normalizedName($0.name) }
+        )
+        usedNames.formUnion(ModeDefinition.builtInModes.map { normalizedName($0.name) })
+
+        var suffix = 1
+        while true {
+            let label = suffix == 1 ? "Custom" : "Custom \(suffix)"
+            let candidate = "\(builtInName) (\(label))"
+            if !usedNames.contains(normalizedName(candidate)) {
+                return candidate
+            }
+            suffix += 1
+        }
     }
 }

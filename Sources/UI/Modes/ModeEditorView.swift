@@ -9,8 +9,8 @@ struct ModeEditorView: View {
             VStack(alignment: .leading, spacing: DesignTokens.space24) {
                 ScreenHeader(
                     title: editor.modeID == nil ? "New Mode" : editor.name,
-                    subtitle: editor.isDefault
-                        ? "Whisper's built-in light cleanup mode."
+                    subtitle: editor.isBuiltIn
+                        ? "Whisper's protected built-in mode."
                         : "Custom instructions run after transcription."
                 )
 
@@ -18,7 +18,7 @@ struct ModeEditorView: View {
                     labeledField("Mode name") {
                         TextField("Mode name", text: $editor.name)
                             .textFieldStyle(.roundedBorder)
-                            .disabled(editor.isDefault)
+                            .disabled(editor.isBuiltIn)
                             .accessibilityIdentifier("Mode name")
                     }
 
@@ -32,12 +32,12 @@ struct ModeEditorView: View {
                         }
                         .labelsHidden()
                         .pickerStyle(.menu)
-                        .disabled(editor.isDefault)
+                        .disabled(editor.isBuiltIn)
                         .accessibilityLabel("Input language")
                         .accessibilityIdentifier("Input language")
                     }
 
-                    if !editor.isDefault {
+                    if !editor.isBuiltIn {
                         Divider().overlay(DesignTokens.border)
                         Toggle("Enabled", isOn: $editor.isEnabled)
                     }
@@ -45,11 +45,11 @@ struct ModeEditorView: View {
 
                 SettingsCard(
                     "Custom Instructions",
-                    subtitle: editor.isDefault
+                    subtitle: editor.isBuiltIn
                         ? "Built-in instructions are protected."
                         : "Describe the transformation. Whisper will not answer or add facts."
                 ) {
-                    if editor.isDefault {
+                    if editor.isBuiltIn {
                         Text(editor.instructions)
                             .font(.system(size: 13))
                             .foregroundStyle(DesignTokens.secondaryText)
@@ -84,7 +84,7 @@ struct ModeEditorView: View {
                 }
 
                 HStack(spacing: DesignTokens.space12) {
-                    if !editor.isDefault {
+                    if !editor.isBuiltIn {
                         Button("Save Changes") { model.saveEditorForPresentation() }
                             .buttonStyle(.borderedProminent)
                             .disabled(!editor.canSave)
@@ -102,7 +102,7 @@ struct ModeEditorView: View {
                         }
                         Button("Duplicate Mode") { model.duplicateForPresentation(id) }
                             .buttonStyle(.bordered)
-                        if !editor.isDefault {
+                        if !editor.isBuiltIn {
                             Button("Delete Mode", role: .destructive) { model.requestDelete(id) }
                                 .buttonStyle(.bordered)
                         }

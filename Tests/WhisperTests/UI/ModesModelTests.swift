@@ -5,13 +5,26 @@ import XCTest
 final class ModesModelTests: XCTestCase {
     private var retainedControllers: [PersistenceController] = []
 
-    func testDefaultModeCannotBeRenamedOrDeleted() throws {
+    func testBuiltInModesCannotBeRenamedDeletedOrEditedButDuplicatesCan() throws {
         let model = try makeModel()
-        let defaultMode = try XCTUnwrap(model.modes.first)
+        let builtIns = model.modes.filter(\.isBuiltIn)
 
-        XCTAssertTrue(defaultMode.isDefault)
-        XCTAssertFalse(model.canRename(defaultMode))
-        XCTAssertFalse(model.canDelete(defaultMode))
+        XCTAssertEqual(builtIns, ModeDefinition.builtInModes)
+        for builtIn in builtIns {
+            XCTAssertFalse(model.canRename(builtIn))
+            XCTAssertFalse(model.canDelete(builtIn))
+            model.select(builtIn.id)
+            let editor = try XCTUnwrap(model.editor)
+            editor.name += " Changed"
+            XCTAssertFalse(editor.canSave)
+        }
+
+        let duplicate = try model.duplicate(ModeDefinition.russianEnglishWorkTechnicalMode.id)
+        XCTAssertTrue(model.canRename(duplicate))
+        XCTAssertTrue(model.canDelete(duplicate))
+        let duplicateEditor = try XCTUnwrap(model.editor)
+        duplicateEditor.name += " Changed"
+        XCTAssertTrue(duplicateEditor.canSave)
     }
 
     func testBlankAndDuplicateDraftsRemainUnsavable() throws {
@@ -100,7 +113,7 @@ final class ModesModelTests: XCTestCase {
             context: controller.container.mainContext,
             userDefaults: defaults
         )
-        try repository.seedDefaultMode()
+        try repository.seedBuiltInModes()
         return try ModesModel(repository: repository)
     }
 }

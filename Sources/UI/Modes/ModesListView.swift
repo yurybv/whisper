@@ -76,7 +76,7 @@ struct ModesListView: View {
                         HStack(spacing: DesignTokens.space8) {
                             Text(mode.name)
                                 .font(.system(size: 14, weight: .semibold))
-                            if mode.isDefault {
+                            if mode.isBuiltIn {
                                 Text("BUILT-IN")
                                     .font(.system(size: 9, weight: .bold))
                                     .foregroundStyle(DesignTokens.mutedText)
@@ -141,7 +141,7 @@ struct ModesListView: View {
     private func accessibilityValue(for mode: ModeDefinition) -> String {
         let language = ModeInputLanguage(languageHint: mode.languageHint).label
         var states: [String] = []
-        if mode.isDefault { states.append("Built-in") }
+        if mode.isBuiltIn { states.append("Built-in") }
         if mode.id == model.activeModeID { states.append("Active") }
         if !mode.isEnabled { states.append("Disabled") }
         states.append("\(language) input")

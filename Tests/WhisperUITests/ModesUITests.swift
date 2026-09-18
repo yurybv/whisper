@@ -2,6 +2,34 @@ import XCTest
 
 @MainActor
 final class ModesUITests: XCTestCase {
+    func testFreshAppShowsThreeProtectedBuiltInModesInOrder() {
+        let app = launchCompletedApp()
+        app.buttons["Modes"].click()
+
+        let names = [
+            "Default",
+            "Russian → English — Work / Technical",
+            "Russian → English — Slack / Friendly",
+        ]
+        for name in names {
+            XCTAssertTrue(app.buttons["Mode row \(name)"].waitForExistence(timeout: 3))
+        }
+
+        app.buttons["Mode row Russian → English — Work / Technical"].click()
+        XCTAssertTrue(app.staticTexts["Built-in instructions are protected."].exists)
+        XCTAssertTrue(
+            app.staticTexts.matching(
+                NSPredicate(
+                    format: "label CONTAINS %@",
+                    "Translate my spoken Russian into clear, natural, professional English."
+                )
+            ).firstMatch.exists
+        )
+        XCTAssertTrue(app.buttons["Duplicate Mode"].exists)
+        XCTAssertFalse(app.textFields["Mode name"].isEnabled)
+        XCTAssertFalse(app.buttons["Delete Mode"].exists)
+    }
+
     func testCreatesActivatesDuplicatesRenamesAndDeletesCustomMode() {
         let app = launchCompletedApp()
         app.buttons["Modes"].click()

@@ -146,7 +146,7 @@ final class AppRuntime {
         )
         persistence = try PersistenceController(storeURL: metadataStoreURL)
         modeRepository = ModeRepository(context: persistence.container.mainContext)
-        try modeRepository.seedDefaultMode()
+        try modeRepository.seedBuiltInModes()
         let history = HistoryRepository(
             context: persistence.container.mainContext,
             appPaths: paths

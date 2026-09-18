@@ -4,33 +4,119 @@ import SwiftData
 
 final class PersistenceTests: XCTestCase {
     @MainActor
-    func testSeedsExactlyOneDefaultMode() throws {
+    func testSeedsExactlyThreeCanonicalBuiltInModesIdempotently() throws {
         let controller = try PersistenceController(inMemory: true)
         let repository = ModeRepository(context: controller.container.mainContext)
 
-        try repository.seedDefaultMode()
-        try repository.seedDefaultMode()
+        try repository.seedBuiltInModes()
+        try repository.seedBuiltInModes()
 
         let modes = try repository.fetchAll()
+        XCTAssertEqual(modes, ModeDefinition.builtInModes)
         XCTAssertEqual(modes.filter(\.isDefault).count, 1)
         XCTAssertEqual(modes.first(where: \.isDefault), ModeDefinition.defaultMode)
     }
 
     @MainActor
-    func testSeedRepairsAnExistingCustomModeNamedDefault() throws {
+    func testSeedRepairsCanonicalRowsAndPreservesUnrelatedCustomMode() throws {
+        let controller = try PersistenceController(inMemory: true)
+        let suiteName = "PersistenceTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let repository = ModeRepository(
+            context: controller.container.mainContext,
+            userDefaults: defaults
+        )
+        let context = controller.container.mainContext
+        let stale = ModeDefinition(
+            id: ModeDefinition.russianEnglishWorkTechnicalMode.id,
+            name: "Old preset name",
+            instructions: "Old instructions",
+            languageHint: "en",
+            isDefault: true,
+            isEnabled: false,
+            sortIndex: 99,
+            createdAt: Date(timeIntervalSince1970: 99),
+            updatedAt: Date(timeIntervalSince1970: 99)
+        )
+        context.insert(ModeEntity(stale, normalizedName: "old preset name"))
+        let custom = try repository.create(
+            ModeDraft(
+                name: "My Custom Mode",
+                instructions: "Keep this content.",
+                languageHint: "fr",
+                isEnabled: false,
+                sortIndex: 42
+            )
+        )
+        try repository.seedBuiltInModes()
+
+        let modes = try repository.fetchAll()
+        XCTAssertEqual(
+            modes.filter(\.isBuiltIn),
+            ModeDefinition.builtInModes
+        )
+        XCTAssertEqual(modes.first(where: { $0.id == custom.id }), custom)
+        XCTAssertEqual(modes.filter(\.isDefault), [.defaultMode])
+    }
+
+    @MainActor
+    func testSeedPreservesActiveCustomMode() throws {
+        let controller = try PersistenceController(inMemory: true)
+        let suiteName = "PersistenceTests.\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+        let repository = ModeRepository(
+            context: controller.container.mainContext,
+            userDefaults: defaults
+        )
+        let custom = try repository.create(
+            ModeDraft(
+                name: "Active Custom",
+                instructions: "Keep active.",
+                languageHint: nil
+            )
+        )
+        try repository.activate(custom.id)
+
+        try repository.seedBuiltInModes()
+
+        XCTAssertEqual(try repository.activeMode().id, custom.id)
+    }
+
+    @MainActor
+    func testSeedRenamesBuiltInNameCollisionsDeterministically() throws {
         let controller = try PersistenceController(inMemory: true)
         let repository = ModeRepository(context: controller.container.mainContext)
+        let first = try repository.create(
+            ModeDraft(
+                name: ModeDefinition.russianEnglishWorkTechnicalMode.name,
+                instructions: "Preserve this first custom mode.",
+                languageHint: "de"
+            )
+        )
         _ = try repository.create(
             ModeDraft(
-                name: "Default",
-                instructions: "Temporary instructions.",
+                name: "\(ModeDefinition.russianEnglishWorkTechnicalMode.name) (Custom)",
+                instructions: "Reserve the first suffix.",
                 languageHint: nil
             )
         )
 
-        try repository.seedDefaultMode()
+        try repository.seedBuiltInModes()
 
-        XCTAssertEqual(try repository.fetchAll(), [ModeDefinition.defaultMode])
+        let modes = try repository.fetchAll()
+        let renamed = try XCTUnwrap(modes.first(where: { $0.id == first.id }))
+        XCTAssertEqual(
+            renamed.name,
+            "\(ModeDefinition.russianEnglishWorkTechnicalMode.name) (Custom 2)"
+        )
+        XCTAssertEqual(renamed.instructions, "Preserve this first custom mode.")
+        XCTAssertEqual(renamed.languageHint, "de")
+        XCTAssertEqual(
+            modes.first(where: { $0.id == ModeDefinition.russianEnglishWorkTechnicalMode.id }),
+            ModeDefinition.russianEnglishWorkTechnicalMode
+        )
     }
 
     @MainActor
@@ -43,7 +129,7 @@ final class PersistenceTests: XCTestCase {
             context: controller.container.mainContext,
             userDefaults: defaults
         )
-        try repository.seedDefaultMode()
+        try repository.seedBuiltInModes()
         let custom = try repository.create(
             ModeDraft(
                 name: "English",

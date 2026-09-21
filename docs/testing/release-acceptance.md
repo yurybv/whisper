@@ -2,11 +2,11 @@
 
 Overall result: **BLOCKED — foreground acceptance found scoped release defects WH-M6-008 through WH-M6-011; remaining macOS-dialog checks are also pending**
 
-Date: 2026-09-18
+Date: 2026-09-21
 
 Environment: Apple Silicon MacBook Pro; macOS 26.4.1; Xcode 26.6 (17F113); Swift 6.3.3; macOS SDK 26.5; XcodeGen 2.46.0.
 
-Build under test: runtime commit `bccbe65` with docs-only source follow-up `e9ea1ca`; ad-hoc `build/Whisper.app`; bundle identifier `dev.yury.whisper`; arm64.
+Build under test: 2026-09-21 local `master` delivery candidate; ad-hoc `build/Whisper.app`; bundle identifier `dev.yury.whisper`; arm64.
 
 Evidence policy: generated phrases only; no real API key, private dictation, transcript, custom instruction, Authorization value, or user document is recorded. `PASS` means the exact row has current or named prior evidence. `AUTOMATED PASS / LIVE NOT RUN` records useful coverage but does not satisfy the manual release gate. `NOT RUN` is an explicit release blocker, never an inferred pass.
 
@@ -62,14 +62,14 @@ Evidence policy: generated phrases only; no real API key, private dictation, tra
 | U-04 | Long Russian and English content | AUTOMATED PASS / LIVE NOT RUN | Long-content UI fixtures passed; inspect current packaged History and Modes. |
 | U-05 | Missing permissions leave unaffected screens usable | AUTOMATED PASS / LIVE NOT RUN | Onboarding, Home, Settings, and Recordings fixtures pass; revoke permissions for the current package and navigate unaffected screens. |
 | U-06 | Dictation and recording HUDs do not steal target focus | PASS (prior live) / CURRENT NOT RUN | Prior mode-switcher/focus and overlay evidence passed; repeat with current package in each target app. |
-| U-07 | Modes-list circle activates directly and menu stays task-focused | AUTOMATED PASS / LIVE NOT RUN | The leading 44-point button activates without changing row selection, exposes `Activate <mode>` plus Active/Inactive, and the ellipsis no longer contains Activate; row inspection and the detail-panel `Activate Mode` action remain. Model/controller tests pass and UI coverage is compiled; click and VoiceOver confirmation are batched for owner testing. |
-| U-08 | Repeated Change Mode shortcut advances selection | AUTOMATED PASS / LIVE NOT RUN | Controller coverage proves the first global shortcut presents once on the active mode and repeats advance through all three modes with wrap without rebuilding the panel. Filter normalization, arrows, Return, Escape, focus restoration, and the `⌃⌘M Next` footer remain covered; packaged keyboard confirmation is batched for owner testing. |
+| U-07 | Modes-list circle activates directly and menu stays task-focused | AUTOMATED PASS / LIVE NOT RUN | The leading 44-point button activates without changing row selection, exposes `Activate <mode>` plus Active/Inactive, and the ellipsis no longer contains Activate; row inspection and the detail-panel `Activate Mode` action remain. The built-in-display UI run exercised activation, selection, detail action, and menu contents successfully; VoiceOver confirmation is batched for owner testing. |
+| U-08 | Repeated Change Mode shortcut advances selection | AUTOMATED PASS / LIVE NOT RUN | Controller coverage proves the first global shortcut presents once on the active mode and repeats advance through all three modes with wrap without rebuilding the panel. The built-in-display UI run exercised keyboard navigation, activation, Escape, and footer guidance successfully; physical packaged shortcut confirmation is batched for owner testing. |
 
 ## Distribution matrix
 
 | ID | Case | Result | Evidence and remaining live check |
 |---|---|---|---|
-| X-01 | Clean supported-Mac build | PASS | Full `scripts/verify.sh` passed all twelve stages on 2026-09-16: 301 unit/service tests and 15 UI tests completed with zero failures before `build/Whisper.app` was rebuilt and signed. UI-test windows were explicitly placed on the built-in display. |
+| X-01 | Clean supported-Mac build | PASS | Full `scripts/verify.sh` passed all twelve stages on 2026-09-21: 316 unit/service tests and 17 UI tests completed with zero failures before `build/Whisper.app` was rebuilt and signed. UI-test windows were explicitly placed on the built-in display. |
 | X-02 | Signature and bundle identity | PASS | `codesign --verify --deep --strict` passes; identifier is `dev.yury.whisper`; executable is arm64-only. |
 | X-03 | Gatekeeper recognizes the ad-hoc build as unnotarized | PASS | `spctl --assess --type execute build/Whisper.app` returned expected exit 3 and `rejected`. |
 | X-04 | Move exact bundle to `/Applications` | PASS (prior package) / CURRENT NOT RUN | The 2026-09-15 verified package was copied without replacement and rechecked at the destination. The 2026-09-16 Keychain-recovery package has only been launched from `build/Whisper.app` and still needs the installation step repeated. |

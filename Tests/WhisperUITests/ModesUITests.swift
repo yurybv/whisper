@@ -20,7 +20,7 @@ final class ModesUITests: XCTestCase {
         XCTAssertTrue(
             app.staticTexts.matching(
                 NSPredicate(
-                    format: "label CONTAINS %@",
+                    format: "value CONTAINS %@",
                     "Translate my spoken Russian into clear, natural, professional English."
                 )
             ).firstMatch.exists
@@ -51,7 +51,7 @@ final class ModesUITests: XCTestCase {
         XCTAssertEqual(app.buttons["Activate \(slackName)"].value as? String, "Inactive")
         XCTAssertTrue(app.buttons["Activate Mode"].exists)
 
-        app.buttons["Actions for \(slackName)"].click()
+        app.menuButtons["Actions for \(slackName)"].click()
         XCTAssertTrue(app.menuItems["Duplicate"].exists)
         XCTAssertFalse(app.menuItems["Activate"].exists)
     }

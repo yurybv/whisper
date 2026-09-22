@@ -119,9 +119,9 @@ Review: passed on 2026-09-15. `WH-M6-001` is ready.
 
 ## Milestone 6: Hardening and local release
 
-Goal: produce an ad-hoc signed personal build with clear installation, permission, recovery, and troubleshooting instructions.
+Goal: produce a consistently signed personal build with clear installation, permission, recovery, and troubleshooting instructions.
 
-Progress: `WH-M6-001`, `WH-M6-002`, and `WH-M6-004` completed on 2026-09-15; `WH-M6-007` completed on 2026-09-16. The canonical packaging script produces a clean, deterministic-path, arm64-only Release bundle at `build/Whisper.app`, applies a timestamp-free ad-hoc signature, and verifies the result. `scripts/verify.sh` composes environment validation, clean project generation, repository and privacy checks, shell validation, build-for-testing, unit/UI test selection, Release packaging, and strict signature verification into one fail-fast command. The privacy review found and fixed provider-error payload retention plus permissive app-owned directory modes; the key remains in Keychain, private directories are `0700`, paths and deletion are contained, and runtime network traffic is limited to the documented OpenAI REST boundary. The Keychain follow-up separates presence from secret retrieval and suppresses both modern and legacy authentication UI for automatic reads; verified packaged startup now completes against an older inaccessible item without opening SecurityAgent. Foreground acceptance resumed on 2026-09-18 and scoped four release follow-ups: reliable Warp insertion (`WH-M6-008`), stable app-owned metadata storage (`WH-M6-009`), protected built-in translation modes (`WH-M6-010`), and direct/cycling mode interactions (`WH-M6-011`). `WH-M6-003` resumes after those fixes.
+Progress: `WH-M6-001`, `WH-M6-002`, and `WH-M6-004` completed on 2026-09-15; `WH-M6-007` completed on 2026-09-16. The canonical packaging script produces a clean, deterministic-path, arm64-only Release bundle at `build/Whisper.app`, originally with an ad-hoc signature. `WH-M6-013` replaces that step with one persistent local Code Signing identity to preserve macOS permission continuity across rebuilds; migration from the old ad-hoc build needs a one-time permission refresh. `scripts/verify.sh` composes environment validation, clean project generation, repository and privacy checks, shell validation, build-for-testing, unit/UI test selection, Release packaging, and strict signature verification into one fail-fast command. The privacy review found and fixed provider-error payload retention plus permissive app-owned directory modes; the key remains in Keychain, private directories are `0700`, paths and deletion are contained, and runtime network traffic is limited to the documented OpenAI REST boundary. The Keychain follow-up separates presence from secret retrieval and suppresses both modern and legacy authentication UI for automatic reads; verified packaged startup now completes against an older inaccessible item without opening SecurityAgent. Foreground acceptance resumed on 2026-09-18 and scoped four release follow-ups: reliable Warp insertion (`WH-M6-008`), stable app-owned metadata storage (`WH-M6-009`), protected built-in translation modes (`WH-M6-010`), and direct/cycling mode interactions (`WH-M6-011`). `WH-M6-003` resumes after those fixes and stable signing are verified.
 
 Deliverables:
 
@@ -133,6 +133,7 @@ Deliverables:
 - reliable insertion in the owner's Warp workflow;
 - stable metadata across rebuilt and relocated app bundles;
 - three protected built-in modes and keyboard-first activation.
+- one free persistent local signing identity and first-migration instructions.
 
 Exit gate: the packaged app passes the acceptance matrix and `WH-M6-006` is done.
 

@@ -44,7 +44,7 @@
 - **Out of scope:** Unsupported platforms and post-MVP features.
 - **Acceptance criteria:** Every matrix row has pass/fail evidence and version/environment details; failures become scoped follow-up tasks or block release; no private content appears in evidence.
 - **Required checks:** All manual cases in `docs/testing/test-strategy.md`.
-- **Dependencies:** WH-M6-002, WH-M6-008, WH-M6-009, WH-M6-010, and WH-M6-011.
+- **Dependencies:** WH-M6-002, WH-M6-008, WH-M6-009, WH-M6-010, WH-M6-011, and WH-M6-013.
 - **Expected files:** `docs/testing/release-acceptance.md`, sanitized evidence directories.
 - **Source:** spec testing strategy and distribution sections.
 - **Blockers:** Foreground acceptance resumed on 2026-09-18 and exposed four scoped release follow-ups: Warp reports false-positive direct insertion (`WH-M6-008`), the generic SwiftData store lost history and custom modes across rebuilt launches (`WH-M6-009`), two owner-approved built-in presets must seed after storage is stable (`WH-M6-010`), and mode activation/switcher interactions require the approved keyboard and selector behavior (`WH-M6-011`). Resume the current-package matrix only after those tasks are done. UI interaction remains limited to the built-in display; any macOS dialog routed elsewhere is a row-level blocker.
@@ -198,3 +198,20 @@
 - **Blockers:** Packaged missing-key → save-key → Retry smoke remains pending because it requires the owner's saved credential and generated live audio.
 - **Implementation (2026-09-18):** Terminal dictation failures now keep the nonactivating HUD visible for four seconds and then hide it. Dismissal only affects the panel; the coordinator retains recoverable audio and the menu bar continues to expose Retry/Discard. Saving or replacing the key continues to update the shared `CachingSecureStore`, so Retry uses the new value without relaunching.
 - **Verification:** TDD first reproduced the failure with the error panel still visible after 4.25 seconds, then passed after adding the bounded error lifetime. The focused overlay, Keychain/cache, recovery-router, and dictation suites passed 43 tests. On 2026-09-21 the full `./scripts/verify.sh` passed all twelve stages with 316 unit/service tests and 17 UI tests on the built-in display, then packaged and verified `build/Whisper.app`; packaged missing-key → save-key → Retry smoke remains deferred to the owner-batched acceptance pass.
+
+## WH-M6-013
+
+- **Title:** Preserve macOS permissions with a stable local signing identity
+- **Type:** build
+- **Status:** review
+- **Priority:** P0
+- **Scope:** Create one free, persistent Code Signing identity in the owner's login Keychain, require it for every Release package, and document the one-time migration from ad-hoc builds.
+- **Out of scope:** Developer ID, notarization, App Store delivery, TCC database changes, and exporting or publishing the private key.
+- **Acceptance criteria:** Setup reuses exactly one valid identity and refuses conflicting state; packaging fails before changing output if that identity is absent or ambiguous; two clean packages have the same signing authority and designated requirement; strict signature verification and full repository checks pass; no private-key material enters Git.
+- **Required checks:** TDD shell tests for identity resolution and packaging rejection; `./scripts/package.sh` twice; `./scripts/verify.sh`; `git diff --check`; owner check that permissions persist after one migration and rebuild.
+- **Dependencies:** WH-M6-002.
+- **Expected files:** `scripts/setup-local-signing.sh`, `scripts/local-signing-identity.sh`, `scripts/package.sh`, shell tests, ADR, README, roadmap, test strategy, release acceptance, task records.
+- **Source:** `docs/superpowers/specs/2026-09-22-stable-local-code-signing-design.md` and `docs/superpowers/plans/2026-09-22-stable-local-code-signing.md`; explicit owner request for free persistent signing.
+- **Blockers:** The owner must confirm permission retention after the one-time migration on the built-in display; automated signing checks alone cannot prove TCC behavior.
+- **Implementation (2026-09-22):** Added an idempotent local-identity setup command and an exact login-Keychain fingerprint resolver. Provisioned a ten-year self-signed Code Signing certificate with a non-extractable private key, Code Signing trust, and `/usr/bin/codesign` access. Packaging now refuses a missing or ambiguous identity before touching the previous bundle, signs only with the persistent fingerprint, and verifies both the expected authority and certificate-bound designated requirement without an ad-hoc fallback. Updated the signing decision, distribution guidance, and manual acceptance matrix.
+- **Verification:** Resolver/setup and packaging rejection tests passed, including an initially failing missing-identity and missing-setup TDD pass. Two independent clean Release builds signed `build/Whisper.app` with the same certificate SHA-1 `3918F34830AA1C4307777059BC515CCB72620601`, the same `dev.yury.whisper` identifier, and the same certificate-bound designated requirement; both passed deep strict `codesign` verification. Full `./scripts/verify.sh` passed all twelve stages with 316 unit/service tests and 17 UI tests on the built-in display. The one-time certificate trust confirmation was completed. Live post-migration permission persistence remains the owner's acceptance check, so this task remains in review.

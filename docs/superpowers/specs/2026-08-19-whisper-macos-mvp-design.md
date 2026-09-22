@@ -332,9 +332,9 @@ Manual acceptance tests cover:
 
 ## Distribution
 
-The repository provides a local packaging script that generates Whisper.app and signs it ad hoc. The README explains:
+The repository provides a local packaging script that generates Whisper.app. The owner-approved [2026-09-22 signing amendment](2026-09-22-stable-local-code-signing-design.md) replaces ad-hoc signing with one persistent self-signed local Code Signing identity so permission grants can survive rebuilds. The README explains:
 
-1. build the app;
+1. create the local signing identity once, then build the app;
 2. move it to Applications;
 3. right-click and choose Open if Gatekeeper warns;
 4. complete onboarding permissions;

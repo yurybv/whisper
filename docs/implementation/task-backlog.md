@@ -89,6 +89,7 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 | WH-M6-010 | Seed protected Russian-to-English built-in modes | review | WH-M6-009 |
 | WH-M6-011 | Improve mode activation and shortcut cycling | review | WH-M6-010 |
 | WH-M6-012 | Auto-dismiss terminal dictation HUD errors | review | WH-M6-007 |
+| WH-M6-013 | Preserve macOS permissions with a stable local signing identity | review | WH-M6-002 |
 
 ## Selection rule
 

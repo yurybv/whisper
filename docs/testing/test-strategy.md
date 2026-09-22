@@ -5,7 +5,7 @@
 - Unit tests: domain invariants, state machines, retry, chunk planning, transcript merge, paths, and settings.
 - Service tests: Keychain, permissions, capture, Accessibility insertion, persistence, and OpenAI through protocol fakes.
 - UI tests: onboarding, mode editing, navigation, shortcut recording, error recovery, and history details.
-- Packaging smoke: generated project builds, tests run, app bundle launches, and ad-hoc signature verifies.
+- Packaging smoke: generated project builds, tests run, app bundle launches, and the persistent local signature verifies.
 
 Automated tests must not send audio, transcripts, instructions, API keys, or network requests to OpenAI.
 
@@ -70,6 +70,7 @@ Distribution:
 - first launch through right-click Open after Gatekeeper warning;
 - all onboarding permission links open the correct System Settings location;
 - API key survives relaunch in Keychain and never appears in logs.
+- after a one-time migration from the old ad-hoc identity, Microphone, Accessibility, Input Monitoring, and Screen Recording grants survive two clean rebuilds of the same `build/Whisper.app`; the signing certificate, designated requirement, and bundle identifier stay stable.
 
 ## Evidence
 

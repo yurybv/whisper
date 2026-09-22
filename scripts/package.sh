@@ -55,6 +55,14 @@ case "$build_root" in
   *) fail "Refusing an unexpected build directory." ;;
 esac
 
+[ -f "$repository_root/scripts/local-signing-identity.sh" ] \
+  || fail "Local signing identity helper is missing."
+# shellcheck source=scripts/local-signing-identity.sh
+source "$repository_root/scripts/local-signing-identity.sh"
+login_keychain="$(whisper_login_keychain)" \
+  || fail "The login Keychain is unavailable."
+signing_fingerprint="$(whisper_resolve_signing_identity "$login_keychain")" || exit 1
+
 printf 'Generating project with XcodeGen...\n'
 cd "$repository_root"
 xcodegen generate --spec project.yml
@@ -85,8 +93,24 @@ executable="$output_app/Contents/MacOS/Whisper"
 [ "$(lipo -archs "$executable")" = "arm64" ] \
   || fail "Packaged executable is not arm64-only."
 
-printf 'Applying ad-hoc signature...\n'
-codesign --force --deep --sign - --timestamp=none "$output_app"
+printf 'Applying stable local signature...\n'
+codesign --force --deep --sign "$signing_fingerprint" --keychain "$login_keychain" --timestamp=none "$output_app"
 codesign --verify --deep --strict --verbose=2 "$output_app"
+
+signature_details="$(codesign --display --verbose=4 "$output_app" 2>&1)" \
+  || fail "Cannot inspect the packaged signature."
+case "$signature_details" in
+  *'Signature=adhoc'*) fail "Packaged app still has an ad-hoc signature." ;;
+esac
+printf '%s\n' "$signature_details" | grep -Fx "Authority=$whisper_signing_name" >/dev/null \
+  || fail "Packaged app was not signed by $whisper_signing_name."
+requirement="$(codesign --display --requirements - "$output_app" 2>&1)" \
+  || fail "Packaged app has no designated requirement."
+case "$requirement" in
+  *'designated =>'*'identifier "dev.yury.whisper"'*) ;;
+  *) fail "Packaged app has an unexpected designated requirement." ;;
+esac
+printf '%s\n' "$requirement" | grep -Fi "certificate leaf = H\"$signing_fingerprint\"" >/dev/null \
+  || fail "Packaged app has a designated requirement for a different certificate."
 
 printf 'Packaged Whisper.app: %s\n' "$output_app"

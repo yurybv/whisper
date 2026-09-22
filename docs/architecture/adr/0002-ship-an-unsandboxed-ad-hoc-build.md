@@ -1,6 +1,6 @@
 # ADR 0002: Ship an unsandboxed ad-hoc build
 
-- Status: Accepted
+- Status: Superseded for local signing by the 2026-09-22 stable-signing decision below
 - Date: 2026-08-20
 - Applies to: macOS 15+ personal MVP
 
@@ -31,3 +31,7 @@ Microphone, Screen Recording, and Accessibility remain explicit runtime permissi
 
 - [Apple code-signing guide](https://developer.apple.com/library/archive/documentation/Security/Conceptual/CodeSigningGuide/Introduction/Introduction.html)
 - [Approved distribution design](../../superpowers/specs/2026-08-19-whisper-macos-mvp-design.md#distribution)
+
+## 2026-09-22 local-signing amendment
+
+The owner requested permission grants that survive local rebuilds. Ad-hoc signatures are therefore no longer used for new packages: their code identity changes with each binary. The unsandboxed, one-Mac, unnotarized distribution choice remains. `scripts/setup-local-signing.sh` provisions one self-signed `Whisper Local Development` identity in the login Keychain, and `scripts/package.sh` requires that exact valid identity, with no ad-hoc fallback. The first migration from an older ad-hoc app still needs a fresh macOS permission grant; subsequent packages reuse the same signing identity and bundle identifier. See the [approved signing design](../../superpowers/specs/2026-09-22-stable-local-code-signing-design.md). This does not make the app a trusted Developer ID or notarized distribution build.

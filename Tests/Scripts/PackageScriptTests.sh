@@ -68,3 +68,30 @@ fi
 grep -F "Refusing a symlinked build directory." "$test_root/symlink.log" >/dev/null \
   || fail "symlinked build directory did not explain the rejection"
 printf 'PASS  symlinked build directory\n'
+
+missing_identity_root="$test_root/missing-identity-package"
+missing_identity_bin="$test_root/missing-identity-bin"
+mkdir -p "$missing_identity_root/scripts" "$missing_identity_root/build/Whisper.app" "$missing_identity_bin"
+cp "$package_script" "$missing_identity_root/scripts/package.sh"
+cp "$repository_root/scripts/local-signing-identity.sh" "$missing_identity_root/scripts/local-signing-identity.sh"
+touch "$missing_identity_root/project.yml"
+touch "$test_root/login.keychain-db"
+touch "$missing_identity_root/build/Whisper.app/preserved"
+write_command "$missing_identity_bin/uname" "printf 'arm64\\n'"
+write_command "$missing_identity_bin/xcodebuild" "if [ \"\${1:-}\" = '-version' ]; then printf 'Xcode 26.6\\nBuild version TEST\\n'; fi"
+write_command "$missing_identity_bin/xcrun" "printf '26.5\\n'"
+write_command "$missing_identity_bin/security" "if [ \"\${1:-}\" = 'login-keychain' ]; then printf '%s\\n' '$test_root/login.keychain-db'; else printf '  0 valid identities found\\n'; fi"
+write_command "$missing_identity_bin/xcodegen" "touch '$test_root/unexpected-project-generation'; exit 1"
+for command_name in codesign ditto lipo; do
+  write_command "$missing_identity_bin/$command_name" "exit 0"
+done
+if PATH="$missing_identity_bin:$PATH" "$missing_identity_root/scripts/package.sh" >"$test_root/missing-identity.log" 2>&1; then
+  fail "missing signing identity unexpectedly succeeded"
+fi
+grep -F "Whisper Local Development signing identity is missing" "$test_root/missing-identity.log" >/dev/null \
+  || fail "missing identity did not explain the rejection"
+[ -f "$missing_identity_root/build/Whisper.app/preserved" ] \
+  || fail "missing identity removed the previous package"
+[ ! -e "$test_root/unexpected-project-generation" ] \
+  || fail "missing identity generated the project"
+printf 'PASS  missing signing identity preserves previous package\n'

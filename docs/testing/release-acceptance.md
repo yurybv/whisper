@@ -81,11 +81,11 @@ Evidence policy: generated phrases only; no real API key, private dictation, tra
 
 ## Blocking release session
 
-Failed criterion: `WH-M6-003` requires every manual row to pass on the current packaged version or produce a resolved, verified follow-up. `X-08` now passes on the current package; `D-14`, `U-07`, and `U-08` still require the live checks tracked by `WH-M6-008`, `WH-M6-010`, and `WH-M6-011`. Rows marked `NOT RUN`, `LIVE NOT RUN`, or `LIVE BLOCKED` still cannot be promoted using automated evidence alone.
+Failed criterion: `WH-M6-003` requires every manual row to pass on the current packaged version or produce a resolved, verified follow-up. `X-08` now passes on the current package and the mode implementations are delivered; `D-14`, `U-07`, and `U-08` still require live checks under `WH-M6-003`, with the Warp fix tracked by `WH-M6-008`. Rows marked `NOT RUN`, `LIVE NOT RUN`, or `LIVE BLOCKED` still cannot be promoted using automated evidence alone.
 
 Reason: the stable metadata migration now has complete automated and package-smoke evidence, while Warp insertion and mode behavior still need their owner-facing packaged checks. Separately, the remaining audio, permission, recovery, Gatekeeper, and authorized Keychain-relaunch checks may open macOS dialogs on the unavailable external display and cannot proceed safely under the current display constraint.
 
-Affected tasks: `WH-M6-003`, `WH-M6-005`, `WH-M6-006`, and live follow-ups `WH-M6-008`, `WH-M6-010`, and `WH-M6-011`.
+Affected tasks: `WH-M6-003`, `WH-M6-005`, `WH-M6-006`, and remaining implementation follow-up `WH-M6-008`.
 
 Recommended default: deliver the verified review commits under the required GitHub identity, then reserve one foreground acceptance session when macOS authorization dialogs may be handled on whichever display receives them. Use only generated text/audio, repair access through the explicit Replace/Save action in Settings if the older Keychain item requires authorization, run the remaining live rows, and record only outcomes and sanitized notes here.
 

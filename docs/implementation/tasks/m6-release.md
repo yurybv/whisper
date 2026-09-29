@@ -44,10 +44,10 @@
 - **Out of scope:** Unsupported platforms and post-MVP features.
 - **Acceptance criteria:** Every matrix row has pass/fail evidence and version/environment details; failures become scoped follow-up tasks or block release; no private content appears in evidence.
 - **Required checks:** All manual cases in `docs/testing/test-strategy.md`.
-- **Dependencies:** WH-M6-002, WH-M6-008, WH-M6-009, WH-M6-010, WH-M6-011, and WH-M6-013.
+- **Dependencies:** WH-M6-002 and WH-M6-008 through WH-M6-013.
 - **Expected files:** `docs/testing/release-acceptance.md`, sanitized evidence directories.
 - **Source:** spec testing strategy and distribution sections.
-- **Blockers:** Foreground acceptance resumed on 2026-09-18 and exposed four scoped release follow-ups: Warp reports false-positive direct insertion (`WH-M6-008`), the generic SwiftData store lost history and custom modes across rebuilt launches (`WH-M6-009`), two owner-approved built-in presets must seed after storage is stable (`WH-M6-010`), and mode activation/switcher interactions require the approved keyboard and selector behavior (`WH-M6-011`). Resume the current-package matrix only after those tasks are done. UI interaction remains limited to the built-in display; any macOS dialog routed elsewhere is a row-level blocker.
+- **Blockers:** This is the consolidated final screen-based test task for all Milestone 6 implementation changes. The owner requested that implementation runs not touch the internal or external display, so no foreground app launch, UI automation, permission dialog, target-app interaction, or screenshot may run before this task is explicitly started. Resume only after `WH-M6-008` through `WH-M6-013` are done; execute with the external display disconnected or with an owner-approved single-display arrangement so every interaction remains on the intended screen.
 - **Acceptance audit (2026-09-15):** Recorded every required dictation, meeting, accessibility, and distribution row against commit `b4f7df0` plus the current acceptance-test hardening diff. Existing production TextEdit and permission/focus evidence is distinguished from current automated coverage; no automated result is represented as a current manual pass. The current package passes the complete verification command, bundle/signature checks, installation to `/Applications`, and the expected ad-hoc Gatekeeper assessment (`spctl` exit 3). Right-click Open launched the quarantined bundle through App Translocation. No API key, private content, or external-display screenshot was collected; the saved Keychain item was not changed.
 
 ## WH-M6-004
@@ -152,7 +152,7 @@
 
 - **Title:** Seed protected Russian-to-English built-in modes
 - **Type:** feature
-- **Status:** review
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Add the owner-provided Work / Technical and Slack / Friendly presets as stable protected built-ins, seed them idempotently beside Default, and preserve existing user modes and active selection.
 - **Out of scope:** A downloadable mode library, editing built-in instructions, app-specific activation, or changing meeting-recording instructions.
@@ -161,9 +161,9 @@
 - **Dependencies:** WH-M6-009.
 - **Expected files:** `Sources/Core/ModeDefinition.swift`, `Sources/Persistence/ModeRepository.swift`, Modes models/views, UI-test fixtures, focused tests, README and task records.
 - **Source:** `docs/superpowers/specs/2026-09-18-release-stabilization-design.md` and `docs/superpowers/plans/2026-09-18-built-in-modes-and-switching.md`.
-- **Blockers:** WH-M6-009 must establish the canonical store before upgraded-store seeding is accepted.
+- **Blockers:** None. `WH-M6-009` is complete. Foreground and packaged visual confirmation is consolidated under final acceptance task `WH-M6-003` per the owner's no-screen-touching instruction.
 - **Implementation (2026-09-18):** Added the two owner-supplied Russian-to-English presets with stable IDs, exact instructions, Russian input hints, deterministic ordering, and built-in identity protection. Startup now reconciles all three canonical modes, repairs stale canonical rows, preserves custom content and active selection, and deterministically renames exact-name custom collisions before inserting a preset. Modes UI treats every built-in as protected while keeping duplication available.
-- **Verification:** TDD first exposed missing built-in constants, default-only reconciliation, and editable non-default presets. The focused mode-rule, persistence, and Modes-model selection passes 38 tests. A deterministic UI test covers all three names, protected instructions, and duplication. On 2026-09-21 the full `./scripts/verify.sh` passed all twelve stages with 316 unit/service tests and 17 UI tests on the built-in display, then packaged and verified `build/Whisper.app`; packaged fresh/upgraded relaunch smoke remains deferred to the owner-batched acceptance pass.
+- **Verification:** TDD first exposed missing built-in constants, default-only reconciliation, and editable non-default presets. On 2026-09-29 the screen-safe focused mode-rule, persistence, and Modes-model selection passed 42 tests with zero failures; no foreground app or UI-test target was launched. A deterministic UI test covers all three names, protected instructions, and duplication, and the previously completed full gate passed 322 unit/service tests plus 17 UI tests against the same implementation. Fresh/upgraded packaged visual confirmation is explicitly assigned to consolidated final acceptance task `WH-M6-003`. `git diff --check` passes, and implementation commit `6621082` is present on `origin/master`.
 
 ## WH-M6-011
 

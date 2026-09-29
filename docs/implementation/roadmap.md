@@ -2,6 +2,8 @@
 
 Status: Milestones 0 through 5 complete; Milestone 6 in progress.
 
+Post-MVP Milestone 7 is planned locally for automatic updates but cannot start before the Milestone 6 review passes. See the [update design](../superpowers/specs/2026-09-29-local-automatic-updates-design.md), [implementation plan](../superpowers/plans/2026-09-29-local-automatic-updates.md), and [task records](tasks/m7-updates.md).
+
 ## Principles
 
 - Build working vertical capabilities, not disconnected UI shells.

@@ -94,3 +94,15 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 ## Selection rule
 
 Select the lowest-numbered `ready` task in the earliest open milestone. A blocked task becomes ready only when every listed dependency is done and the previous milestone review explicitly authorizes the milestone.
+
+## Milestone 7: Local automatic updates (planned, not started)
+
+This owner-requested post-MVP work is recorded in [m7-updates.md](tasks/m7-updates.md). All tasks remain blocked until `WH-M6-006` is done; recording the plan does not start the milestone.
+
+| ID | Task | Status | Depends on |
+|---|---|---|---|
+| WH-M7-001 | Embed release versions in signed bundles | blocked | WH-M6-006 |
+| WH-M7-002 | Integrate a signed Sparkle updater | blocked | WH-M7-001 |
+| WH-M7-003 | Prepare and publish guarded local releases | blocked | WH-M7-002 |
+| WH-M7-004 | Verify first install and automatic patch update | blocked | WH-M7-003 |
+| WH-M7-005 | Review automatic update release readiness | blocked | WH-M7-001..004 |

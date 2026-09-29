@@ -4,7 +4,7 @@
 
 **Goal:** Persist modes, dictation history, meetings, transcript segments, and cleanup tombstones at a stable Whisper-owned URL and safely adopt any compatible legacy `default.store` without risking silent data loss.
 
-**Architecture:** `AppPaths` owns the canonical metadata directory and URL. A pre-container relocation service examines only persistent-store metadata, stages a copy of a compatible SQLite family, atomically promotes it, and leaves the legacy files untouched. `AppRuntime` must resolve this URL before creating SwiftData; any compatible-store migration failure aborts startup instead of falling through to an empty store.
+**Architecture:** `AppPaths` owns the canonical metadata directory and URL. A pre-container relocation service examines only persistent-store metadata, stages a consistent SQLite online-backup snapshot of a compatible store, atomically promotes it, and leaves the legacy files untouched. `AppRuntime` must resolve this URL before creating SwiftData; any compatible-store migration failure aborts startup instead of falling through to an empty store.
 
 **Tech Stack:** Swift 6.3, Foundation, SwiftData, Core Data persistent-store metadata APIs, XCTest, XcodeGen/Xcodebuild.
 
@@ -116,7 +116,7 @@ protocol PersistentStoreRelocating: Sendable {
 
 - [ ] Determine compatibility without fetching user objects. Use `NSPersistentStoreCoordinator.metadataForPersistentStore(ofType:at:)` and require the model-version hashes for the complete Whisper schema (`ModeEntity`, `DictationEntity`, `MeetingEntity`, `TranscriptSegmentEntity`, and `RecordingCleanupEntity`) to match the current model. Keep metadata inspection in a focused helper so tests can inject compatible, incompatible, and throwing results.
 
-- [ ] Copy the complete SQLite family. For base URL `default.store`, copy the base plus existing `default.store-wal` and `default.store-shm` to a unique staging directory under `AppPaths.rootURL`, renaming the destination family to `Whisper.store`, `Whisper.store-wal`, and `Whisper.store-shm`.
+- [ ] Snapshot the complete SQLite state with SQLite's online-backup API so a concurrent WAL write or checkpoint cannot mix file generations. Write the resulting `Whisper.store` into a unique staging directory under `AppPaths.rootURL`; do not mutate or delete the source family.
 
 - [ ] Promote atomically at the directory level:
 

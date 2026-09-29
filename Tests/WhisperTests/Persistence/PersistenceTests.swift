@@ -1,5 +1,6 @@
-import XCTest
+import CoreData
 import SwiftData
+import XCTest
 @testable import Whisper
 
 final class PersistenceTests: XCTestCase {
@@ -601,7 +602,7 @@ final class PersistenceTests: XCTestCase {
     func testRelocatorIgnoresUnrelatedLegacyStore() throws {
         let sandbox = try makeStoreSandbox()
         defer { try? FileManager.default.removeItem(at: sandbox.applicationSupport) }
-        try Data("unrelated local database".utf8).write(to: sandbox.legacyStoreURL)
+        try seedUnrelatedStore(at: sandbox.legacyStoreURL)
 
         let canonicalURL = try PersistentStoreRelocator().prepareCanonicalStore(
             paths: sandbox.paths,
@@ -614,12 +615,126 @@ final class PersistenceTests: XCTestCase {
     }
 
     @MainActor
+    func testRelocatorFailsClosedWhenMetadataInspectionThrows() throws {
+        let fixture = StoreFixture()
+        let sandbox = try makeStoreSandbox()
+        defer { try? FileManager.default.removeItem(at: sandbox.applicationSupport) }
+        try seedStore(at: sandbox.legacyStoreURL, fixture: fixture)
+        let relocator = PersistentStoreRelocator(metadataReader: { _ in
+            throw CocoaError(.fileReadNoPermission)
+        })
+
+        XCTAssertThrowsError(
+            try relocator.prepareCanonicalStore(
+                paths: sandbox.paths,
+                legacyStoreURL: sandbox.legacyStoreURL
+            )
+        ) {
+            XCTAssertEqual($0 as? PersistenceError, .metadataMigrationFailed)
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: sandbox.legacyStoreURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: sandbox.paths.metadataStoreURL.path))
+    }
+
+    @MainActor
+    func testRelocatorRejectsMatchingEntityNamesWithDifferentModelHashes() throws {
+        let sandbox = try makeStoreSandbox()
+        defer { try? FileManager.default.removeItem(at: sandbox.applicationSupport) }
+        try seedCoreDataStore(
+            at: sandbox.legacyStoreURL,
+            entityNames: [
+                "ModeEntity",
+                "DictationEntity",
+                "MeetingEntity",
+                "TranscriptSegmentEntity",
+                "RecordingCleanupEntity",
+            ]
+        )
+        var attemptedCopy = false
+        let relocator = PersistentStoreRelocator(snapshotStore: { _, _ in
+            attemptedCopy = true
+            throw CocoaError(.fileWriteUnknown)
+        })
+
+        let canonicalURL = try relocator.prepareCanonicalStore(
+            paths: sandbox.paths,
+            legacyStoreURL: sandbox.legacyStoreURL
+        )
+
+        XCTAssertEqual(canonicalURL, sandbox.paths.metadataStoreURL)
+        XCTAssertFalse(attemptedCopy)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: canonicalURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: sandbox.legacyStoreURL.path))
+    }
+
+    @MainActor
+    func testRelocatorPreservesCanonicalStorePromotedByConcurrentLaunch() throws {
+        let legacyFixture = StoreFixture()
+        let winningFixture = StoreFixture()
+        let sandbox = try makeStoreSandbox()
+        defer { try? FileManager.default.removeItem(at: sandbox.applicationSupport) }
+        try seedStore(at: sandbox.legacyStoreURL, fixture: legacyFixture)
+        let winningDirectory = sandbox.paths.rootURL.appendingPathComponent(
+            ".ConcurrentMetadata-\(UUID().uuidString)",
+            isDirectory: true
+        )
+        try FileManager.default.createDirectory(
+            at: winningDirectory,
+            withIntermediateDirectories: false,
+            attributes: [.posixPermissions: 0o700]
+        )
+        try seedStore(
+            at: winningDirectory.appendingPathComponent("Whisper.store"),
+            fixture: winningFixture
+        )
+        let relocator = PersistentStoreRelocator(removeEmptyDirectory: { metadataDirectory in
+            try FileManager.default.removeItem(at: metadataDirectory)
+            try FileManager.default.moveItem(at: winningDirectory, to: metadataDirectory)
+        })
+
+        let canonicalURL = try relocator.prepareCanonicalStore(
+            paths: sandbox.paths,
+            legacyStoreURL: sandbox.legacyStoreURL
+        )
+
+        let controller = try PersistenceController(storeURL: canonicalURL)
+        XCTAssertEqual(
+            try controller.container.mainContext.fetch(FetchDescriptor<ModeEntity>()).map(\.id),
+            [winningFixture.modeID]
+        )
+        XCTAssertNotEqual(winningFixture.modeID, legacyFixture.modeID)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: sandbox.legacyStoreURL.path))
+    }
+
+    @MainActor
+    func testRelocatorDoesNotRemovePopulatedCanonicalDirectory() throws {
+        let fixture = StoreFixture()
+        let sandbox = try makeStoreSandbox()
+        defer { try? FileManager.default.removeItem(at: sandbox.applicationSupport) }
+        try seedStore(at: sandbox.legacyStoreURL, fixture: fixture)
+        let markerURL = sandbox.paths.metadataDirectoryURL.appendingPathComponent("keep.txt")
+        try Data("keep".utf8).write(to: markerURL)
+
+        XCTAssertThrowsError(
+            try PersistentStoreRelocator().prepareCanonicalStore(
+                paths: sandbox.paths,
+                legacyStoreURL: sandbox.legacyStoreURL
+            )
+        ) {
+            XCTAssertEqual($0 as? PersistenceError, .metadataMigrationFailed)
+        }
+        XCTAssertEqual(try Data(contentsOf: markerURL), Data("keep".utf8))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: sandbox.legacyStoreURL.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: sandbox.paths.metadataStoreURL.path))
+    }
+
+    @MainActor
     func testRelocatorLeavesLegacyUntouchedAndNoCanonicalStoreWhenCopyFails() throws {
         let fixture = StoreFixture()
         let sandbox = try makeStoreSandbox()
         defer { try? FileManager.default.removeItem(at: sandbox.applicationSupport) }
         try seedStore(at: sandbox.legacyStoreURL, fixture: fixture)
-        let relocator = PersistentStoreRelocator(copyItem: { _, _ in
+        let relocator = PersistentStoreRelocator(snapshotStore: { _, _ in
             throw CocoaError(.fileWriteNoPermission)
         })
 
@@ -702,6 +817,31 @@ final class PersistenceTests: XCTestCase {
         )
         context.insert(RecordingCleanupEntity(meetingID: fixture.cleanupMeetingID))
         try context.save()
+    }
+
+    private func seedUnrelatedStore(at storeURL: URL) throws {
+        try seedCoreDataStore(at: storeURL, entityNames: ["UnrelatedEntity"])
+    }
+
+    private func seedCoreDataStore(at storeURL: URL, entityNames: [String]) throws {
+        let model = NSManagedObjectModel()
+        model.entities = entityNames.map { name in
+            let entity = NSEntityDescription()
+            entity.name = name
+            entity.managedObjectClassName = NSStringFromClass(NSManagedObject.self)
+            let incompatibleMarker = NSAttributeDescription()
+            incompatibleMarker.name = "incompatibleMarker"
+            incompatibleMarker.attributeType = .stringAttributeType
+            entity.properties = [incompatibleMarker]
+            return entity
+        }
+
+        let coordinator = NSPersistentStoreCoordinator(managedObjectModel: model)
+        _ = try coordinator.addPersistentStore(
+            type: .sqlite,
+            configuration: nil,
+            at: storeURL
+        )
     }
 
     private func makeStoreSandbox() throws -> StoreSandbox {

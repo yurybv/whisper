@@ -38,7 +38,7 @@ Before the first canonical container opens:
 
 1. If the canonical store exists, use it and never replace it from legacy data.
 2. Otherwise, inspect `~/Library/Application Support/default.store` without reading or logging user content.
-3. If its persistent-store metadata identifies the complete Whisper entity schema, copy the SQLite store family into a staging directory under `Application Support/Whisper`, atomically promote that directory to `Metadata`, then open and validate the canonical store.
+3. If its persistent-store metadata identifies the complete Whisper entity schema and exact current model hashes, take a SQLite-coordinated online-backup snapshot into a staging directory under `Application Support/Whisper`, atomically promote that directory to `Metadata`, then open and validate the canonical store.
 4. Keep the legacy store untouched as rollback evidence. Do not delete it automatically.
 5. If migration of a compatible Whisper store fails, fail startup with the existing local-storage error instead of silently creating an empty database.
 6. If no compatible legacy Whisper store exists, create a new canonical store.

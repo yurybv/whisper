@@ -1,4 +1,5 @@
 import CoreData
+import Darwin
 import Foundation
 import SwiftData
 
@@ -9,7 +10,9 @@ protocol PersistentStoreRelocating {
 
 @MainActor
 final class PersistentStoreRelocator: PersistentStoreRelocating {
-    typealias CopyItem = (URL, URL) throws -> Void
+    typealias SnapshotStore = (URL, URL) throws -> Void
+    typealias MetadataReader = (URL) throws -> [String: Data]
+    typealias RemoveEmptyDirectory = (URL) throws -> Void
 
     private static let requiredEntityNames: Set<String> = [
         "ModeEntity",
@@ -20,14 +23,20 @@ final class PersistentStoreRelocator: PersistentStoreRelocating {
     ]
 
     private let fileManager: FileManager
-    private let copyItem: CopyItem
+    private let snapshotStore: SnapshotStore
+    private let metadataReader: MetadataReader
+    private let removeEmptyDirectory: RemoveEmptyDirectory
 
     init(
         fileManager: FileManager = .default,
-        copyItem: CopyItem? = nil
+        snapshotStore: SnapshotStore? = nil,
+        metadataReader: MetadataReader? = nil,
+        removeEmptyDirectory: RemoveEmptyDirectory? = nil
     ) {
         self.fileManager = fileManager
-        self.copyItem = copyItem ?? fileManager.copyItem(at:to:)
+        self.snapshotStore = snapshotStore ?? SQLiteStoreSnapshotter().snapshotStore(from:to:)
+        self.metadataReader = metadataReader ?? Self.readModelVersionHashes
+        self.removeEmptyDirectory = removeEmptyDirectory ?? Self.removeEmptyDirectoryAtomically
     }
 
     func prepareCanonicalStore(paths: AppPaths, legacyStoreURL: URL) throws -> URL {
@@ -38,7 +47,16 @@ final class PersistentStoreRelocator: PersistentStoreRelocating {
         guard fileManager.fileExists(atPath: legacyStoreURL.path) else {
             return canonicalURL
         }
-        guard isCompatibleWhisperStore(at: legacyStoreURL) else {
+        let isCompatible: Bool
+        do {
+            isCompatible = try isCompatibleWhisperStore(
+                at: legacyStoreURL,
+                paths: paths
+            )
+        } catch {
+            throw PersistenceError.metadataMigrationFailed
+        }
+        guard isCompatible else {
             return canonicalURL
         }
 
@@ -53,7 +71,7 @@ final class PersistentStoreRelocator: PersistentStoreRelocating {
                 attributes: [.posixPermissions: 0o700]
             )
             let stagedStoreURL = stagingDirectory.appendingPathComponent("Whisper.store")
-            try copyStoreFamily(from: legacyStoreURL, to: stagedStoreURL)
+            try snapshotStore(legacyStoreURL, stagedStoreURL)
             try validateStore(at: stagedStoreURL)
 
             if fileManager.fileExists(atPath: canonicalURL.path) {
@@ -61,8 +79,16 @@ final class PersistentStoreRelocator: PersistentStoreRelocating {
                 return canonicalURL
             }
 
-            try removeEmptyMetadataDirectory(at: paths.metadataDirectoryURL)
-            try fileManager.moveItem(at: stagingDirectory, to: paths.metadataDirectoryURL)
+            do {
+                try removeEmptyDirectory(paths.metadataDirectoryURL)
+                try fileManager.moveItem(at: stagingDirectory, to: paths.metadataDirectoryURL)
+            } catch {
+                if fileManager.fileExists(atPath: canonicalURL.path) {
+                    try? fileManager.removeItem(at: stagingDirectory)
+                    return canonicalURL
+                }
+                throw error
+            }
             try fileManager.setAttributes(
                 [.posixPermissions: 0o700],
                 ofItemAtPath: paths.metadataDirectoryURL.path
@@ -76,47 +102,59 @@ final class PersistentStoreRelocator: PersistentStoreRelocating {
         }
     }
 
-    private func isCompatibleWhisperStore(at storeURL: URL) -> Bool {
-        guard
-            let metadata = try? NSPersistentStoreCoordinator.metadataForPersistentStore(
-                ofType: NSSQLiteStoreType,
-                at: storeURL
-            ),
-            let hashes = metadata[NSStoreModelVersionHashesKey] as? [String: Data]
-        else {
-            return false
+    private func isCompatibleWhisperStore(at storeURL: URL, paths: AppPaths) throws -> Bool {
+        let legacyHashes = try metadataReader(storeURL)
+        let currentHashes = try currentModelVersionHashes(paths: paths)
+        guard Set(currentHashes.keys) == Self.requiredEntityNames else {
+            throw PersistenceError.metadataMigrationFailed
         }
-        return Set(hashes.keys) == Self.requiredEntityNames
+        return legacyHashes == currentHashes
     }
 
-    private func copyStoreFamily(from source: URL, to destination: URL) throws {
-        for suffix in ["", "-wal", "-shm"] {
-            let sourceMember = URL(fileURLWithPath: source.path + suffix)
-            guard fileManager.fileExists(atPath: sourceMember.path) else { continue }
-            let destinationMember = URL(fileURLWithPath: destination.path + suffix)
-            try copyItem(sourceMember, destinationMember)
+    private func currentModelVersionHashes(paths: AppPaths) throws -> [String: Data] {
+        let probeDirectory = paths.rootURL.appendingPathComponent(
+            ".MetadataModelProbe-\(UUID().uuidString)",
+            isDirectory: true
+        )
+        try fileManager.createDirectory(
+            at: probeDirectory,
+            withIntermediateDirectories: false,
+            attributes: [.posixPermissions: 0o700]
+        )
+        defer { try? fileManager.removeItem(at: probeDirectory) }
+
+        let probeStoreURL = probeDirectory.appendingPathComponent("Whisper.store")
+        let controller = try PersistenceController(storeURL: probeStoreURL)
+        return try withExtendedLifetime(controller) {
+            try metadataReader(probeStoreURL)
         }
+    }
+
+    private static func readModelVersionHashes(at storeURL: URL) throws -> [String: Data] {
+        let metadata = try NSPersistentStoreCoordinator.metadataForPersistentStore(
+            ofType: NSSQLiteStoreType,
+            at: storeURL
+        )
+        return metadata[NSStoreModelVersionHashesKey] as? [String: Data] ?? [:]
     }
 
     private func validateStore(at storeURL: URL) throws {
         let controller = try PersistenceController(storeURL: storeURL)
         let context = controller.container.mainContext
-        _ = try context.fetch(FetchDescriptor<ModeEntity>()).count
-        _ = try context.fetch(FetchDescriptor<DictationEntity>()).count
-        _ = try context.fetch(FetchDescriptor<MeetingEntity>()).count
-        _ = try context.fetch(FetchDescriptor<TranscriptSegmentEntity>()).count
-        _ = try context.fetch(FetchDescriptor<RecordingCleanupEntity>()).count
+        _ = try context.fetchCount(FetchDescriptor<ModeEntity>())
+        _ = try context.fetchCount(FetchDescriptor<DictationEntity>())
+        _ = try context.fetchCount(FetchDescriptor<MeetingEntity>())
+        _ = try context.fetchCount(FetchDescriptor<TranscriptSegmentEntity>())
+        _ = try context.fetchCount(FetchDescriptor<RecordingCleanupEntity>())
     }
 
-    private func removeEmptyMetadataDirectory(at directoryURL: URL) throws {
-        guard fileManager.fileExists(atPath: directoryURL.path) else { return }
-        let contents = try fileManager.contentsOfDirectory(
-            at: directoryURL,
-            includingPropertiesForKeys: nil
-        )
-        guard contents.isEmpty else {
-            throw PersistenceError.metadataMigrationFailed
+    private static func removeEmptyDirectoryAtomically(at directoryURL: URL) throws {
+        let errorCode = directoryURL.withUnsafeFileSystemRepresentation { path -> Int32 in
+            guard let path else { return EINVAL }
+            return Darwin.rmdir(path) == 0 ? 0 : errno
         }
-        try fileManager.removeItem(at: directoryURL)
+        guard errorCode == 0 || errorCode == ENOENT else {
+            throw POSIXError(POSIXErrorCode(rawValue: errorCode) ?? .EIO)
+        }
     }
 }

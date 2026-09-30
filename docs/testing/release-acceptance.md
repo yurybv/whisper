@@ -1,12 +1,12 @@
 # Whisper MVP release acceptance
 
-Overall result: **BLOCKED — live Warp, mode, permission, recovery, and macOS-dialog acceptance remains pending**
+Overall result: **BLOCKED — live Warp, mode, recovery, and remaining macOS-dialog acceptance remains pending**
 
-Date: 2026-09-29
+Date: 2026-09-30
 
 Environment: Apple Silicon MacBook Pro; macOS 26.4.1; Xcode 26.6 (17F113); Swift 6.3.3; macOS SDK 26.5; XcodeGen 2.46.0.
 
-Build under test: 2026-09-29 `origin/master` at `cdd92d9`; stable-local-identity `build/Whisper.app`; bundle identifier `dev.yury.whisper`; arm64.
+Build under test: 2026-09-30 `origin/master` at `628c1d3`; stable-local-identity `build/Whisper.app`; bundle identifier `dev.yury.whisper`; arm64.
 
 Evidence policy: generated phrases only; no real API key, private dictation, transcript, custom instruction, Authorization value, or user document is recorded. `PASS` means the exact row has current or named prior evidence. `AUTOMATED PASS / LIVE NOT RUN` records useful coverage but does not satisfy the manual release gate. `NOT RUN` is an explicit release blocker, never an inferred pass.
 
@@ -69,7 +69,7 @@ Evidence policy: generated phrases only; no real API key, private dictation, tra
 
 | ID | Case | Result | Evidence and remaining live check |
 |---|---|---|---|
-| X-01 | Clean supported-Mac build | PASS | Full `scripts/verify.sh` passed all twelve stages on 2026-09-29: 322 unit/service tests and 17 UI tests completed with zero failures before `build/Whisper.app` was rebuilt and signed. |
+| X-01 | Clean supported-Mac build | PASS | Full `scripts/verify.sh` passed all twelve stages again on 2026-09-30: 322 unit/service tests and 17 UI tests completed with zero failures before `build/Whisper.app` was rebuilt and signed. |
 | X-02 | Signature and bundle identity | PASS | `codesign --verify --deep --strict` passes; identifier is `dev.yury.whisper`; executable is arm64-only. |
 | X-03 | Gatekeeper recognizes the ad-hoc build as unnotarized | PASS | `spctl --assess --type execute build/Whisper.app` returned expected exit 3 and `rejected`. |
 | X-04 | Move exact bundle to `/Applications` | PASS (current package smoke) | On 2026-09-29 the exact verified `build/Whisper.app` was copied to `/Applications/Whisper.app`, its strict signature and `dev.yury.whisper` identity were rechecked, and the executable launched from the installed path. The prior installed app was restored afterward. |
@@ -77,13 +77,13 @@ Evidence policy: generated phrases only; no real API key, private dictation, tra
 | X-06 | Onboarding links open exact permission panes | PASS (prior live) / CURRENT NOT RUN | WH-M3-001 verified the routes and recovery states; repeat from the packaged build. |
 | X-07 | API key survives relaunch in Keychain and never appears in logs | AUTOMATED PASS / LIVE BLOCKED | Twelve Keychain lifecycle, cache, query, and legacy-interaction tests pass; Settings startup/refresh now checks item presence without retrieving the secret. A no-cursor launch of the current ad-hoc package against the mismatched older item remained alive in its event loop, showed zero SecurityAgent windows, and had no `SecItemCopyMatching` frame in the sanitized process sample. The key was not read, printed, changed, or logged. A live authorized read after relaunch remains required to prove the full row. |
 | X-08 | History and modes survive rebuilt and relocated launches | PASS (current package smoke) | On 2026-09-29 the owner store was quarantined without reading its contents, then one fixed synthetic custom-mode ID and one fixed synthetic dictation ID were written into a compatible legacy store through the production repositories. Launching the verified package migrated both IDs into the canonical store. They survived a clean repackage and relaunch from `build/Whisper.app`, then a copy plus exact executable launch from `/Applications/Whisper.app`. The canonical metadata directory remained `0700`, and recordings continued to resolve under `Application Support/Whisper/Recordings`. The original canonical and legacy store families plus the prior installed app were restored afterward; disposable synthetic artifacts were moved to Trash. The complete gate passed 322 unit/service tests, 17 UI tests, Release packaging, and strict signature verification. Previously missing records remain unrecoverable from the accessible legacy store because it already contains zero history records. |
-| X-09 | Stable local signature and permission continuity | AUTOMATED PASS / LIVE NOT RUN | `WH-M6-013` replaced ad-hoc packaging with one self-signed local identity. Two independent clean Release builds had the same `Whisper Local Development` authority, certificate SHA-1, bundle identifier, and certificate-bound designated requirement, and passed deep strict verification; the full 316-unit/17-UI verification run passed. Grant any requested app permissions once and verify the same `build/Whisper.app` retains Microphone, Accessibility, Input Monitoring, and Screen Recording access after another rebuild. Automated signature checks cannot establish the live macOS permission outcome. |
+| X-09 | Stable local signature and permission continuity | PASS | On 2026-09-30, after a Mac reboot, two independent clean Release builds had the same `Whisper Local Development` authority, certificate SHA-1 `3918F34830AA1C4307777059BC515CCB72620601`, `dev.yury.whisper` identifier, CDHash, and certificate-bound designated requirement. The exact rebuilt package launched without another Keychain prompt, and read-only System Settings inspection confirmed that Microphone, Accessibility, Input Monitoring, and Screen & System Audio Recording all remained enabled after the reboot and both rebuilds. The subsequent full 322-unit/17-UI verification gate and strict signature check passed. No permission switch or TCC database was changed during the check. |
 
 ## Blocking release session
 
 Failed criterion: `WH-M6-003` requires every manual row to pass on the current packaged version or produce a resolved, verified follow-up. `X-08` now passes on the current package and the mode implementations are delivered; `D-14`, `U-07`, and `U-08` still require live checks under `WH-M6-003`, with the Warp fix tracked by `WH-M6-008`. Rows marked `NOT RUN`, `LIVE NOT RUN`, or `LIVE BLOCKED` still cannot be promoted using automated evidence alone.
 
-Reason: the stable metadata migration now has complete automated and package-smoke evidence, while Warp insertion and mode behavior still need their owner-facing packaged checks. Separately, the remaining audio, permission, recovery, Gatekeeper, and authorized Keychain-relaunch checks may open macOS dialogs on the unavailable external display and cannot proceed safely under the current display constraint.
+Reason: stable metadata migration and stable-signature permission continuity now have complete automated and package-smoke evidence, while Warp insertion and mode behavior still need their owner-facing packaged checks. Separately, the remaining audio, permission-revocation recovery, Gatekeeper, and authorized Keychain-relaunch checks may open macOS dialogs and remain consolidated under final acceptance.
 
 Affected tasks: `WH-M6-003`, `WH-M6-005`, `WH-M6-006`, and remaining implementation follow-up `WH-M6-008`.
 

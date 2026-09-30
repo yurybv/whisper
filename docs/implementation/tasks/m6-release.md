@@ -118,7 +118,7 @@
 
 - **Title:** Fix false-positive text insertion in Warp
 - **Type:** bug
-- **Status:** blocked
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Route the known Warp bundle through the existing captured-process clipboard paste strategy so a false-success Accessibility write cannot produce a misleading `Inserted` result.
 - **Out of scope:** Changing the captured-target product behavior, replacing Accessibility insertion for working applications, or adding application-specific automatic modes.
@@ -127,9 +127,9 @@
 - **Dependencies:** WH-M6-002, WH-M6-012.
 - **Expected files:** `Sources/Accessibility/AXTextInsertionService.swift`, `Tests/WhisperTests/Accessibility/TextInsertionServiceTests.swift`, release acceptance evidence and task records.
 - **Source:** `docs/superpowers/specs/2026-09-18-release-stabilization-design.md` and `docs/superpowers/plans/2026-09-18-warp-text-insertion.md`; follow-up to WH-M6-003 foreground acceptance.
-- **Blockers:** Live generated-dictation smoke remains pending, and WH-M6-012 must stop a prior Keychain failure HUD from covering the target applications indefinitely. The available computer-use environment refuses direct control of `dev.warp.Warp-Stable`, so the owner must confirm the packaged build inserts into Warp and TextEdit before this task can move from review to done.
+- **Blockers:** None. The consolidated physical Push-to-Talk and real-provider journey remains assigned to final acceptance task `WH-M6-003`; this task's target-app smoke used fixed synthetic text without reading the saved key or making a provider request.
 - **Implementation (2026-09-18):** Added a bundle-specific direct-insertion policy to `AXTextInsertionService`. Captured Warp targets now skip the false-positive selected-text Accessibility write and continue through the existing captured-PID activation, Command-V posting, delayed pasteboard restoration, and manual-paste fallback path. Other targets retain direct Accessibility insertion as the preferred path.
-- **Verification:** TDD reproduced Warp returning Accessibility success without receiving text, then passed with a regression test that requires paste fallback, exact event ordering, and restoration of the prior clipboard. The focused insertion suite passed 9 tests. Full `./scripts/verify.sh` passed all twelve stages with 302 unit/service tests and 15 UI tests, rebuilt `build/Whisper.app`, and verified its signature. `git diff --check` passed. Live Warp/TextEdit smoke is the only remaining required check; no dictated or private content is retained in evidence.
+- **Verification:** TDD reproduced Warp returning Accessibility success without receiving text, then passed with a regression test that requires paste fallback, exact event ordering, and restoration of the prior clipboard. On 2026-09-30 the focused insertion suite passed 9 tests. A generated-text smoke compiled the production insertion service into a disposable harness, opened an isolated Warp window through Warp's supported URI, captured bundle `dev.warp.Warp-Stable`, and confirmed the service returned `pasted`, the fixed marker was present in the focused prompt, and every prior pasteboard representation was restored. A separate temporary TextEdit document captured bundle `com.apple.TextEdit` and confirmed `insertedDirectly`, marker presence, and unchanged pasteboard contents. No clipboard value, saved credential, dictated text, or user document content was logged. The final full `./scripts/verify.sh` and `git diff --check` results are recorded in the closing task commit; implementation commit `8d2255d` is present on `origin/master`.
 
 ## WH-M6-009
 

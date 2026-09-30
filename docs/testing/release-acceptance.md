@@ -1,12 +1,12 @@
 # Whisper MVP release acceptance
 
-Overall result: **BLOCKED — live Warp, mode, recovery, and remaining macOS-dialog acceptance remains pending**
+Overall result: **BLOCKED — consolidated physical dictation, mode, recovery, and remaining macOS-dialog acceptance remains pending**
 
 Date: 2026-09-30
 
 Environment: Apple Silicon MacBook Pro; macOS 26.4.1; Xcode 26.6 (17F113); Swift 6.3.3; macOS SDK 26.5; XcodeGen 2.46.0.
 
-Build under test: 2026-09-30 `origin/master` at `628c1d3`; stable-local-identity `build/Whisper.app`; bundle identifier `dev.yury.whisper`; arm64.
+Build under test: 2026-09-30 `origin/master` at `538a294`; stable-local-identity `build/Whisper.app`; bundle identifier `dev.yury.whisper`; arm64.
 
 Evidence policy: generated phrases only; no real API key, private dictation, transcript, custom instruction, Authorization value, or user document is recorded. `PASS` means the exact row has current or named prior evidence. `AUTOMATED PASS / LIVE NOT RUN` records useful coverage but does not satisfy the manual release gate. `NOT RUN` is an explicit release blocker, never an inferred pass.
 
@@ -27,7 +27,7 @@ Evidence policy: generated phrases only; no real API key, private dictation, tra
 | D-11 | Revoked Microphone permission | AUTOMATED PASS / LIVE NOT RUN | Permission and Home/Recordings model fixtures pass; current macOS permission revocation/recovery is pending. |
 | D-12 | Revoked Accessibility and clipboard fallback | AUTOMATED PASS / LIVE NOT RUN | `TextInsertionServiceTests` cover manual-paste fallback and clipboard preservation; current macOS revocation/recovery is pending. |
 | D-13 | Active meeting rejects push-to-talk with a clear message | AUTOMATED PASS / LIVE NOT RUN | Hotkey routing, coordinator, menu-bar, and Recordings tests pass; confirm with physical push-to-talk during a real capture. |
-| D-14 | Warp insertion after translated dictation | FAIL | The generated dictation was recorded and transformed, and History identified target bundle `dev.warp.Warp-Stable`, but the focused Warp input remained unchanged while the HUD reported `Inserted`. Warp accepts the selected-text Accessibility write without applying it; `WH-M6-008` routes this bundle through verified paste fallback. No dictated content is retained in evidence. |
+| D-14 | Warp insertion after translated dictation | PASS (target insertion smoke) / PHYSICAL PTT DEFERRED | Implementation commit `8d2255d` routes captured bundle `dev.warp.Warp-Stable` through the production paste fallback. On 2026-09-30 a fixed generated marker was inserted into an isolated Warp prompt: the captured bundle matched, the result was `pasted`, the marker was present, and every prior pasteboard representation was restored. The same production service then inserted a separate fixed marker directly into a temporary TextEdit document under bundle `com.apple.TextEdit`, with the marker present and pasteboard unchanged. No marker value, clipboard value, credential, or user content is retained here. The physical Push-to-Talk and real-provider repetition remains in consolidated final task `WH-M6-003`. |
 
 ## Meeting matrix
 
@@ -81,11 +81,11 @@ Evidence policy: generated phrases only; no real API key, private dictation, tra
 
 ## Blocking release session
 
-Failed criterion: `WH-M6-003` requires every manual row to pass on the current packaged version or produce a resolved, verified follow-up. `X-08` now passes on the current package and the mode implementations are delivered; `D-14`, `U-07`, and `U-08` still require live checks under `WH-M6-003`, with the Warp fix tracked by `WH-M6-008`. Rows marked `NOT RUN`, `LIVE NOT RUN`, or `LIVE BLOCKED` still cannot be promoted using automated evidence alone.
+Failed criterion: `WH-M6-003` requires every manual row to pass on the current packaged version or produce a resolved, verified follow-up. `X-08`, `X-09`, and the Warp/TextEdit insertion boundary now have current package or production-service smoke evidence; `D-14`, `U-07`, and `U-08` still require their physical packaged repetitions under `WH-M6-003`. Rows marked `NOT RUN`, `LIVE NOT RUN`, or `LIVE BLOCKED` still cannot be promoted using automated evidence alone.
 
-Reason: stable metadata migration and stable-signature permission continuity now have complete automated and package-smoke evidence, while Warp insertion and mode behavior still need their owner-facing packaged checks. Separately, the remaining audio, permission-revocation recovery, Gatekeeper, and authorized Keychain-relaunch checks may open macOS dialogs and remain consolidated under final acceptance.
+Reason: stable metadata migration, stable-signature permission continuity, and the Warp-specific insertion path now have complete automated and focused live evidence. Physical Push-to-Talk, mode behavior, audio, permission-revocation recovery, Gatekeeper, and authorized Keychain-relaunch checks remain consolidated under final acceptance.
 
-Affected tasks: `WH-M6-003`, `WH-M6-005`, `WH-M6-006`, and remaining implementation follow-up `WH-M6-008`.
+Affected tasks: `WH-M6-003`, `WH-M6-005`, and `WH-M6-006`.
 
 Recommended default: deliver the verified review commits under the required GitHub identity, then reserve one foreground acceptance session when macOS authorization dialogs may be handled on whichever display receives them. Use only generated text/audio, repair access through the explicit Replace/Save action in Settings if the older Keychain item requires authorization, run the remaining live rows, and record only outcomes and sanitized notes here.
 

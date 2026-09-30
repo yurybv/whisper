@@ -186,7 +186,7 @@
 
 - **Title:** Auto-dismiss terminal dictation HUD errors
 - **Type:** bug
-- **Status:** review
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Give terminal dictation failures a readable bounded HUD lifetime so a Keychain or provider error cannot cover target applications indefinitely while preserving the failed session and its menu-bar Retry/Discard actions.
 - **Out of scope:** Automatically retrying or discarding captured audio, changing Keychain access policy, changing failure copy, or altering active recording/processing HUD lifetime.
@@ -195,9 +195,9 @@
 - **Dependencies:** WH-M6-007.
 - **Expected files:** `Sources/UI/HUD/DictationHUDController.swift`, `Tests/WhisperTests/UI/OverlayLifecycleTests.swift`, release acceptance evidence and task records.
 - **Source:** approved MVP state-machine, error-handling, and nonactivating-HUD sections in `docs/superpowers/specs/2026-08-19-whisper-macos-mvp-design.md`; follow-up to WH-M6-008 live verification.
-- **Blockers:** Packaged missing-key → save-key → Retry smoke remains pending because it requires the owner's saved credential and generated live audio.
+- **Blockers:** None. The credential-dependent packaged missing-key → save-key → Retry journey is consolidated under final acceptance task `WH-M6-003`, where the owner's saved key can remain masked and untouched by component-level verification.
 - **Implementation (2026-09-18):** Terminal dictation failures now keep the nonactivating HUD visible for four seconds and then hide it. Dismissal only affects the panel; the coordinator retains recoverable audio and the menu bar continues to expose Retry/Discard. Saving or replacing the key continues to update the shared `CachingSecureStore`, so Retry uses the new value without relaunching.
-- **Verification:** TDD first reproduced the failure with the error panel still visible after 4.25 seconds, then passed after adding the bounded error lifetime. The focused overlay, Keychain/cache, recovery-router, and dictation suites passed 43 tests. On 2026-09-21 the full `./scripts/verify.sh` passed all twelve stages with 316 unit/service tests and 17 UI tests on the built-in display, then packaged and verified `build/Whisper.app`; packaged missing-key → save-key → Retry smoke remains deferred to the owner-batched acceptance pass.
+- **Verification:** TDD first reproduced the failure with the error panel still visible after 4.25 seconds, then passed after adding the bounded error lifetime. On 2026-09-29, and again after the Mac reboot on 2026-09-30, the focused overlay, Keychain/cache, recovery-router, and dictation selection passed 32 tests with zero failures; the latest real lifecycle elapsed 4.429 seconds. A computer-vision pass observed the real nonactivating `Dictation failed` panel with synthetic, secret-free copy while it was visible and confirmed the test host disappeared after the four-second timeout. On 2026-09-21 the full `./scripts/verify.sh` passed all twelve stages with 316 unit/service tests and 17 UI tests, and the later 2026-09-29 full gate passed 322 unit/service tests plus 17 UI tests against the same implementation before packaging and strict signature verification. The credential-dependent packaged Retry journey remains explicitly assigned to consolidated final acceptance task `WH-M6-003`; component verification did not read, replace, or expose the owner's saved key. `git diff --check` passes, and implementation commit `3360ab6` is present on `origin/master`.
 
 ## WH-M6-013
 

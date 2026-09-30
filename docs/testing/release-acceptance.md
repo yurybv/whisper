@@ -1,12 +1,12 @@
 # Whisper MVP release acceptance
 
-Overall result: **BLOCKED — consolidated physical dictation, mode, recovery, and remaining macOS-dialog acceptance remains pending**
+Overall result: **BLOCKED — macOS authentication and packaged-app foreground acceptance remain pending**
 
-Date: 2026-09-30
+Date: 2026-10-01
 
 Environment: Apple Silicon MacBook Pro; macOS 26.4.1; Xcode 26.6 (17F113); Swift 6.3.3; macOS SDK 26.5; XcodeGen 2.46.0.
 
-Build under test: 2026-09-30 `origin/master` at `538a294`; stable-local-identity `build/Whisper.app`; bundle identifier `dev.yury.whisper`; arm64.
+Build under test: 2026-10-01 `origin/master` at `46bb479`; stable-local-identity `build/Whisper.app`; bundle identifier `dev.yury.whisper`; arm64.
 
 Evidence policy: generated phrases only; no real API key, private dictation, transcript, custom instruction, Authorization value, or user document is recorded. `PASS` means the exact row has current or named prior evidence. `AUTOMATED PASS / LIVE NOT RUN` records useful coverage but does not satisfy the manual release gate. `NOT RUN` is an explicit release blocker, never an inferred pass.
 
@@ -69,11 +69,11 @@ Evidence policy: generated phrases only; no real API key, private dictation, tra
 
 | ID | Case | Result | Evidence and remaining live check |
 |---|---|---|---|
-| X-01 | Clean supported-Mac build | PASS | Full `scripts/verify.sh` passed all twelve stages again on 2026-09-30: 322 unit/service tests and 17 UI tests completed with zero failures before `build/Whisper.app` was rebuilt and signed. |
-| X-02 | Signature and bundle identity | PASS | `codesign --verify --deep --strict` passes; identifier is `dev.yury.whisper`; executable is arm64-only. |
-| X-03 | Gatekeeper recognizes the ad-hoc build as unnotarized | PASS | `spctl --assess --type execute build/Whisper.app` returned expected exit 3 and `rejected`. |
+| X-01 | Clean supported-Mac build | PASS (prior) / CURRENT FULL GATE INCOMPLETE | The 2026-09-30 full gate passed 322 unit/service and 17 UI tests. On 2026-10-01, the UI runner timed out before executing a test while macOS Local Authentication was enabling automation. A separate clean Release package succeeded, and `./scripts/verify.sh --skip-ui-tests` passed all twelve noninteractive stages with 322 unit/service tests, packaging, and signature verification. Retry the 17 UI tests after the owner handles the macOS authentication prompt. |
+| X-02 | Signature and bundle identity | PASS (current package) | The 2026-10-01 clean Release package passes `codesign --verify --deep --strict`; identifier is `dev.yury.whisper`, authority is `Whisper Local Development`, and the executable is arm64-only. |
+| X-03 | Gatekeeper rejects the unnotarized local build | PASS (current package) | `spctl --assess --type execute build/Whisper.app` returned expected exit 3 and `rejected` on 2026-10-01. |
 | X-04 | Move exact bundle to `/Applications` | PASS (current package smoke) | On 2026-09-29 the exact verified `build/Whisper.app` was copied to `/Applications/Whisper.app`, its strict signature and `dev.yury.whisper` identity were rechecked, and the executable launched from the installed path. The prior installed app was restored afterward. |
-| X-05 | First launch through right-click Open | PASS (prior package) / CURRENT NOT RUN | Finder's contextual Open launched the 2026-09-15 quarantined bundle through App Translocation. Gatekeeper windows were routed by macOS to the external display and dismissed without interaction. Repeat with the 2026-09-16 package. |
+| X-05 | First launch through right-click Open | PASS (prior package) / CURRENT NOT RUN | Finder's contextual Open launched the 2026-09-15 quarantined bundle through App Translocation. Gatekeeper windows were routed by macOS to the external display and dismissed without interaction. Repeat with the 2026-10-01 package. |
 | X-06 | Onboarding links open exact permission panes | PASS (prior live) / CURRENT NOT RUN | WH-M3-001 verified the routes and recovery states; repeat from the packaged build. |
 | X-07 | API key survives relaunch in Keychain and never appears in logs | AUTOMATED PASS / LIVE BLOCKED | Twelve Keychain lifecycle, cache, query, and legacy-interaction tests pass; Settings startup/refresh now checks item presence without retrieving the secret. A no-cursor launch of the current ad-hoc package against the mismatched older item remained alive in its event loop, showed zero SecurityAgent windows, and had no `SecItemCopyMatching` frame in the sanitized process sample. The key was not read, printed, changed, or logged. A live authorized read after relaunch remains required to prove the full row. |
 | X-08 | History and modes survive rebuilt and relocated launches | PASS (current package smoke) | On 2026-09-29 the owner store was quarantined without reading its contents, then one fixed synthetic custom-mode ID and one fixed synthetic dictation ID were written into a compatible legacy store through the production repositories. Launching the verified package migrated both IDs into the canonical store. They survived a clean repackage and relaunch from `build/Whisper.app`, then a copy plus exact executable launch from `/Applications/Whisper.app`. The canonical metadata directory remained `0700`, and recordings continued to resolve under `Application Support/Whisper/Recordings`. The original canonical and legacy store families plus the prior installed app were restored afterward; disposable synthetic artifacts were moved to Trash. The complete gate passed 322 unit/service tests, 17 UI tests, Release packaging, and strict signature verification. Previously missing records remain unrecoverable from the accessible legacy store because it already contains zero history records. |
@@ -83,10 +83,10 @@ Evidence policy: generated phrases only; no real API key, private dictation, tra
 
 Failed criterion: `WH-M6-003` requires every manual row to pass on the current packaged version or produce a resolved, verified follow-up. `X-08`, `X-09`, and the Warp/TextEdit insertion boundary now have current package or production-service smoke evidence; `D-14`, `U-07`, and `U-08` still require their physical packaged repetitions under `WH-M6-003`. Rows marked `NOT RUN`, `LIVE NOT RUN`, or `LIVE BLOCKED` still cannot be promoted using automated evidence alone.
 
-Reason: stable metadata migration, stable-signature permission continuity, and the Warp-specific insertion path now have complete automated and focused live evidence. Physical Push-to-Talk, mode behavior, audio, permission-revocation recovery, Gatekeeper, and authorized Keychain-relaunch checks remain consolidated under final acceptance.
+Reason: stable metadata migration, stable-signature permission continuity, and the Warp-specific insertion path have automated and focused live evidence. The owner started WH-M6-003 on 2026-10-01 with the current display arrangement. Physical Push-to-Talk, mode behavior, audio, permission-revocation recovery, Gatekeeper, and authorized Keychain-relaunch checks remain in this task. The current UI automation run also needs macOS Local Authentication: the runner timed out before test execution, and a `testmanagerd` process sample showed it waiting inside `LAContext evaluatePolicy` while enabling automation.
 
 Affected tasks: `WH-M6-003`, `WH-M6-005`, and `WH-M6-006`.
 
-Recommended default: deliver the verified review commits under the required GitHub identity, then reserve one foreground acceptance session when macOS authorization dialogs may be handled on whichever display receives them. Use only generated text/audio, repair access through the explicit Replace/Save action in Settings if the older Keychain item requires authorization, run the remaining live rows, and record only outcomes and sanitized notes here.
+Recommended default: resume this foreground acceptance session when the owner can handle macOS authorization dialogs on whichever display receives them. Use only generated text/audio, repair access through the explicit Replace/Save action in Settings if the older Keychain item requires authorization, run the remaining live rows, and record only outcomes and sanitized notes here.
 
-Required external change: the external display becomes available briefly for Gatekeeper, Keychain, and macOS permission confirmations, or it is physically disconnected before the session so macOS must place those dialogs on the built-in display. No credential needs to be disclosed or recorded.
+Required external action: the owner handles macOS authentication to enable Xcode UI automation and opens Whisper's main window from its menu bar item for the desktop-control session. Any later Gatekeeper, Keychain, or permission confirmation that requires a credential remains with the owner. No credential needs to be disclosed or recorded.

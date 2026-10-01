@@ -80,4 +80,16 @@ Do not claim a task is complete unless:
 - `git diff --check` passes;
 - the final commit is present on `origin/master`.
 
-Every milestone ends with its milestone review task. Do not start the next milestone until that review is done.
+Every milestone ends with its milestone review task. Normally, do not start the next milestone until that review is done.
+
+## Owner-approved update-first order (2026-10-01)
+
+The owner explicitly prioritized versioning and in-app updates to make subsequent testing easier. This is a limited exception to numeric milestone order, not a declaration that MVP acceptance passed:
+
+1. Complete `WH-M7-001` through `WH-M7-005`, beginning with version metadata. Their entry prerequisites are the completed verification, privacy, and stable-signing tasks (`WH-M6-002`, `WH-M6-004`, `WH-M6-013`).
+2. Research the reported Right Option/start-stop problem in `WH-M6-014`, the last queued development/research item. Record evidence before proposing a fix; any confirmed defect gets a scoped follow-up.
+3. Resume `WH-M6-003` after that research and any blocking fixes, then `WH-M6-005` and `WH-M6-006`. Keep unresolved acceptance rows visible throughout.
+
+Follow the revised [update design](docs/superpowers/specs/2026-09-29-local-automatic-updates-design.md) and [plan](docs/superpowers/plans/2026-09-29-local-automatic-updates.md). The current request revises planning only; it does not itself publish a release or create a signing secret.
+
+After the updater exists, the owner can request a release in ordinary language. The agent handles version selection, verification, packaging, signing, Git tags, GitHub Release assets, and publication on this Mac. One completed task can span several related commits and receives one patch version when requested. A source push is not publication authorization. Do not ask the owner to run build commands, prepare release notes, choose the next patch number, or repeat approval already given for that release. Ask only for a genuinely missing decision, credential, or OS-controlled consent; the owner enters authentication locally. The owner normally only invokes **Check for Updates…** and accepts installation. One initial installation at `/Applications/Whisper.app` is approved as part of the future bootstrap workflow.

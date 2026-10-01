@@ -25,7 +25,7 @@ A task is ready only when it has:
 - dependencies and blockers;
 - expected affected files;
 - a linked specification or implementation-plan section;
-- no unresolved dependency on a later milestone.
+- no unresolved dependency in the approved execution order (numeric milestone order except for the update-first exception below).
 
 ## Selecting the next task
 
@@ -38,7 +38,13 @@ A task is ready only when it has:
 7. Read its full task record and linked plan section.
 8. Change only that task to `status: in-progress` and commit that status with the implementation or as the first commit of the task series.
 
-Do not skip a milestone review gate. Do not select a blocked task simply because it is interesting.
+Do not skip a milestone review gate except for the explicit owner-approved sequencing change below. Do not select a blocked task simply because it is interesting.
+
+### Update-first exception, approved 2026-10-01
+
+Select `WH-M7-001..005` before the remaining Milestone 6 work. The owner deferred manual acceptance to first build the update channel. `WH-M6-003` is `blocked` by that order and the unresolved dictation report; its prior evidence is preserved, and no acceptance criterion is waived. After the M7 review, select `WH-M6-014` (research), resolve any resulting release-blocking defects, then resume `WH-M6-003 → WH-M6-005 → WH-M6-006`.
+
+Use `blocked` with this named dependency rather than adding a new `paused` status. The research item is last in the development queue; final acceptance and release-readiness reviews necessarily follow it. Early M7 releases are personal testing builds with known limitations, not evidence that the MVP release gate passed.
 
 ## Implementation cycle
 
@@ -63,6 +69,16 @@ For each task:
 - Do not rewrite commits already on `origin/master`.
 - Preserve unrelated user changes.
 - Before push, verify `gh api user --jq .login` returns `yurybv` and the remote is HTTPS under `yurybv/whisper`.
+
+## Requested application releases (after Milestone 7 implementation)
+
+- Completing and pushing a task does not automatically publish an app version. The owner's command to release that task is the publication authorization; do not ask the same question again before each release stage.
+- The agent runs the entire local release workflow. The owner need not operate a terminal, rebuild, copy bundles after bootstrap, select version numbers, or prepare assets.
+- Normal release identity is one completed task, its exact verified commit range, and one next `1.0.PATCH` version. Multiple related commits are allowed. Do not silently combine unrelated completed tasks into one release; use separate releases in order or obtain an explicit batch request.
+- A failed or repeated publication resumes the same prepared version and artifacts. It must not increment the version twice or overwrite an existing published release.
+- The two bootstrap acceptance releases are the sole initial exception to the completed-task rule: `WH-M7-004` must exercise `1.0.0 → 1.0.1` before it can itself be done. Both source checkpoints must be verified on `origin/master`, the task must be in `review`, and the owner's bootstrap-release command must cover both versions. The final task/review documentation commits can accompany the next task's release as explicitly identified metadata-only closure commits.
+- Ask the owner only for an ungranted signing-key setup action, a macOS authentication/consent prompt, or an action the available UI tools cannot perform. Preparation and independent checks continue without waiting unnecessarily. Never collect passwords or key material in chat.
+- Report the published version, task ID, release link, and the in-app update action. Report failed publication honestly and retain the previous working release.
 
 ## Definition of done
 

@@ -113,6 +113,7 @@ final class ModesUITests: XCTestCase {
         XCTAssertTrue(app.descendants(matching: .any)["Launch at Login"].exists)
         XCTAssertTrue(app.descendants(matching: .any)["Sound Effects"].exists)
         XCTAssertTrue(app.buttons["Open Screen Recording Settings"].exists)
+        XCTAssertTrue(app.staticTexts["Version 0.0.0 · Development build"].exists)
     }
 
     private func launchCompletedApp() -> XCUIApplication {

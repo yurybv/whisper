@@ -1,6 +1,6 @@
 # Whisper MVP release acceptance
 
-Overall result: **BLOCKED — macOS authentication and packaged-app foreground acceptance remain pending**
+Overall result: **BLOCKED — owner deferred MVP acceptance until in-app updates and dictation research are complete**
 
 Date: 2026-10-01
 
@@ -9,6 +9,8 @@ Environment: Apple Silicon MacBook Pro; macOS 26.4.1; Xcode 26.6 (17F113); Swift
 Build under test: 2026-10-01 `origin/master` at `46bb479`; stable-local-identity `build/Whisper.app`; bundle identifier `dev.yury.whisper`; arm64.
 
 Evidence policy: generated phrases only; no real API key, private dictation, transcript, custom instruction, Authorization value, or user document is recorded. `PASS` means the exact row has current or named prior evidence. `AUTOMATED PASS / LIVE NOT RUN` records useful coverage but does not satisfy the manual release gate. `NOT RUN` is an explicit release blocker, never an inferred pass.
+
+Scheduling revision, 2026-10-01: the owner prioritized `WH-M7-001..005` and requested that the Option/menu-stop problem become the last research item (`WH-M6-014`). The rows below preserve prior evidence and remain open where indicated. Future acceptance resumes on the versioned app installed at `/Applications/Whisper.app`; successful updater tests do not automatically pass dictation rows.
 
 ## Dictation matrix
 
@@ -28,6 +30,8 @@ Evidence policy: generated phrases only; no real API key, private dictation, tra
 | D-12 | Revoked Accessibility and clipboard fallback | AUTOMATED PASS / LIVE NOT RUN | `TextInsertionServiceTests` cover manual-paste fallback and clipboard preservation; current macOS revocation/recovery is pending. |
 | D-13 | Active meeting rejects push-to-talk with a clear message | AUTOMATED PASS / LIVE NOT RUN | Hotkey routing, coordinator, menu-bar, and Recordings tests pass; confirm with physical push-to-talk during a real capture. |
 | D-14 | Warp insertion after translated dictation | TARGET INSERTION PASS / PHYSICAL PTT NOT RUN | Implementation commit `8d2255d` routes captured bundle `dev.warp.Warp-Stable` through the production paste fallback. On 2026-09-30 a fixed generated marker was inserted into an isolated Warp prompt: the captured bundle matched, the result was `pasted`, the marker was present, and every prior pasteboard representation was restored. The same production service then inserted a separate fixed marker directly into a temporary TextEdit document under bundle `com.apple.TextEdit`, with the marker present and pasteboard unchanged. No marker value, clipboard value, credential, or user content is retained here. The physical Push-to-Talk and real-provider repetition remains in consolidated final task `WH-M6-003`. |
+
+The additional dictation report is tracked as **D-15 — OWNER-REPORTED FAILURE / ROOT CAUSE UNCONFIRMED**: holding Option for a few seconds did not start recording; after **Start Dictation**, the owner could not stop it. The owner clarified Option rather than Control. No live reproduction or root cause was established. Read-only inspection later found no running Whisper process and no growth in the temporary audio file; this does not establish how the session ended or verify the Stop action. Investigation is deferred to `WH-M6-014`; private audio was not opened or transmitted for diagnosis.
 
 ## Meeting matrix
 
@@ -87,6 +91,6 @@ Reason: stable metadata migration, stable-signature permission continuity, and t
 
 Affected tasks: `WH-M6-003`, `WH-M6-005`, and `WH-M6-006`.
 
-Recommended default: continue this foreground acceptance session when the owner can handle macOS authorization dialogs on whichever display receives them. Use only generated text/audio, repair access through the explicit Replace/Save action in Settings if the older Keychain item requires authorization, run the remaining live rows, and record only outcomes and sanitized notes here.
+Recommended default: implement and verify the M7 update channel first, complete the deferred WH-M6-014 investigation and any blocking fixes, then resume the preserved matrix on the installed version. Use only generated text/audio and record sanitized outcomes. Early personal testing releases must disclose the unresolved dictation behavior rather than claim MVP readiness.
 
-Required external action: the owner opens Whisper's main window from its menu bar item for the desktop-control session. Any later Gatekeeper, Keychain, or permission confirmation that requires a credential remains with the owner. No credential needs to be disclosed or recorded.
+Required external action now: none for planning or version-metadata implementation. During later installation/acceptance, the agent handles available UI and commands, and batches only unavoidable physical checks and protected Gatekeeper, Keychain, or permission confirmations for the owner. No credential needs to be disclosed or recorded.

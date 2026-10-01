@@ -166,7 +166,7 @@ struct SettingsView: View {
                         Label("Whisper", systemImage: "waveform")
                             .font(.system(size: 14, weight: .semibold))
                         Spacer()
-                        Text("Version 1.0 · Personal local build")
+                        Text(AppVersion.current.displayText)
                             .font(.system(size: 12))
                             .foregroundStyle(DesignTokens.mutedText)
                     }

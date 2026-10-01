@@ -2,6 +2,8 @@
 
 Task details live in `docs/implementation/tasks/`. This index is the selection surface for autonomous work.
 
+Owner-approved order, revised 2026-10-01: **updates first** (`WH-M7-001..005`), then the final research item `WH-M6-014`, followed by resumed acceptance/runbook/review (`WH-M6-003`, `WH-M6-005`, `WH-M6-006`). Milestone IDs remain stable; unfinished MVP checks are not marked done. Next eligible task: **WH-M7-002**.
+
 ## Status legend
 
 - `done`: verified on `origin/master`
@@ -79,7 +81,7 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 |---|---|---|---|
 | WH-M6-001 | Add deterministic ad-hoc packaging | done | WH-M5-004 |
 | WH-M6-002 | Add full automated verification command | done | WH-M6-001 |
-| WH-M6-003 | Run target-app and failure-state acceptance matrix | in-progress | WH-M6-002, WH-M6-008..013 |
+| WH-M6-003 | Run target-app and failure-state acceptance matrix | blocked | WH-M6-002, WH-M6-008..014, WH-M7-005 |
 | WH-M6-004 | Complete privacy, security, and logging review | done | WH-M6-002 |
 | WH-M6-005 | Write installation and operating runbook | blocked | WH-M6-001..004 |
 | WH-M6-006 | Review MVP release readiness | blocked | WH-M6-001..005 |
@@ -93,16 +95,24 @@ Task details live in `docs/implementation/tasks/`. This index is the selection s
 
 ## Selection rule
 
-Select the lowest-numbered `ready` task in the earliest open milestone. A blocked task becomes ready only when every listed dependency is done and the previous milestone review explicitly authorizes the milestone.
+Recover existing work first, then select the lowest-numbered eligible `ready` task in the owner-approved order above. A blocked task becomes ready only when every listed dependency is done. The explicit update-first exception permits M7 before M6 review; all other milestone review gates remain in force.
 
-## Milestone 7: Local automatic updates (planned, not started)
+## Milestone 7: Local automatic updates (priority, in progress)
 
-This owner-requested post-MVP work is recorded in [m7-updates.md](tasks/m7-updates.md). All tasks remain blocked until `WH-M6-006` is done; recording the plan does not start the milestone.
+This owner-prioritized work is recorded in [m7-updates.md](tasks/m7-updates.md). The 2026-10-01 decision supersedes the former dependency on `WH-M6-006`; completed verification, privacy, and stable-signing work permits `WH-M7-001` to start. Release publication still requires an owner command. The agent performs local builds and publication; the owner updates through Whisper after the one-time bootstrap installation.
 
 | ID | Task | Status | Depends on |
 |---|---|---|---|
-| WH-M7-001 | Embed release versions in signed bundles | blocked | WH-M6-006 |
-| WH-M7-002 | Integrate a signed Sparkle updater | blocked | WH-M7-001 |
+| WH-M7-001 | Embed release versions in signed bundles | done | WH-M6-002, WH-M6-004, WH-M6-013 |
+| WH-M7-002 | Integrate a signed Sparkle updater | ready | WH-M7-001 |
 | WH-M7-003 | Prepare and publish guarded local releases | blocked | WH-M7-002 |
 | WH-M7-004 | Verify first install and automatic patch update | blocked | WH-M7-003 |
 | WH-M7-005 | Review automatic update release readiness | blocked | WH-M7-001..004 |
+
+## Deferred research (last development item)
+
+The owner's Right Option/menu-start report remains unresolved. Research it after the update channel is verified, so any subsequent fix can be delivered through the application. Final MVP acceptance and review follow this investigation and any necessary fix; their results must not be inferred from update tests.
+
+| ID | Task | Status | Depends on |
+|---|---|---|---|
+| WH-M6-014 | Research Right Option and menu-started dictation stop failure | blocked | WH-M7-005 |

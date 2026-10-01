@@ -1,8 +1,8 @@
 # Whisper MVP Roadmap
 
-Status: Milestones 0 through 5 complete; Milestone 6 in progress.
+Status: Milestones 0 through 5 complete; Milestone 6 acceptance deferred; Milestone 7 versioning and updates prioritized, in progress.
 
-Post-MVP Milestone 7 is planned locally for automatic updates but cannot start before the Milestone 6 review passes. See the [update design](../superpowers/specs/2026-09-29-local-automatic-updates-design.md), [implementation plan](../superpowers/plans/2026-09-29-local-automatic-updates.md), and [task records](tasks/m7-updates.md).
+On 2026-10-01 the owner explicitly moved Milestone 7 ahead of the remaining Milestone 6 acceptance. The new order is `WH-M7-001..005 → WH-M6-014` (deferred dictation research) `→ WH-M6-003 → WH-M6-005 → WH-M6-006`, with scoped blocking fixes inserted if research confirms a defect. This preserves the unfinished MVP gate while making later testing possible through in-app updates. See the [update design](../superpowers/specs/2026-09-29-local-automatic-updates-design.md), [implementation plan](../superpowers/plans/2026-09-29-local-automatic-updates.md), and [task records](tasks/m7-updates.md).
 
 ## Principles
 
@@ -11,7 +11,7 @@ Post-MVP Milestone 7 is planned locally for automatic updates but cannot start b
 - Write meeting audio continuously to disk before any network processing.
 - Keep OpenAI behind protocol boundaries and use fakes in automated tests.
 - Protect the default mode, push-to-talk flow, recording recovery, and privacy rules as core invariants.
-- Finish each milestone with a review before starting the next.
+- Finish each milestone with a review; the owner-approved M7-before-M6 exception above changes execution order only.
 
 ## Milestone 0: Governance and readiness
 
@@ -123,7 +123,9 @@ Review: passed on 2026-09-15. `WH-M6-001` is ready.
 
 Goal: produce a consistently signed personal build with clear installation, permission, recovery, and troubleshooting instructions.
 
-Progress: `WH-M6-001`, `WH-M6-002`, and `WH-M6-004` completed on 2026-09-15; `WH-M6-007` completed on 2026-09-16; stable app-owned metadata storage (`WH-M6-009`), protected built-in translation modes (`WH-M6-010`), direct/cycling mode interactions (`WH-M6-011`), and bounded terminal-error HUD lifetime (`WH-M6-012`) completed on 2026-09-29; reliable Warp insertion (`WH-M6-008`) plus stable local signing and live permission continuity (`WH-M6-013`) completed on 2026-09-30. The canonical packaging script produces a clean, deterministic-path, arm64-only Release bundle at `build/Whisper.app`, signed by one persistent local Code Signing identity. After the one-time migration, Microphone, Accessibility, Input Monitoring, and Screen Recording access remained enabled through a reboot and two clean rebuilds with the same certificate-bound designated requirement. Captured Warp targets now bypass the false-positive selected-text write and use the clipboard paste path, while normal editors retain direct Accessibility insertion; generated-marker smoke confirmed both branches and exact clipboard restoration in isolated Warp and TextEdit targets. `scripts/verify.sh` composes environment validation, clean project generation, repository and privacy checks, shell validation, build-for-testing, unit/UI test selection, Release packaging, and strict signature verification into one fail-fast command. The privacy review found and fixed provider-error payload retention plus permissive app-owned directory modes; the key remains in Keychain, private directories are `0700`, paths and deletion are contained, and runtime network traffic is limited to the documented OpenAI REST boundary. The Keychain follow-up separates presence from secret retrieval and suppresses both modern and legacy authentication UI for automatic reads; verified packaged startup now completes against an older inaccessible item without opening SecurityAgent. Foreground acceptance resumed on 2026-09-18 and scoped four release follow-ups, all of which are now implemented and individually verified. On 2026-10-01 the full gate passed again with 322 unit/service and 17 UI tests plus clean packaging and signature verification. `WH-M6-003` is the consolidated final screen-based acceptance task; its physical Push-to-Talk, real-provider, failure-state, and cross-target release matrix remains in progress.
+Current scheduling (2026-10-01): the owner deferred WH-M6-003; its status is now blocked pending M7 update delivery and WH-M6-014 research. The progress paragraph below records the earlier acceptance session, whose evidence remains valid but incomplete. WH-M6-005 and WH-M6-006 remain blocked.
+
+Progress: `WH-M6-001`, `WH-M6-002`, and `WH-M6-004` completed on 2026-09-15; `WH-M6-007` completed on 2026-09-16; stable app-owned metadata storage (`WH-M6-009`), protected built-in translation modes (`WH-M6-010`), direct/cycling mode interactions (`WH-M6-011`), and bounded terminal-error HUD lifetime (`WH-M6-012`) completed on 2026-09-29; reliable Warp insertion (`WH-M6-008`) plus stable local signing and live permission continuity (`WH-M6-013`) completed on 2026-09-30. The canonical packaging script produces a clean, deterministic-path, arm64-only Release bundle at `build/Whisper.app`, signed by one persistent local Code Signing identity. After the one-time migration, Microphone, Accessibility, Input Monitoring, and Screen Recording access remained enabled through a reboot and two clean rebuilds with the same certificate-bound designated requirement. Captured Warp targets now bypass the false-positive selected-text write and use the clipboard paste path, while normal editors retain direct Accessibility insertion; generated-marker smoke confirmed both branches and exact clipboard restoration in isolated Warp and TextEdit targets. `scripts/verify.sh` composes environment validation, clean project generation, repository and privacy checks, shell validation, build-for-testing, unit/UI test selection, Release packaging, and strict signature verification into one fail-fast command. The privacy review found and fixed provider-error payload retention plus permissive app-owned directory modes; the key remains in Keychain, private directories are `0700`, paths and deletion are contained, and runtime network traffic is limited to the documented OpenAI REST boundary. The Keychain follow-up separates presence from secret retrieval and suppresses both modern and legacy authentication UI for automatic reads; verified packaged startup now completes against an older inaccessible item without opening SecurityAgent. Foreground acceptance resumed on 2026-09-18 and scoped four release follow-ups, all of which are now implemented and individually verified. On 2026-10-01 the full gate passed again with 322 unit/service and 17 UI tests plus clean packaging and signature verification. `WH-M6-003` is the consolidated final screen-based acceptance task; its physical Push-to-Talk, real-provider, failure-state, and cross-target release matrix remains incomplete and is now deferred until the update channel and dictation research are complete.
 
 Deliverables:
 
@@ -139,11 +141,28 @@ Deliverables:
 
 Exit gate: the packaged app passes the acceptance matrix and `WH-M6-006` is done.
 
+## Milestone 7: Versioned in-app updates (current priority)
+
+Goal: the owner asks for a release in chat and then installs it through Whisper; the agent performs version selection, tests, local signing, packaging, and GitHub publication.
+
+Entry gate: owner-approved exception on 2026-10-01, backed by completed `WH-M6-002`, `WH-M6-004`, and `WH-M6-013`. `WH-M7-001` completed version metadata and signed-package injection; next task: `WH-M7-002` (`ready`). No updater or release workflow is implemented yet.
+
+Deliverables:
+
+- bundle versions derived from release tags; development packages clearly labeled;
+- Sparkle **Check for Updates…** and background checks with installation deferred during active work;
+- one patch per completed task on explicit request, allowing a task's related commit series;
+- agent-operated local release command, signed ZIP/appcast, resumable draft publication, and generated release notes;
+- one initial installation at `/Applications/Whisper.app`, then a real `1.0.0 → 1.0.1` update preserving signing identity and verifying data/permission continuity;
+- a short owner workflow with no recurring terminal commands or manual copies.
+
+Exit gate: `WH-M7-005` verifies the update channel. It does not certify dictation or the unfinished MVP matrix. Known Right Option/menu-stop behavior is disclosed in early personal testing releases and researched in `WH-M6-014`, the final development/research item before returning to acceptance.
+
 ## Explicit post-MVP work
 
 Do not add these items to the active MVP backlog without an owner request:
 
-- notarization, App Store distribution, or automatic updates;
+- notarization or App Store distribution (automatic updates are separately authorized above);
 - accounts, subscriptions, analytics, or cloud sync;
 - local speech models or multiple providers;
 - individual remote-speaker identification;

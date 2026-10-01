@@ -5,7 +5,7 @@ Implement exactly task `<TASK_ID>`.
 Required procedure:
 
 1. Read `AGENTS.md` and all documents linked by the task.
-2. Verify the task is `ready`, its dependencies are `done`, and no previous milestone review is open.
+2. Verify the task is `ready`, its dependencies are `done`, and milestone gates follow the current owner-approved execution order in `AGENTS.md` and the backlog (including the explicit M7-before-M6 exception).
 3. Run the account/remote guard and inspect the working tree.
 4. List expected files and required checks before editing.
 5. Set the task to `in-progress`.

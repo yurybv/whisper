@@ -7,6 +7,19 @@ fail() {
   exit 1
 }
 
+validate_release_version() {
+  local candidate="$1"
+  local major minor patch component
+
+  [[ "$candidate" =~ ^([0]|[1-9][0-9]*)\.([0]|[1-9][0-9]*)\.([0]|[1-9][0-9]*)$ ]] || return 1
+  IFS='.' read -r major minor patch <<< "$candidate"
+  for component in "$major" "$minor" "$patch"; do
+    if [ "${#component}" -gt 10 ] || { [ "${#component}" -eq 10 ] && [[ "$component" > "2147483647" ]]; }; then
+      return 1
+    fi
+  done
+}
+
 version_at_least() {
   awk -v current="$1" -v minimum="$2" 'BEGIN {
     split(current, actual, ".")
@@ -25,7 +38,16 @@ require_command() {
   command -v "$1" >/dev/null 2>&1 || fail "$1 is required."
 }
 
-[ "$#" -eq 0 ] || fail "usage: scripts/package.sh"
+release_version="0.0.0"
+case "$#" in
+  0) ;;
+  2)
+    [ "$1" = "--release-version" ] || fail "usage: scripts/package.sh [--release-version MAJOR.MINOR.PATCH]"
+    validate_release_version "$2" || fail "Invalid release version. Expected MAJOR.MINOR.PATCH with 32-bit decimal components."
+    release_version="$2"
+    ;;
+  *) fail "usage: scripts/package.sh [--release-version MAJOR.MINOR.PATCH]" ;;
+esac
 
 repository_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 build_root="$repository_root/build"
@@ -84,7 +106,13 @@ xcodebuild \
 [ -d "$product_app" ] || fail "Release build did not produce Whisper.app."
 ditto "$product_app" "$output_app"
 
-bundle_identifier="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$output_app/Contents/Info.plist" 2>/dev/null || true)"
+bundle_plist="$output_app/Contents/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $release_version" "$bundle_plist" \
+  || fail "Could not set packaged short version."
+/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $release_version" "$bundle_plist" \
+  || fail "Could not set packaged build version."
+
+bundle_identifier="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$bundle_plist" 2>/dev/null || true)"
 [ "$bundle_identifier" = "dev.yury.whisper" ] \
   || fail "Unexpected bundle identifier: ${bundle_identifier:-missing}."
 
@@ -113,4 +141,4 @@ esac
 printf '%s\n' "$requirement" | grep -Fi "certificate leaf = H\"$signing_fingerprint\"" >/dev/null \
   || fail "Packaged app has a designated requirement for a different certificate."
 
-printf 'Packaged Whisper.app: %s\n' "$output_app"
+printf 'Packaged Whisper.app version %s: %s\n' "$release_version" "$output_app"

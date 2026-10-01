@@ -34,6 +34,21 @@ expect_rejection() {
 
 [ -x "$package_script" ] || fail "scripts/package.sh must exist and be executable"
 
+version_root="$test_root/version-package"
+mkdir -p "$version_root/scripts" "$version_root/build/Whisper.app"
+cp "$package_script" "$version_root/scripts/package.sh"
+touch "$version_root/project.yml" "$version_root/build/Whisper.app/preserved"
+for invalid_version in 1.0 v1.0.1 01.0.1 1.0.1-beta -1.0.1 1.999999999999999999999.1 '1.0.1;rm'; do
+  if "$version_root/scripts/package.sh" --release-version "$invalid_version" >"$test_root/invalid-version.log" 2>&1; then
+    fail "invalid release version $invalid_version unexpectedly succeeded"
+  fi
+  grep -F "Invalid release version" "$test_root/invalid-version.log" >/dev/null \
+    || fail "invalid release version $invalid_version did not explain the rejection"
+  [ -f "$version_root/build/Whisper.app/preserved" ] \
+    || fail "invalid release version $invalid_version removed the previous package"
+done
+printf 'PASS  invalid release versions preserve previous package\n'
+
 architecture_bin="$test_root/architecture-bin"
 mkdir -p "$architecture_bin"
 write_command "$architecture_bin/uname" "printf 'x86_64\\n'"

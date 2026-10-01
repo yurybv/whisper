@@ -1,78 +1,81 @@
 # Milestone 7: Local automatic updates
 
-Planning status: recorded locally on 2026-09-29; no implementation started. Milestone 7 is gated by `WH-M6-006` and remains blocked until the Milestone 6 review is done. All tasks link to the [design](../../superpowers/specs/2026-09-29-local-automatic-updates-design.md) and [implementation plan](../../superpowers/plans/2026-09-29-local-automatic-updates.md).
+Planning status: revised 2026-10-01 under the owner's explicit update-first decision; version metadata (`WH-M7-001`) is complete and the signed updater integration is next. The former `WH-M6-006` entry gate is replaced by completed verification, privacy, and stable-signing prerequisites. M6 acceptance stays open. All tasks link to the revised [design](../../superpowers/specs/2026-09-29-local-automatic-updates-design.md) and [implementation plan](../../superpowers/plans/2026-09-29-local-automatic-updates.md).
+
+Owner workflow: request a release in chat, then use **Check for Updates…** in Whisper. The agent runs all build, signing, versioning, packaging, and publishing commands. One completed task may contain several commits and maps to one patch release when requested. One initial installation is accepted; protected OS confirmations remain with the owner. This planning revision does not authorize immediate key creation or publication.
 
 ## WH-M7-001
 
 - **Title:** Embed release versions in signed bundles
 - **Type:** build
-- **Status:** blocked
-- **Priority:** P1
-- **Scope:** Add validated version injection before final signing; display the installed bundle version in Settings; distinguish non-release development packages.
-- **Out of scope:** Publishing tags/releases, Sparkle integration, or changing bundle identity/storage.
-- **Acceptance criteria:** The release package's short/build versions match the validated version supplied by the release command; invalid versions stop before changing the existing package; About reads installed metadata; signatures remain valid. Git-tag derivation belongs to `WH-M7-003`.
-- **Required checks:** Failing-then-passing package shell and version/UI tests; `./scripts/verify.sh`; `git diff --check`; inspect packaged plist and signature.
-- **Dependencies:** WH-M6-006.
-- **Expected files:** `Resources/Info.plist`, `scripts/package.sh`, Settings/version source and tests.
-- **Source:** implementation plan Task 1.
-- **Blockers:** Milestone 6 review not done. This planning-only turn must not change its status.
+- **Status:** done
+- **Priority:** P0
+- **Scope:** Add validated version injection before final signing; display installed bundle version in Settings; distinguish development packages.
+- **Out of scope:** Publishing tags/releases, Sparkle integration, installation, or changing bundle identity/storage.
+- **Acceptance criteria:** Release short/build versions match the validated argument; invalid versions leave the previous package intact; About reads installed metadata; development builds are labeled; signatures remain valid. Task/source release mapping belongs to WH-M7-003.
+- **Required checks:** TDD package/version/UI tests from plan Task 1; versioned package/plist/signature inspection; `./scripts/verify.sh`; `git diff --check`.
+- **Dependencies:** WH-M6-002, WH-M6-004, WH-M6-013.
+- **Expected files:** `Resources/Info.plist`, `scripts/package.sh`, `Sources/Core/AppVersion.swift`, Settings/version tests and UI.
+- **Source:** implementation plan Task 1; owner-approved reprioritization on 2026-10-01.
+- **Evidence:** Red-green shell and Swift tests; focused Settings UI test; a signed `1.0.0` package verified matching bundle values, arm64 architecture, and its stable designated requirement. `./scripts/verify.sh --skip-ui-tests` passed because unrelated foreground windows blocked the full UI suite; the changed Settings UI test ran successfully.
+- **Blockers:** None.
 
 ## WH-M7-002
 
 - **Title:** Integrate a signed Sparkle updater
 - **Type:** feature
-- **Status:** blocked
-- **Priority:** P1
-- **Scope:** Pin/embed Sparkle, add feed/public-key metadata, start updater for release builds, expose Check for Updates, and verify embedded-code signing.
-- **Out of scope:** Cloud build automation, custom updater UI, silent updates, and public release publication.
-- **Acceptance criteria:** Release app can check the feed; development app does not start a misconfigured updater; manual check action works; nested framework/helpers and outer app verify with stable identity; private EdDSA key stays local.
-- **Required checks:** Failing-then-passing updater/menu tests and UI test; signed package framework checks; `./scripts/verify.sh`; `git diff --check`.
+- **Status:** ready
+- **Priority:** P0
+- **Scope:** Pin/embed Sparkle, configure the feed/public key, expose Check for Updates in menu and Settings, defer installation/relaunch while capture or processing is active, and verify embedded-code signing.
+- **Out of scope:** Cloud builds, custom updater UI, silent replacement during active work, public publication, and the deferred dictation investigation.
+- **Acceptance criteria:** Release builds start the updater once; development and isolated UI-test launches do not; both manual actions share the adapter; busy-to-idle deferral protects active work; setup reuses the same EdDSA key; framework/helpers and app verify with the stable identity; private key stays in Keychain.
+- **Required checks:** TDD updater/installation-state/menu/UI and key-setup tests from plan Task 2; two signed package comparisons; `./scripts/verify.sh`; `git diff --check`.
 - **Dependencies:** WH-M7-001.
-- **Expected files:** `project.yml`, `Resources/Info.plist`, updater lifecycle/UI files, package signing, focused tests.
+- **Expected files:** `project.yml`, `Resources/Info.plist`, `Sources/Updates/UpdateController.swift`, app lifecycle/state wiring, menu/Settings UI, package signing, `scripts/setup-update-signing.sh`, focused tests.
 - **Source:** implementation plan Task 2.
-- **Blockers:** WH-M7-001; owner authorization for one-time creation of a Sparkle signing secret when implementation reaches that step.
+- **Blockers:** None. Prepare implementation and deterministic tests before the one-time new-key authorization if still missing. Owner handles only any protected Keychain dialog; do not require manual tool execution.
 
 ## WH-M7-003
 
 - **Title:** Prepare and publish guarded local releases
 - **Type:** build
 - **Status:** blocked
-- **Priority:** P1
-- **Scope:** Local version/tag derivation, fail-closed account and repository guard, versioned ZIP and EdDSA appcast generation, draft release upload, and latest publication.
-- **Out of scope:** A GitHub-hosted runner, GitHub Pages, replacing published assets, or automatic remote publication without this Mac.
-- **Acceptance criteria:** Wrong account/repository/state causes no remote writes; `v1.0.0` bootstraps, then exactly one new commit maps to the next patch; ZIP/appcast metadata and signatures agree; only a complete draft becomes latest; prior feed remains usable on failure.
-- **Required checks:** Failing-then-passing mocked release script tests, invalid-input/security cases, local prepare dry-run, full `./scripts/verify.sh`, `git diff --check`.
+- **Priority:** P0
+- **Scope:** Agent-operated prepare/publish phases, task-to-version mapping across related commits, immutable source/artifact manifests, generated notes, signed ZIP/appcast, draft verification, and resumable latest publication.
+- **Out of scope:** Hosted/self-hosted runners, GitHub Pages, replacing published assets, automatic publication on push, and a new task-tracking service.
+- **Acceptance criteria:** One completed task maps to one patch even with multiple commits; unexplained changes and duplicate tasks are rejected; multiple queued tasks can be released separately in order. Guards prevent remote writes on invalid state. Retries resume the same version/assets; identical published requests are idempotent. ZIP/appcast/public manifest agree with exact source and keys; only a verified draft becomes latest. Public URL verification is explicit. Bootstrap exception is limited to WH-M7-004's two verified review checkpoints.
+- **Required checks:** Failing-then-passing release/manifest/feed shell tests including mutation-boundary failures; local-only preparation against synthetic repositories; `./scripts/verify.sh`; `git diff --check`.
 - **Dependencies:** WH-M7-002.
-- **Expected files:** `scripts/release-local.sh`, `Tests/Scripts/ReleaseScriptTests.sh`, release runbook.
-- **Source:** implementation plan Task 3.
-- **Blockers:** WH-M7-002; publication additionally requires `gh` login `yurybv`, correct HTTPS remote/master, verified source commit, and explicit owner authorization.
+- **Expected files:** `scripts/release-local.sh`, `scripts/release-manifest.swift`, `Tests/Scripts/ReleaseScriptTests.sh`, `Tests/Scripts/ReleaseFeedTests.sh`, `docs/operations/releasing.md`.
+- **Source:** implementation plan Task 3 and its file/interface map.
+- **Blockers:** WH-M7-002. Public publication is not required to complete this implementation task. A later owner release command authorizes the whole publication workflow; the agent handles commands and version selection without repeated approvals.
 
 ## WH-M7-004
 
 - **Title:** Verify first install and automatic patch update
 - **Type:** testing
 - **Status:** blocked
-- **Priority:** P1
-- **Scope:** Publish and install the first release, exercise `1.0.0 → 1.0.1` through Sparkle on the built-in display, verify permission/data continuity, and finish operating documentation/review.
-- **Out of scope:** Notarization, other-Mac installation, beta channels, and paid distribution.
-- **Acceptance criteria:** Public Release assets download correctly; installed app updates at the same path without manual rebuild; version changes; TCC grants, Keychain key, modes, history, and recordings remain; tampered/unavailable update leaves old app working; documentation matches observed behavior.
-- **Required checks:** Public asset and signature/digest checks; full `./scripts/verify.sh`; manual built-in-display update/permission/data matrix; `git diff --check`; source/privacy review.
+- **Priority:** P0
+- **Scope:** Agent-prepared bootstrap releases and one installation at /Applications, actual 1.0.0 → 1.0.1 Sparkle update, busy-state and failure checks, permission/data continuity, and a short owner guide.
+- **Out of scope:** Notarization, other-Mac distribution, fixing the deferred Right Option/menu-stop report, and requiring recurring owner build/copy commands.
+- **Acceptance criteria:** Verified public assets install once; the installed app then updates through its own UI to 1.0.1 at the same path. Signing and observed permissions/Keychain/modes/history/recordings survive; failed/tampered updates preserve the prior app; active work defers installation. Owner instructions require only requesting a release, in-app update actions, and genuinely necessary OS consent. Known baseline dictation uncertainty remains recorded separately.
+- **Required checks:** Public archive/feed/manifest digests and signatures; actual built-in-display update/continuity matrix in `docs/testing/update-acceptance.md`; failure fixtures; `./scripts/verify.sh`; `git diff --check`; evidence privacy review.
 - **Dependencies:** WH-M7-003.
-- **Expected files:** release/test/operations docs, roadmap, ADR, task and backlog evidence.
+- **Expected files:** README, release/operations guide, update acceptance/evidence, ADR, roadmap and task records.
 - **Source:** implementation plan Task 4.
-- **Blockers:** WH-M7-003; real publication and manual QA require `yurybv` account and owner participation for macOS consent. Do not mark done from automated evidence alone.
+- **Blockers:** WH-M7-003; missing bootstrap publication command or an unavoidable OS confirmation at execution time. Complete preparation before asking. The two bootstrap releases may use verified checkpoints while this task is in review; do not mark it done before live update evidence exists.
 
 ## WH-M7-005
 
 - **Title:** Review automatic update release readiness
 - **Type:** review
 - **Status:** blocked
-- **Priority:** P1
-- **Scope:** Audit the completed Milestone 7 implementation, release and manual-update evidence, privacy, signing continuity, task statuses, and operational documentation.
-- **Out of scope:** New updater features, extra distribution channels, or silently waiving failed acceptance criteria.
-- **Acceptance criteria:** Tasks `WH-M7-001` through `WH-M7-004` are done with verified commits on `origin/master`; the public `1.0.0 → 1.0.1` update and permission/data continuity have documented live evidence; release safety and recovery are reviewed; backlog and roadmap agree with the evidence.
-- **Required checks:** `./scripts/verify.sh`; `git diff --check`; inspect public release assets and task evidence; review the built-in-display acceptance matrix.
+- **Priority:** P0
+- **Scope:** Audit update implementation, task/version mapping, release integrity/retries, real update continuity, owner effort, privacy, and status consistency.
+- **Out of scope:** New updater features or treating update-channel readiness as completed MVP/dictation acceptance.
+- **Acceptance criteria:** WH-M7-001..004 are done on origin/master; manifests and real 1.0.0 → 1.0.1 evidence agree; all update-specific failures are resolved; owner workflow requires no recurring builds or file copies. The unresolved dictation report remains visible and WH-M6-014 becomes ready; WH-M6-003 remains blocked pending research and any necessary fix.
+- **Required checks:** `./scripts/verify.sh`; `git diff --check`; inspect public release assets/manifests, update evidence, dependencies, and owner instructions.
 - **Dependencies:** WH-M7-001..004.
-- **Expected files:** `docs/implementation/reviews/m7-review.md`, task/backlog/roadmap records, release acceptance documentation.
-- **Source:** implementation plan Task 5 and the repository milestone-review rule.
-- **Blockers:** WH-M7-001..004 must be done; a failed real update or missing manual permission-continuity check blocks completion.
+- **Expected files:** `docs/implementation/reviews/m7-review.md`, task/backlog/roadmap records, update acceptance documentation.
+- **Source:** implementation plan Task 5 and the owner-approved milestone-order exception.
+- **Blockers:** WH-M7-001..004. Update-specific continuity failures or missing manual update evidence prevent completion; the pre-existing dictation issue remains assigned to the final research task.

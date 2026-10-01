@@ -38,7 +38,7 @@
 
 - **Title:** Run target-app and failure-state acceptance matrix
 - **Type:** testing
-- **Status:** blocked
+- **Status:** in-progress
 - **Priority:** P0
 - **Scope:** Execute the manual matrix for target apps, languages, custom mode, permissions, network errors, meeting sources, relaunch recovery, long input, history, and Gatekeeper installation.
 - **Out of scope:** Unsupported platforms and post-MVP features.
@@ -47,9 +47,10 @@
 - **Dependencies:** WH-M6-002 and WH-M6-008 through WH-M6-013.
 - **Expected files:** `docs/testing/release-acceptance.md`, sanitized evidence directories.
 - **Source:** spec testing strategy and distribution sections.
-- **Blockers:** The owner explicitly started foreground acceptance on 2026-10-01 with the external display connected. The current full gate and focused retry both stop before any UI test because macOS waits in Local Authentication while enabling automation. Only the owner can complete the Touch ID or password step when the test is rerun. The running packaged app also has only a menu bar item; the owner must choose **Open Whisper** to expose its main window to desktop control. The remaining physical, real-provider, permission, and recovery rows cannot be marked passed without those foreground checks. Keep evidence generated and sanitized.
+- **Blockers:** The initial macOS automation timeout cleared and the full UI suite passed. The owner authorized foreground acceptance and will handle Touch ID when prompted. Physical, real-provider, permission, and recovery rows still require the packaged app's main window and sanitized live checks.
 - **Acceptance audit (2026-09-15):** Recorded every required dictation, meeting, accessibility, and distribution row against commit `b4f7df0` plus the current acceptance-test hardening diff. Existing production TextEdit and permission/focus evidence is distinguished from current automated coverage; no automated result is represented as a current manual pass. The current package passes the complete verification command, bundle/signature checks, installation to `/Applications`, and the expected ad-hoc Gatekeeper assessment (`spctl` exit 3). Right-click Open launched the quarantined bundle through App Translocation. No API key, private content, or external-display screenshot was collected; the saved Keychain item was not changed.
 - **Acceptance progress (2026-10-01):** The owner authorized the foreground session. The current source passed 322 unit/service tests plus environment, privacy, shell, and build checks. The full gate stopped before its UI tests because macOS timed out while enabling automation; two focused retries reproduced this before any UI test executed, and a process sample located the wait in Local Authentication. A separate clean Release package, strict signature check, bundle/architecture check, and expected unnotarized Gatekeeper assessment passed. A fresh `./scripts/verify.sh --skip-ui-tests` passed all twelve stages for this documentation checkpoint, explicitly without UI execution. The physical and real-provider matrix remains pending; see `docs/testing/release-acceptance.md` and `docs/testing/evidence/WH-M6-003/qa.md`.
+- **Acceptance progress (resumed 2026-10-01):** A later focused UI test passed after the initial automation timeout, and the complete `./scripts/verify.sh` passed all twelve stages with 322 unit/service and 17 UI tests, zero failures or skips, clean Release packaging, and strict signature verification. Gatekeeper still rejects the expected unnotarized local package. The manual matrix remains in progress; current results are in `docs/testing/release-acceptance.md` and the sanitized QA note.
 
 ## WH-M6-004
 

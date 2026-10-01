@@ -7,3 +7,9 @@
 - `./scripts/package.sh` independently built the clean Release app. Strict deep signature verification passed with the `Whisper Local Development` authority, `dev.yury.whisper` identifier, and arm64 executable. Gatekeeper assessment returned its expected rejection for this unnotarized local build.
 - After recording the new blocker, `./scripts/verify.sh --skip-ui-tests` passed all twelve named stages, including 322 unit/service tests, Release packaging, and strict signature verification. The UI-test execution was explicitly skipped; this is a documentation checkpoint, not release acceptance.
 - No provider request, dictated text, recording, permission revocation, credential change, or private screenshot was made in this session. The remaining live matrix rows are recorded in `docs/testing/release-acceptance.md`.
+
+## Resumed foreground verification
+
+- An initial focused UI retry again timed out while enabling automation. A second focused run passed its one selected test, showing that the macOS automation barrier had cleared.
+- The subsequent complete `./scripts/verify.sh` passed all twelve stages on the same Mac and source: 322 of 322 unit/service tests and 17 of 17 UI tests passed, with zero failures or skips in the `.xcresult` summaries. Clean Release packaging and deep strict signature verification passed. The packaged app retained `dev.yury.whisper` and the `Whisper Local Development` signing authority.
+- Physical, real-provider, permission-revocation, and recovery cases remain pending; no private content or credential was added to the evidence.

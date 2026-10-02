@@ -26,5 +26,9 @@
 	<string>Whisper uses the microphone for dictation and meeting transcription.</string>
 	<key>NSScreenCaptureUsageDescription</key>
 	<string>Whisper captures system audio for meetings that you choose to record.</string>
+	<key>SUFeedURL</key>
+	<string>https://github.com/yurybv/whisper/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>yciFa66Z192JyDrx0glJMI9RuDftpYHgkadTq6ZjvEI=</string>
 </dict>
 </plist>

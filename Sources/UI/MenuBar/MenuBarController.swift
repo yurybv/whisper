@@ -15,6 +15,7 @@ final class MenuBarController: NSObject {
         onRetryDictation: @escaping () -> Void,
         onDiscardDictation: @escaping () -> Void,
         onRecentHistory: @escaping () -> Void,
+        onCheckForUpdates: @escaping () -> Void,
         onOpenMainWindow: @escaping () -> Void,
         onQuit: @escaping () -> Void
     ) {
@@ -34,6 +35,7 @@ final class MenuBarController: NSObject {
                 onRetryDictation: onRetryDictation,
                 onDiscardDictation: onDiscardDictation,
                 onRecentHistory: onRecentHistory,
+                onCheckForUpdates: onCheckForUpdates,
                 onOpenMainWindow: onOpenMainWindow,
                 onQuit: onQuit
             )

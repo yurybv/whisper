@@ -4,6 +4,7 @@ struct SettingsView: View {
     @Bindable var model: SettingsModel
     let previewSetup: () -> Void
     let resetSetup: () -> Void
+    let checkForUpdates: () -> Void
     @State private var confirmsKeyRemoval = false
 
     var body: some View {
@@ -169,6 +170,7 @@ struct SettingsView: View {
                         Text(AppVersion.current.displayText)
                             .font(.system(size: 12))
                             .foregroundStyle(DesignTokens.mutedText)
+                        Button("Check for Updates…", action: checkForUpdates)
                     }
                 }
 

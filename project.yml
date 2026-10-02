@@ -9,12 +9,18 @@ settings:
     SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
     MACOSX_DEPLOYMENT_TARGET: "15.0"
+packages:
+  Sparkle:
+    url: https://github.com/sparkle-project/Sparkle.git
+    exactVersion: 2.10.0
 targets:
   Whisper:
     type: application
     platform: macOS
     sources:
       - Sources
+    dependencies:
+      - package: Sparkle
     resources:
       - Resources
     info:
@@ -26,6 +32,8 @@ targets:
         LSUIElement: true
         NSMicrophoneUsageDescription: Whisper uses the microphone for dictation and meeting transcription.
         NSScreenCaptureUsageDescription: Whisper captures system audio for meetings that you choose to record.
+        SUFeedURL: https://github.com/yurybv/whisper/releases/latest/download/appcast.xml
+        SUPublicEDKey: yciFa66Z192JyDrx0glJMI9RuDftpYHgkadTq6ZjvEI=
     entitlements:
       path: Config/Whisper.entitlements
     settings:

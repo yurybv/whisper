@@ -126,6 +126,7 @@ final class AppRuntime {
     private var menuBarController: MenuBarController!
     private var hotkeyRouter: HotkeyActionRouter!
     private var recoveryActionRouter: DictationRecoveryActionRouter!
+    private var updateController: UpdateController!
 
     init() throws {
         let sharedCaptureStartArbiter = CaptureStartArbiter()
@@ -302,6 +303,7 @@ final class AppRuntime {
             onRetryDictation: { [weak self] in self?.recoveryActionRouter.scheduleRetry() },
             onDiscardDictation: { [weak self] in self?.recoveryActionRouter.scheduleDiscard() },
             onRecentHistory: { [weak self] in self?.openMainWindow() },
+            onCheckForUpdates: { [weak self] in self?.updateController.checkForUpdates() },
             onOpenMainWindow: { [weak self] in self?.openMainWindow() },
             onQuit: { NSApp.terminate(nil) }
         )
@@ -338,13 +340,26 @@ final class AppRuntime {
                         self?.startDictationFromHome()
                     },
                     changeMode: { [weak self] in self?.showModeSwitcher() },
-                    recordMeeting: { [weak self] in self?.scheduleMeetingToggle() }
+                    recordMeeting: { [weak self] in self?.scheduleMeetingToggle() },
+                    checkForUpdates: { [weak self] in self?.updateController.checkForUpdates() }
                 )
             )
         }
+        let isReleaseBuild = AppVersion.current.shortVersion != "0.0.0"
+            && AppVersion.current.buildVersion != "0.0.0"
+        let busyState: () -> Bool = { [weak self] in
+            self?.blocksUpdateInstallation ?? true
+        }
+        updateController = UpdateController(
+            isReleaseBuild: isReleaseBuild,
+            isIsolatedLaunch: ProcessInfo.processInfo.arguments.contains("--ui-testing"),
+            driver: SparkleUpdateDriver(isBusy: busyState),
+            isBusy: busyState
+        )
     }
 
     func start() {
+        updateController.start()
         let initialMode = (try? modeRepository.activeMode()) ?? .defaultMode
         menuBarController.render(state: .ready, modeName: initialMode.name)
         resumeMeetingJobs()
@@ -639,6 +654,7 @@ final class AppRuntime {
     }
 
     private func renderMeetingState() {
+        updateController.activityDidChange()
         recordingHUDController.render(model: recordingsModel, screen: recordingScreen)
         let meetingActive: Bool
         if case .recording = recordingsModel.state {
@@ -672,6 +688,7 @@ final class AppRuntime {
 
     private func render(_ state: DictationState) {
         lastState = state
+        updateController.activityDidChange()
         if case .completed = state {
             homeModel.refresh()
         }
@@ -685,6 +702,22 @@ final class AppRuntime {
             message: presentation.message,
             dictationRecovery: presentation.recovery
         )
+    }
+
+    private var blocksUpdateInstallation: Bool {
+        switch lastState {
+        case .recording, .transcribing, .transforming, .inserting:
+            return true
+        case .idle, .completed, .failed:
+            break
+        }
+
+        switch recordingsModel.state {
+        case .recording, .finalizing, .captured, .transcribing, .processing:
+            return true
+        case .idle, .ready, .failed:
+            return false
+        }
     }
 
 }

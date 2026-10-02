@@ -145,7 +145,7 @@ Exit gate: the packaged app passes the acceptance matrix and `WH-M6-006` is done
 
 Goal: the owner asks for a release in chat and then installs it through Whisper; the agent performs version selection, tests, local signing, packaging, and GitHub publication.
 
-Entry gate: owner-approved exception on 2026-10-01, backed by completed `WH-M6-002`, `WH-M6-004`, and `WH-M6-013`. `WH-M7-001` completed version metadata and signed-package injection; next task: `WH-M7-002` (`ready`). No updater or release workflow is implemented yet.
+Entry gate: owner-approved exception on 2026-10-01, backed by completed `WH-M6-002`, `WH-M6-004`, and `WH-M6-013`. `WH-M7-001` completed version metadata and signed-package injection. `WH-M7-002` completed the pinned Sparkle client, busy-work installation gate, Keychain-backed EdDSA setup, and explicit nested-code signing. Next task: `WH-M7-003` (`ready`); guarded release publication and live bootstrap verification remain pending.
 
 Deliverables:
 

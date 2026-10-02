@@ -11,6 +11,7 @@ struct AppRootView: View {
     let startDictation: () -> Void
     let changeMode: () -> Void
     let recordMeeting: () -> Void
+    let checkForUpdates: () -> Void
     @State private var destination: SidebarDestination = .home
 
     init(
@@ -24,7 +25,8 @@ struct AppRootView: View {
         relaunch: @escaping () -> Void,
         startDictation: @escaping () -> Void,
         changeMode: @escaping () -> Void,
-        recordMeeting: @escaping () -> Void
+        recordMeeting: @escaping () -> Void,
+        checkForUpdates: @escaping () -> Void
     ) {
         self.onboarding = onboarding
         self.home = home
@@ -36,6 +38,7 @@ struct AppRootView: View {
         self.startDictation = startDictation
         self.changeMode = changeMode
         self.recordMeeting = recordMeeting
+        self.checkForUpdates = checkForUpdates
         _destination = State(initialValue: initialDestination)
     }
 
@@ -135,7 +138,8 @@ struct AppRootView: View {
             SettingsView(
                 model: settings,
                 previewSetup: { onboarding.presentSetup(reset: false) },
-                resetSetup: { onboarding.presentSetup(reset: true) }
+                resetSetup: { onboarding.presentSetup(reset: true) },
+                checkForUpdates: checkForUpdates
             )
         }
     }

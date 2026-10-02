@@ -34,6 +34,21 @@ expect_rejection() {
 
 [ -x "$package_script" ] || fail "scripts/package.sh must exist and be executable"
 
+for nested_component in \
+  '$sparkle_version/Updater.app' \
+  '$sparkle_version/XPCServices/Downloader.xpc' \
+  '$sparkle_version/XPCServices/Installer.xpc' \
+  '$sparkle_version/Autoupdate'; do
+  grep -F "$nested_component" "$package_script" >/dev/null \
+    || fail "package script does not explicitly sign $nested_component"
+done
+grep -F -- '--preserve-metadata=identifier,entitlements,flags,runtime' "$package_script" >/dev/null \
+  || fail "package script does not preserve Sparkle signing metadata"
+if grep -F 'codesign --force --deep --sign' "$package_script" >/dev/null; then
+  fail "package script still relies on deep signing"
+fi
+printf 'PASS  explicit Sparkle signing order\n'
+
 version_root="$test_root/version-package"
 mkdir -p "$version_root/scripts" "$version_root/build/Whisper.app"
 cp "$package_script" "$version_root/scripts/package.sh"

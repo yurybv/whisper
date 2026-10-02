@@ -2,7 +2,7 @@
 
 Personal macOS menu-bar dictation MVP. Requires Apple Silicon, macOS 15+, Xcode and XcodeGen. The supported development Mac runs macOS 26.4.1.
 
-Versioning and in-app updates are the current planned priority; they are not implemented yet. The [revised plan](docs/superpowers/plans/2026-09-29-local-automatic-updates.md) targets one initial installation at `/Applications/Whisper.app`, then **Check for Updates…** inside Whisper. The owner requests a release in chat; the agent builds, tests, signs, and publishes the next patch version for the completed task. The commands below remain the current development workflow, not future recurring owner steps. Manual MVP acceptance and the reported Right Option/menu-stop issue remain open in the [backlog](docs/implementation/task-backlog.md).
+Version metadata and the signed Sparkle updater client are implemented; guarded release automation and the live bootstrap update remain in progress. The [revised plan](docs/superpowers/plans/2026-09-29-local-automatic-updates.md) targets one initial installation at `/Applications/Whisper.app`, then **Check for Updates…** inside Whisper. The owner requests a release in chat; the agent builds, tests, signs, and publishes the next patch version for the completed task. The commands below remain the current development workflow, not future recurring owner steps. Manual MVP acceptance and the reported Right Option/menu-stop issue remain open in the [backlog](docs/implementation/task-backlog.md).
 
 ```bash
 ./scripts/bootstrap.sh

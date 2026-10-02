@@ -1,8 +1,8 @@
 # Milestone 7: Local automatic updates
 
-Planning status: revised 2026-10-01 under the owner's explicit update-first decision; version metadata (`WH-M7-001`) is complete and the signed updater integration is next. The former `WH-M6-006` entry gate is replaced by completed verification, privacy, and stable-signing prerequisites. M6 acceptance stays open. All tasks link to the revised [design](../../superpowers/specs/2026-09-29-local-automatic-updates-design.md) and [implementation plan](../../superpowers/plans/2026-09-29-local-automatic-updates.md).
+Planning status: revised 2026-10-01 under the owner's explicit update-first decision; version metadata (`WH-M7-001`) and signed updater integration (`WH-M7-002`) are complete, and guarded local release automation (`WH-M7-003`) is next. The former `WH-M6-006` entry gate is replaced by completed verification, privacy, and stable-signing prerequisites. M6 acceptance stays open. All tasks link to the revised [design](../../superpowers/specs/2026-09-29-local-automatic-updates-design.md) and [implementation plan](../../superpowers/plans/2026-09-29-local-automatic-updates.md).
 
-Owner workflow: request a release in chat, then use **Check for Updates…** in Whisper. The agent runs all build, signing, versioning, packaging, and publishing commands. One completed task may contain several commits and maps to one patch release when requested. One initial installation is accepted; protected OS confirmations remain with the owner. This planning revision does not authorize immediate key creation or publication.
+Owner workflow: request a release in chat, then use **Check for Updates…** in Whisper. The agent runs all build, signing, versioning, packaging, and publishing commands. One completed task may contain several commits and maps to one patch release when requested. One initial installation is accepted; protected OS confirmations remain with the owner. The owner authorized the one-time local updater key creation on 2026-10-02; source delivery still does not authorize release publication.
 
 ## WH-M7-001
 
@@ -24,7 +24,7 @@ Owner workflow: request a release in chat, then use **Check for Updates…** in 
 
 - **Title:** Integrate a signed Sparkle updater
 - **Type:** feature
-- **Status:** ready
+- **Status:** done
 - **Priority:** P0
 - **Scope:** Pin/embed Sparkle, configure the feed/public key, expose Check for Updates in menu and Settings, defer installation/relaunch while capture or processing is active, and verify embedded-code signing.
 - **Out of scope:** Cloud builds, custom updater UI, silent replacement during active work, public publication, and the deferred dictation investigation.
@@ -33,13 +33,14 @@ Owner workflow: request a release in chat, then use **Check for Updates…** in 
 - **Dependencies:** WH-M7-001.
 - **Expected files:** `project.yml`, `Resources/Info.plist`, `Sources/Updates/UpdateController.swift`, app lifecycle/state wiring, menu/Settings UI, package signing, `scripts/setup-update-signing.sh`, focused tests.
 - **Source:** implementation plan Task 2.
-- **Blockers:** None. Prepare implementation and deterministic tests before the one-time new-key authorization if still missing. Owner handles only any protected Keychain dialog; do not require manual tool execution.
+- **Evidence:** Sparkle 2.10.0 is pinned exactly; release-only lifecycle, shared manual actions, unavailable-feed retry, and busy-to-idle installation handling passed focused Swift/UI tests. Matching-key reuse, conflict refusal, and explicit setup passed shell fixtures without secret output. Two fresh signed `1.0.0` packages produced identical authorities and certificate-bound designated requirements for the app, framework, Updater, Autoupdate, and both XPC services. The canonical gate passed with 330 unit tests, 17 UI tests, shell/privacy checks, packaging, and strict signature verification; `git diff --check` passed.
+- **Blockers:** None.
 
 ## WH-M7-003
 
 - **Title:** Prepare and publish guarded local releases
 - **Type:** build
-- **Status:** blocked
+- **Status:** ready
 - **Priority:** P0
 - **Scope:** Agent-operated prepare/publish phases, task-to-version mapping across related commits, immutable source/artifact manifests, generated notes, signed ZIP/appcast, draft verification, and resumable latest publication.
 - **Out of scope:** Hosted/self-hosted runners, GitHub Pages, replacing published assets, automatic publication on push, and a new task-tracking service.

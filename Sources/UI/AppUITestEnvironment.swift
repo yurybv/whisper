@@ -142,7 +142,8 @@ final class AppUITestEnvironment {
                     relaunch: relaunch,
                     startDictation: {},
                     changeMode: {},
-                    recordMeeting: {}
+                    recordMeeting: {},
+                    checkForUpdates: {}
                 )
             )
         }

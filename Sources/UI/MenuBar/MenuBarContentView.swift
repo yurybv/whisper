@@ -84,6 +84,7 @@ struct MenuBarContentView: View {
     let onRetryDictation: () -> Void
     let onDiscardDictation: () -> Void
     let onRecentHistory: () -> Void
+    let onCheckForUpdates: () -> Void
     let onOpenMainWindow: () -> Void
     let onQuit: () -> Void
 
@@ -137,6 +138,7 @@ struct MenuBarContentView: View {
             Divider().overlay(DesignTokens.border)
 
             menuButton("Recent History", systemImage: "clock.arrow.circlepath", action: onRecentHistory)
+            menuButton("Check for Updates…", systemImage: "arrow.triangle.2.circlepath", action: onCheckForUpdates)
             menuButton("Open Whisper", systemImage: "macwindow", action: onOpenMainWindow)
             menuButton("Quit Whisper", systemImage: "power", action: onQuit)
         }

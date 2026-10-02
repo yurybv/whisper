@@ -75,6 +75,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 onRetryDictation: {},
                 onDiscardDictation: {},
                 onRecentHistory: {},
+                onCheckForUpdates: {},
                 onOpenMainWindow: {},
                 onQuit: { NSApp.terminate(nil) }
             )

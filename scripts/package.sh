@@ -38,6 +38,37 @@ require_command() {
   command -v "$1" >/dev/null 2>&1 || fail "$1 is required."
 }
 
+sign_code_object() {
+  local code_path="$1"
+
+  [ -e "$code_path" ] || fail "Required code object is missing: $code_path"
+  codesign \
+    --force \
+    --sign "$signing_fingerprint" \
+    --keychain "$login_keychain" \
+    --timestamp=none \
+    --preserve-metadata=identifier,entitlements,flags,runtime \
+    "$code_path"
+}
+
+verify_stable_signature() {
+  local code_path="$1"
+  local signature_details requirement
+
+  codesign --verify --strict --verbose=2 "$code_path"
+  signature_details="$(codesign --display --verbose=4 "$code_path" 2>&1)" \
+    || fail "Cannot inspect signature: $code_path"
+  case "$signature_details" in
+    *'Signature=adhoc'*) fail "Code object still has an ad-hoc signature: $code_path" ;;
+  esac
+  printf '%s\n' "$signature_details" | grep -Fx "Authority=$whisper_signing_name" >/dev/null \
+    || fail "Code object was not signed by $whisper_signing_name: $code_path"
+  requirement="$(codesign --display --requirements - "$code_path" 2>&1)" \
+    || fail "Code object has no designated requirement: $code_path"
+  printf '%s\n' "$requirement" | grep -Fi "certificate leaf = H\"$signing_fingerprint\"" >/dev/null \
+    || fail "Code object has a designated requirement for a different certificate: $code_path"
+}
+
 release_version="0.0.0"
 case "$#" in
   0) ;;
@@ -84,6 +115,9 @@ source "$repository_root/scripts/local-signing-identity.sh"
 login_keychain="$(whisper_login_keychain)" \
   || fail "The login Keychain is unavailable."
 signing_fingerprint="$(whisper_resolve_signing_identity "$login_keychain")" || exit 1
+[ -x "$repository_root/scripts/setup-update-signing.sh" ] \
+  || fail "Update signing helper is missing."
+"$repository_root/scripts/setup-update-signing.sh" --check
 
 printf 'Generating project with XcodeGen...\n'
 cd "$repository_root"
@@ -115,15 +149,36 @@ bundle_plist="$output_app/Contents/Info.plist"
 bundle_identifier="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$bundle_plist" 2>/dev/null || true)"
 [ "$bundle_identifier" = "dev.yury.whisper" ] \
   || fail "Unexpected bundle identifier: ${bundle_identifier:-missing}."
+feed_url="$(/usr/libexec/PlistBuddy -c 'Print :SUFeedURL' "$bundle_plist" 2>/dev/null || true)"
+[ "$feed_url" = "https://github.com/yurybv/whisper/releases/latest/download/appcast.xml" ] \
+  || fail "Packaged update feed URL is missing or unexpected."
+public_update_key="$(/usr/libexec/PlistBuddy -c 'Print :SUPublicEDKey' "$bundle_plist" 2>/dev/null || true)"
+[ -n "$public_update_key" ] || fail "Packaged Sparkle public key is missing."
 
 executable="$output_app/Contents/MacOS/Whisper"
 [ -x "$executable" ] || fail "Whisper executable is missing."
 [ "$(lipo -archs "$executable")" = "arm64" ] \
   || fail "Packaged executable is not arm64-only."
 
-printf 'Applying stable local signature...\n'
-codesign --force --deep --sign "$signing_fingerprint" --keychain "$login_keychain" --timestamp=none "$output_app"
+printf 'Applying stable local signatures from inner code to outer app...\n'
+sparkle_framework="$output_app/Contents/Frameworks/Sparkle.framework"
+sparkle_version="$sparkle_framework/Versions/Current"
+sparkle_code_objects=(
+  "$sparkle_version/XPCServices/Downloader.xpc"
+  "$sparkle_version/XPCServices/Installer.xpc"
+  "$sparkle_version/Updater.app"
+  "$sparkle_version/Autoupdate"
+  "$sparkle_framework"
+)
+for code_object in "${sparkle_code_objects[@]}"; do
+  sign_code_object "$code_object"
+done
+codesign --force --sign "$signing_fingerprint" --keychain "$login_keychain" --timestamp=none "$output_app"
 codesign --verify --deep --strict --verbose=2 "$output_app"
+
+for code_object in "${sparkle_code_objects[@]}"; do
+  verify_stable_signature "$code_object"
+done
 
 signature_details="$(codesign --display --verbose=4 "$output_app" 2>&1)" \
   || fail "Cannot inspect the packaged signature."

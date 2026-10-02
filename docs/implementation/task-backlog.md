@@ -2,7 +2,7 @@
 
 Task details live in `docs/implementation/tasks/`. This index is the selection surface for autonomous work.
 
-Owner-approved order, revised 2026-10-01: **updates first** (`WH-M7-001..005`), then the final research item `WH-M6-014`, followed by resumed acceptance/runbook/review (`WH-M6-003`, `WH-M6-005`, `WH-M6-006`). Milestone IDs remain stable; unfinished MVP checks are not marked done. Next eligible task: **WH-M7-002**.
+Owner-approved order, revised 2026-10-01: **updates first** (`WH-M7-001..005`), then the final research item `WH-M6-014`, followed by resumed acceptance/runbook/review (`WH-M6-003`, `WH-M6-005`, `WH-M6-006`). Milestone IDs remain stable; unfinished MVP checks are not marked done. Next eligible task: **WH-M7-003**.
 
 ## Status legend
 
@@ -104,8 +104,8 @@ This owner-prioritized work is recorded in [m7-updates.md](tasks/m7-updates.md).
 | ID | Task | Status | Depends on |
 |---|---|---|---|
 | WH-M7-001 | Embed release versions in signed bundles | done | WH-M6-002, WH-M6-004, WH-M6-013 |
-| WH-M7-002 | Integrate a signed Sparkle updater | ready | WH-M7-001 |
-| WH-M7-003 | Prepare and publish guarded local releases | blocked | WH-M7-002 |
+| WH-M7-002 | Integrate a signed Sparkle updater | done | WH-M7-001 |
+| WH-M7-003 | Prepare and publish guarded local releases | ready | WH-M7-002 |
 | WH-M7-004 | Verify first install and automatic patch update | blocked | WH-M7-003 |
 | WH-M7-005 | Review automatic update release readiness | blocked | WH-M7-001..004 |
 

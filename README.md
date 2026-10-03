@@ -2,7 +2,18 @@
 
 Personal macOS menu-bar dictation MVP. Requires Apple Silicon, macOS 15+, Xcode and XcodeGen. The supported development Mac runs macOS 26.4.1.
 
-Version metadata and the signed Sparkle updater client are implemented; guarded release automation and the live bootstrap update remain in progress. The [revised plan](docs/superpowers/plans/2026-09-29-local-automatic-updates.md) targets one initial installation at `/Applications/Whisper.app`, then **Check for Updates…** inside Whisper. The owner requests a release in chat; the agent builds, tests, signs, and publishes the next patch version for the completed task. The commands below remain the current development workflow, not future recurring owner steps. Manual MVP acceptance and the reported Right Option/menu-stop issue remain open in the [backlog](docs/implementation/task-backlog.md).
+Version metadata, the signed Sparkle updater client, and guarded local release automation are implemented; the live bootstrap update is being prepared. The [revised plan](docs/superpowers/plans/2026-09-29-local-automatic-updates.md) targets one initial installation at `/Applications/Whisper.app`, then **Check for Updates…** inside Whisper. The owner requests a release in chat; the agent builds, tests, signs, publishes, and verifies the next patch version for the completed task. The commands below remain the current development workflow, not recurring owner steps. Manual MVP acceptance and the reported Right Option/menu-stop issue remain open in the [backlog](docs/implementation/task-backlog.md).
+
+## Updating the installed app
+
+After the bootstrap is verified, the normal owner workflow has no build or copy commands:
+
+1. Ask the agent to release the completed task.
+2. In Whisper, choose **Check for Updates…** from the menu bar or Settings.
+3. Accept Sparkle's install and relaunch prompt when no dictation, recording, finalization, or processing work is active.
+4. Confirm the installed version in Settings.
+
+The first bootstrap is a one-time agent-managed installation at `/Applications/Whisper.app`. macOS may require a local Gatekeeper, Keychain, or permission confirmation; enter authentication only into the macOS prompt and never send it to the agent. Keep the app at that path and keep both local signing keys in Keychain so future updates preserve identity. If an update fails, leave the working app installed and follow the [update troubleshooting guide](docs/operations/troubleshooting.md).
 
 ```bash
 ./scripts/bootstrap.sh
@@ -34,4 +45,4 @@ The OpenAI key remains in Keychain and is added to requests only at execution ti
 
 Automated onboarding, main-window, mode CRUD, and mode-switcher UI tests use DEBUG-only `--ui-testing` fixtures, without Keychain, user databases, permission prompts or OpenAI requests. Unit tests use protocol fakes. The scheme includes both unit and UI targets.
 
-Task status and verification evidence: [local backlog](docs/implementation/task-backlog.md), [onboarding QA](docs/testing/evidence/WH-M3-001/qa.md), [main UI QA](docs/testing/evidence/WH-M3-002/qa.md), [accessibility QA](docs/testing/evidence/WH-M3-003/qa.md), [Recordings QA](docs/testing/evidence/WH-M4-005/qa.md), [History QA](docs/testing/evidence/WH-M5-001/qa.md), [History actions QA](docs/testing/evidence/WH-M5-002/qa.md), [History recovery QA](docs/testing/evidence/WH-M5-003/qa.md), [Packaging QA](docs/testing/evidence/WH-M6-001/qa.md), [verification-command QA](docs/testing/evidence/WH-M6-002/qa.md), [privacy/security review](docs/implementation/reviews/privacy-security-review.md), [privacy/security QA](docs/testing/evidence/WH-M6-004/qa.md), [Milestone 4 review](docs/implementation/reviews/m4-review.md), [Milestone 5 review](docs/implementation/reviews/m5-review.md), [test strategy](docs/testing/test-strategy.md).
+Task status and verification evidence: [local backlog](docs/implementation/task-backlog.md), [update operations](docs/operations/releasing.md), [update acceptance](docs/testing/update-acceptance.md), [bootstrap QA](docs/testing/evidence/WH-M7-004/qa.md), [onboarding QA](docs/testing/evidence/WH-M3-001/qa.md), [main UI QA](docs/testing/evidence/WH-M3-002/qa.md), [accessibility QA](docs/testing/evidence/WH-M3-003/qa.md), [Recordings QA](docs/testing/evidence/WH-M4-005/qa.md), [History QA](docs/testing/evidence/WH-M5-001/qa.md), [History actions QA](docs/testing/evidence/WH-M5-002/qa.md), [History recovery QA](docs/testing/evidence/WH-M5-003/qa.md), [Packaging QA](docs/testing/evidence/WH-M6-001/qa.md), [verification-command QA](docs/testing/evidence/WH-M6-002/qa.md), [privacy/security review](docs/implementation/reviews/privacy-security-review.md), [privacy/security QA](docs/testing/evidence/WH-M6-004/qa.md), [Milestone 4 review](docs/implementation/reviews/m4-review.md), [Milestone 5 review](docs/implementation/reviews/m5-review.md), [test strategy](docs/testing/test-strategy.md).

@@ -1,6 +1,6 @@
 # Milestone 7: Local automatic updates
 
-Planning status: revised 2026-10-01 under the owner's explicit update-first decision; version metadata (`WH-M7-001`), signed updater integration (`WH-M7-002`), and guarded local release automation (`WH-M7-003`) are complete. Live bootstrap verification (`WH-M7-004`) is ready. The former `WH-M6-006` entry gate is replaced by completed verification, privacy, and stable-signing prerequisites. M6 acceptance stays open. All tasks link to the revised [design](../../superpowers/specs/2026-09-29-local-automatic-updates-design.md) and [implementation plan](../../superpowers/plans/2026-09-29-local-automatic-updates.md).
+Planning status: revised 2026-10-01 under the owner's explicit update-first decision; version metadata (`WH-M7-001`), signed updater integration (`WH-M7-002`), and guarded local release automation (`WH-M7-003`) are complete. Live bootstrap verification (`WH-M7-004`) is in review with its acceptance/runbook checkpoint verified. The former `WH-M6-006` entry gate is replaced by completed verification, privacy, and stable-signing prerequisites. M6 acceptance stays open. All tasks link to the revised [design](../../superpowers/specs/2026-09-29-local-automatic-updates-design.md) and [implementation plan](../../superpowers/plans/2026-09-29-local-automatic-updates.md).
 
 Owner workflow: request a release in chat, then use **Check for Updates…** in Whisper. The agent runs all build, signing, versioning, packaging, and publishing commands. One completed task may contain several commits and maps to one patch release when requested. One initial installation is accepted; protected OS confirmations remain with the owner. The owner authorized the one-time local updater key creation on 2026-10-02; source delivery still does not authorize release publication.
 
@@ -56,7 +56,7 @@ Owner workflow: request a release in chat, then use **Check for Updates…** in 
 
 - **Title:** Verify first install and automatic patch update
 - **Type:** testing
-- **Status:** ready
+- **Status:** review
 - **Priority:** P0
 - **Scope:** Agent-prepared bootstrap releases and one installation at /Applications, actual 1.0.0 → 1.0.1 Sparkle update, busy-state and failure checks, permission/data continuity, and a short owner guide.
 - **Out of scope:** Notarization, other-Mac distribution, fixing the deferred Right Option/menu-stop report, and requiring recurring owner build/copy commands.
@@ -65,6 +65,7 @@ Owner workflow: request a release in chat, then use **Check for Updates…** in 
 - **Dependencies:** WH-M7-003.
 - **Expected files:** README, release/operations guide, update acceptance/evidence, ADR, roadmap and task records.
 - **Source:** implementation plan Task 4.
+- **Evidence:** Owner and operator flows, recovery rules, a privacy-safe installed-update matrix, an evidence template, and the local Sparkle distribution ADR are prepared. Link/diff/privacy checks and both release shell suites pass. The canonical gate passes 330 unit/service tests, 17 UI tests, Release packaging, and strict nested-signature verification. No public or installed-app mutation occurred.
 - **Blockers:** Missing explicit bootstrap publication command or an unavoidable OS confirmation at execution time. Complete preparation before asking. The two bootstrap releases may use verified checkpoints while this task is in review; do not mark it done before live update evidence exists.
 
 ## WH-M7-005

@@ -61,3 +61,16 @@ The only incomplete-task exception is `WH-M7-004` while it is in `review`, with 
 ```
 
 `initial` is restricted to `1.0.0` with no existing release. `update` is restricted to `1.0.1` immediately after a verified `WH-M7-004` initial manifest. The owner command for the bootstrap pair authorizes both publications and the one-time `/Applications/Whisper.app` installation workflow; it does not authorize unrelated releases.
+
+Before requesting that command, commit and push the Task 4 checklist/evidence checkpoint, move `WH-M7-004` to `review`, and prepare the `initial` candidate locally. Report its exact task, source SHA, version, manifest path, artifact checks, and known limitations. Do not create a tag, draft, release, or installed-app replacement during this preparation.
+
+After the bootstrap pair is authorized:
+
+1. Publish the exact sealed `initial` manifest and verify the public latest appcast, tagged ZIP, and public manifest.
+2. Download the public assets again, compare them with the prepared artifacts, extract the ZIP, and verify bundle version, identifier, architecture, nested signatures, certificate, and designated requirement.
+3. Confirm Whisper has no active dictation, recording, finalization, or processing work. Preserve any existing `/Applications/Whisper.app` as a recoverable same-volume backup, then install the verified public `1.0.0` bundle at that exact path and launch it. Never force-quit active work.
+4. Record the sanitized pre-update continuity state. Complete the prepared `1.0.0` checks, then commit and push only Task 4 acceptance evidence or a verified update-specific correction for the second checkpoint.
+5. Prepare and publish the exact `update` manifest under the same authorization. Starting from installed `1.0.0`, use **Check for Updates…** and Sparkle's standard install/relaunch flow; do not manually replace the app with `1.0.1`.
+6. Verify `1.0.1` remains at `/Applications/Whisper.app`, compare continuity, exercise the isolated failure fixtures, and record only sanitized results in `docs/testing/update-acceptance.md` and `docs/testing/evidence/WH-M7-004/qa.md`.
+
+The acceptance matrix is the authority for pass/pending status. An automated result never substitutes for a live installed-app row. See [troubleshooting.md](troubleshooting.md) for recovery rules that preserve the last working app and immutable release assets.

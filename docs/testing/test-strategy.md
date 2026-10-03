@@ -72,6 +72,10 @@ Distribution:
 - API key survives relaunch in Keychain and never appears in logs.
 - after a one-time migration from the old ad-hoc identity, Microphone, Accessibility, Input Monitoring, and Screen Recording grants survive two clean rebuilds of the same `build/Whisper.app`; the signing certificate, designated requirement, and bundle identifier stay stable.
 
+Automatic updates use the separate [update acceptance matrix](update-acceptance.md). The live gate starts from the verified public `1.0.0` ZIP installed at `/Applications/Whisper.app` and must reach public `1.0.1` through Sparkle's own UI, not a manual replacement. It records public artifact hashes/signatures, installed path/version, certificate and designated-requirement continuity, the four macOS permission states, Keychain availability without reading the key, and synthetic modes/history/recordings identifiers without content.
+
+Tampered ZIP, wrong EdDSA key/signature, malformed feed, bad URL, downgrade, and offline cases run only against an isolated fixture feed and disposable installed test copy. They must preserve the previous app and app-owned data. Busy-state coverage combines deterministic updater-controller tests with a live generated fixture that proves installation stays deferred during dictation/capture/finalization/processing and resumes when idle. Never mutate the public latest feed to test failure handling.
+
 ## Evidence
 
 Each completed task records commands run and manual checks in its final commit summary or milestone review. UI-changing tasks keep screenshots under `docs/testing/evidence/<task-id>/` only when they contain no secrets or private transcript data.

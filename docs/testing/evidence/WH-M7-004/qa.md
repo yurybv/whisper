@@ -15,6 +15,12 @@
 - No OpenAI key, Keychain value, signing private key, Authorization header, user dictation, transcript, recording content, custom instruction, clipboard content, or raw test bundle is committed or published.
 - Live evidence must continue using state-only observations and generated fixtures. Public assets are limited to the signed app ZIP, appcast, and sanitized release manifest.
 
-## Live bootstrap evidence
+## Live bootstrap evidence — 2026-11-08
 
-Pending explicit authorization for the bootstrap pair. Record exact source SHAs, versions, public release links, artifact digests/signatures, installed-path/version observations, continuity states, isolated failure results, and any OS-controlled confirmation after execution. Do not replace pending rows with passes unless directly observed.
+- Authorization: the owner explicitly requested that the bootstrap pair be published, installed, and tested.
+- Initial source: `WH-M7-004`, `40e75ed6b9b9cba8d63f17a5f9983bbd1a58e280`, bootstrap phase `initial`, version `1.0.0`.
+- Initial artifacts: the sealed ZIP SHA-256 is `12b028427def5f56f81635934aed40d4104ea7b9a49ee9a7bcb92d72ab9e7caa`; the signing certificate fingerprint is `3918f34830aa1c4307777059bc515ccb72620601`; the Sparkle public-key fingerprint is `2d409331d673008bbfeb5d3036b36b624c79534b94f046caa2138c6d979f885c`.
+- Publication: [v1.0.0](https://github.com/yurybv/whisper/releases/tag/v1.0.0) is public with ZIP, appcast, and sanitized manifest assets. Fresh public downloads matched the sealed local artifacts byte-for-byte, and the extracted arm64 bundle passed strict nested signature and designated-requirement verification.
+- Installation: the verified public `1.0.0` bundle is installed at `/Applications/Whisper.app`; the prior bundle is retained as `/Applications/Whisper.pre-bootstrap-20261108-224141.app`. Installed metadata reports `dev.yury.whisper` version `1.0.0`, the strict signature passes, and the executable launched.
+- Pre-update continuity: Microphone, Accessibility, Input Monitoring, and Screen Recording are granted for `dev.yury.whisper`; the named OpenAI Keychain item is present without reading its value; three mode identifiers are present. History contains zero dictation and zero meeting rows. Eight owned recording directories remain, but no audio was opened and no matching meeting row is present, so generated history/recording continuity remains pending.
+- Pending before the second checkpoint closes: owner confirmation that Settings shows `1.0.0` and exposes **Check for Updates…**; public `1.0.1`; the standard Sparkle update/relaunch; post-update continuity; generated history/recording fixtures; isolated failure and busy-state checks.
